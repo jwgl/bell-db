@@ -109,20 +109,20 @@ degree_id      = EXCLUDED.degree_id,
 department_id  = EXCLUDED.department_id;
 
 -- 专业方向
-insert into ea.direction(id, major_id, name)
-select id, major_id, name from ea.sv_direction
+insert into ea.direction(id, program_id, name)
+select id, program_id, name from ea.sv_direction
 on conflict(id) do update set
-major_id = EXCLUDED.major_id,
-name     = EXCLUDED.name;
+program_id = EXCLUDED.program_id,
+name       = EXCLUDED.name;
 
-INSERT INTO ea.direction (id, major_id, name) VALUES (201402041, 20140204, '社会保障方向');
-INSERT INTO ea.direction (id, major_id, name) VALUES (201402042, 20140204, '劳动关系方向');
-INSERT INTO ea.direction (id, major_id, name) VALUES (201405071, 20140507, '对外汉语教学');
-INSERT INTO ea.direction (id, major_id, name) VALUES (201405072, 20140507, '英语语言文学');
-INSERT INTO ea.direction (id, major_id, name) VALUES (201405073, 20140507, '英语教育');
-INSERT INTO ea.direction (id, major_id, name) VALUES (201405081, 20140508, '汉语言文学');
-INSERT INTO ea.direction (id, major_id, name) VALUES (201405082, 20140508, '商务日语');
-INSERT INTO ea.direction (id, major_id, name) VALUES (201405083, 20140508, '汉语言');
+INSERT INTO ea.direction (id, major_id, name) VALUES (2014020401, 201402040, '社会保障方向');
+INSERT INTO ea.direction (id, major_id, name) VALUES (2014020402, 201402040, '劳动关系方向');
+INSERT INTO ea.direction (id, major_id, name) VALUES (2014050701, 201405070, '对外汉语教学');
+INSERT INTO ea.direction (id, major_id, name) VALUES (2014050702, 201405070, '英语语言文学');
+INSERT INTO ea.direction (id, major_id, name) VALUES (2014050703, 201405070, '英语教育');
+INSERT INTO ea.direction (id, major_id, name) VALUES (2014050801, 201405080, '汉语言文学');
+INSERT INTO ea.direction (id, major_id, name) VALUES (2014050802, 201405080, '商务日语');
+INSERT INTO ea.direction (id, major_id, name) VALUES (2014050803, 201405080, '汉语言');
 
 -- 教学计划
 insert into ea.program(id, type, major_id, credit)
@@ -302,11 +302,11 @@ update admission set used_name = '刘龑' where student_id = '1017010074';
 insert into ea.student(id, name, pinyin_name, sex, birthday, political_status, nationality, date_enrolled, 
 	date_graduated, is_enrolled, at_school, is_registed, train_range, 
 	category, forign_language, forign_language_level, change_type, department_id,
-	admin_class_id, major_id, admission_id)
+	admin_class_id, major_id, direction_id, admission_id)
 select id, name, pinyin_name, sex, birthday, political_status, nationality, date_enrolled, 
 	date_graduated, is_enrolled, at_school, is_registed, train_range, 
 	category, forign_language, forign_language_level, change_type, department_id,
-	admin_class_id, major_id, admission_id
+	admin_class_id, major_id, direction_id, admission_id
 from ea.sv_student
 on conflict(id) do update set
 name                  = EXCLUDED.name,
@@ -328,6 +328,7 @@ change_type           = EXCLUDED.change_type,
 department_id         = EXCLUDED.department_id,
 admin_class_id        = EXCLUDED.admin_class_id,
 major_id              = EXCLUDED.major_id,
+direction_id          = EXCLUDED.direction_id,
 admission_id          = EXCLUDED.admission_id;
 
 -- postgres=# set client_encoding to 'utf8';
