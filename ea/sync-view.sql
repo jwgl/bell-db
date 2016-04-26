@@ -239,7 +239,8 @@ order by id;
  * 专业方向
  */
 create or replace view ea.sv_direction as
-select to_number(zyfxdm) as id, to_number(substr(zyfxdm, 1, 8)) as major_id, zyfxmc as name
+select to_number(substr(zyfxdm, 1, 8) || '0' || substr(zyfxdm, 9, 1)) as id, 
+ to_number(substr(zyfxdm, 1, 8) || '0') as program_id, zyfxmc as name
 from zfxfzb.zyfxb
 order by id;
 
@@ -452,12 +453,12 @@ with x as (
     ea.util.csv_bit_to_number(kkkxq, jyxdxq) as allowed_term,
     case when sfpk is not null then sfpk else sv_course.schedule_type end as schedule_type,
     xydm as department_id,
-    zyfxdm as direction_id
+    sv_direction.id as direction_id
   from zfxfzb.jxjhkcxxb
   join zfxfzb.kcxzdmb on kcxz = kcxzmc
   join zfxfzb.xydmb on kkxy = xymc
   join ea.sv_course on kcdm = sv_course.id
-  left join zfxfzb.zyfxb on zyfxmc = zyfx and jxjhh = substr(zyfxdm, 1, 8)
+  left join sv_direction on sv_direction.name = zyfx and sv_direction.program_id = jxjhh || 0
   left join ( -- 是否排课
     select jxjhh as pk_jxjhh, kcdm as pk_kcdm, zyfx as pk_zyfx, decode(sfpk, 0, 0, 1) as sfpk  from(
       select jxjhh, kcdm, kcmc, zyfx, sum (case when skdd is null and sksj is null then 0 else 1 end) as sfpk
@@ -510,7 +511,7 @@ case
   else (end_week - start_week + 1)
 end as period_weeks, is_compulsory, is_practical,
 property_id, assess_type, test_type, start_week, end_week,
-suggested_term, allowed_term, schedule_type, department_id, to_number(direction_id) as direction_id
+suggested_term, allowed_term, schedule_type, department_id, direction_id
 from x
 where program_id in (select id from ea.sv_program)
 and course_id in (select id from ea.sv_course)
@@ -693,7 +694,7 @@ left join zfxfzb.mzdmb on mz = mzmc
 left join zfxfzb.zzmmdmb on zzmm = zzmmmc
 left join ea.sv_admin_class on xzb = name
 left join ea.sv_major on dqszj || zydm = sv_major.id
-left join ea.sv_direction on zyfx = sv_direction.name and (dqszj || zydm) = sv_direction.major_id
+left join ea.sv_direction on zyfx = sv_direction.name and (dqszj || zydm || '0') = sv_direction.program_id
 order by id;
 
 /*

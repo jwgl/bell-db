@@ -158,7 +158,7 @@ CREATE FOREIGN TABLE ea.sv_major (
 DROP FOREIGN TABLE IF EXISTS ea.sv_direction;
 CREATE FOREIGN TABLE ea.sv_direction (
     id integer,
-    major_id integer,
+    program_id integer,
     name varchar(30)
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_DIRECTION');
 
