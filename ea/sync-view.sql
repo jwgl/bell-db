@@ -168,8 +168,8 @@ select zydm as id,
 		else 0
 	end as stop_enroll,
 	case zydm
-		when 2201 then 1 -- 中加
-    when 1317 then 1 -- 中德
+		when '2201' then 1 -- 中加
+    	when '1317' then 1 -- 中德
 		else 0
 	end as is_joint_program,
   case
@@ -303,7 +303,7 @@ select to_number(kcxzdm) as id,
 	kcxzmc as name,
 	kcxzjc as short_name,
 	decode(xbx, '选', 0, '必', 1, 1) as is_compulsory,
-	decode(name, '学科基础课', 1, '专业主干课', 1, 0) as is_primary
+	decode(kcxzmc, '学科基础课', 1, '专业主干课', 1, 0) as is_primary
 from zfxfzb.kcxzdmb
 order by id;
 
@@ -903,6 +903,8 @@ join ea.sv_teacher f on a.jszgh = f.id
 left join ea.sv_property g on a.kcxz = g.name
 order by id;
 
+/*
+
 --是否存在不一致的数据
 select count(*), count(distinct id), count(distinct original_id) from ea.sv_course_class;
 
@@ -922,6 +924,7 @@ select * from ea.sv_course_class a join x on a.id = x.id;
 select * from zfxfzb.jxrwbview where xkkh in (
 	select original_id from ea.sv_course_class group by original_id having count(*) > 1
 ) order by xkkh;
+*/
 
 /**
  * 教学班-计划
