@@ -34,9 +34,9 @@ with teacher as (
   )
   order by id
 ), student as (
-  select
+select
     xh as id,
-    replace(xm, '', '龑') as name,
+    xm as name,
     null as login_name,
     nvl(xsmm, DBMS_RANDOM.STRING('A', 10)) as password,
     dzyxdz as email,
@@ -49,13 +49,15 @@ with teacher as (
   from zfxfzb.xsjbxxb
   left join zfxfzb.xydmb on xy_xsxy = xymc
   where xjzt =  '有' -- 有学籍
-  and xh in (select xh from zfxfzb.cjb where cjb.xh = xsjbxxb.xh) -- 有成绩
+  and exists (select * from zfxfzb.cjb where cjb.xh = xsjbxxb.xh) -- 有成绩
+  and dqszj > (select max(dqszj) - 8 from zfxfzb.xsjbxxb) 
   order by xh
 )
 select * from teacher
 union all
 select * from student
 ;
+
 /**
  * 行政班管理员
  */

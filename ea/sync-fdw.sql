@@ -31,13 +31,13 @@ CREATE USER MAPPING FOR tm SERVER zf OPTIONS (user 'tm',password 'tm');
 --- 学期
 DROP FOREIGN TABLE IF EXISTS ea.sv_term;
 CREATE FOREIGN TABLE ea.sv_term (
-    id numeric(5),
+    id integer,
     start_date date,
-    start_week numeric(2),
-    mid_right numeric(2),
-    end_week numeric(2),
-    max_week numeric(2),
-    mid_left numeric(2)
+    start_week integer,
+    mid_left integer,
+    mid_right integer,
+    end_week integer,
+    max_week integer
 ) SERVER zf OPTIONS (schema 'EA', table 'TERM');
 
 --- 学院
@@ -136,6 +136,7 @@ CREATE FOREIGN TABLE ea.sv_subject (
     length_of_schooling integer,
     stop_enroll boolean,
     is_joint_program boolean,
+    is_dual_degree boolean,
     is_top_up boolean,
     field_id numeric(10),
     degree_id numeric(6),
@@ -194,7 +195,7 @@ CREATE FOREIGN TABLE ea.sv_program_property (
 DROP FOREIGN TABLE IF EXISTS ea.sv_course;
 CREATE FOREIGN TABLE ea.sv_course (
     id char(8),
-    name nvarchar(100),
+    name varchar(100),
     english_name varchar(120),
     credit numeric(3, 1),
     period_theory integer,
