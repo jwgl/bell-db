@@ -1,12 +1,12 @@
 -- 学期
-insert into ea.term (id, start_date, start_week, end_week, mid_left, mid_right, max_week)
-select id, start_date, start_week, end_week, mid_left, mid_right, max_week from ea.sv_term
+insert into ea.term (id, start_date, start_week, mid_left, mid_right,end_week, max_week)
+select id, start_date, start_week, mid_left, mid_right, end_week, max_week from ea.sv_term
 on conflict(id) do update set
 start_date = EXCLUDED.start_date,
 start_week = EXCLUDED.start_week,
-end_week   = EXCLUDED.end_week,
 mid_left   = EXCLUDED.mid_left,
 mid_right  = EXCLUDED.mid_right,
+end_week   = EXCLUDED.end_week,
 max_week   = EXCLUDED.max_week;
 
 -- 学院
@@ -80,9 +80,9 @@ on conflict(field_id, discipline_id) do nothing;
 
 -- 校内专业
 insert into ea.subject(id, name, english_name, short_name, education_level, length_of_schooling, 
-	stop_enroll, is_joint_program, is_top_up, field_id, degree_id, department_id)
+	stop_enroll, is_joint_program, is_dual_degree, is_top_up, field_id, degree_id, department_id)
 select id, name, english_name, short_name, education_level, length_of_schooling, 
-	stop_enroll, is_joint_program, is_top_up, field_id, degree_id, department_id
+	stop_enroll, is_joint_program, is_dual_degree, is_top_up, field_id, degree_id, department_id
 from ea.sv_subject
 on conflict(id) do update set
 name                = EXCLUDED.name,
@@ -92,6 +92,7 @@ education_level     = EXCLUDED.education_level,
 length_of_schooling = EXCLUDED.length_of_schooling,
 stop_enroll         = EXCLUDED.stop_enroll,
 is_joint_program    = EXCLUDED.is_joint_program,
+is_dual_degree      = EXCLUDED.is_dual_degree, 
 is_top_up           = EXCLUDED.is_top_up,
 field_id            = EXCLUDED.field_id,
 degree_id           = EXCLUDED.degree_id,
@@ -108,22 +109,6 @@ field_id       = EXCLUDED.field_id,
 degree_id      = EXCLUDED.degree_id,
 department_id  = EXCLUDED.department_id;
 
--- 专业方向
-insert into ea.direction(id, program_id, name)
-select id, program_id, name from ea.sv_direction
-on conflict(id) do update set
-program_id = EXCLUDED.program_id,
-name       = EXCLUDED.name;
-
-INSERT INTO ea.direction (id, major_id, name) VALUES (2014020401, 201402040, '社会保障方向');
-INSERT INTO ea.direction (id, major_id, name) VALUES (2014020402, 201402040, '劳动关系方向');
-INSERT INTO ea.direction (id, major_id, name) VALUES (2014050701, 201405070, '对外汉语教学');
-INSERT INTO ea.direction (id, major_id, name) VALUES (2014050702, 201405070, '英语语言文学');
-INSERT INTO ea.direction (id, major_id, name) VALUES (2014050703, 201405070, '英语教育');
-INSERT INTO ea.direction (id, major_id, name) VALUES (2014050801, 201405080, '汉语言文学');
-INSERT INTO ea.direction (id, major_id, name) VALUES (2014050802, 201405080, '商务日语');
-INSERT INTO ea.direction (id, major_id, name) VALUES (2014050803, 201405080, '汉语言');
-
 -- 教学计划
 insert into ea.program(id, type, major_id, credit)
 select id, type, major_id, credit from ea.sv_program
@@ -131,6 +116,22 @@ on conflict(id) do update set
 type     = EXCLUDED.type,
 major_id = EXCLUDED.major_id,
 credit   = EXCLUDED.credit;
+
+-- 专业方向
+insert into ea.direction(id, program_id, name)
+select id, program_id, name from ea.sv_direction
+on conflict(id) do update set
+program_id = EXCLUDED.program_id,
+name       = EXCLUDED.name;
+
+INSERT INTO ea.direction (id, program_id, name) VALUES (2014020401, 201402040, '社会保障方向');
+INSERT INTO ea.direction (id, program_id, name) VALUES (2014020402, 201402040, '劳动关系方向');
+INSERT INTO ea.direction (id, program_id, name) VALUES (2014050701, 201405070, '对外汉语教学');
+INSERT INTO ea.direction (id, program_id, name) VALUES (2014050702, 201405070, '英语语言文学');
+INSERT INTO ea.direction (id, program_id, name) VALUES (2014050703, 201405070, '英语教育');
+INSERT INTO ea.direction (id, program_id, name) VALUES (2014050801, 201405080, '汉语言文学');
+INSERT INTO ea.direction (id, program_id, name) VALUES (2014050802, 201405080, '商务日语');
+INSERT INTO ea.direction (id, program_id, name) VALUES (2014050803, 201405080, '汉语言');
 
 -- 课程性质
 insert into ea.property(id, name, short_name, is_compulsory, is_primary)
