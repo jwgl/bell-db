@@ -205,8 +205,7 @@ select program_id, course_id, direction_id, period_theory, period_experiment, pe
 	start_week, end_week, suggested_term, allowed_term, schedule_type,
 	department_id
 from ea.sv_program_course
-where direction is not null
-on conflict(program_id, course_id, nullif(direction_id, '')) do update set
+on conflict(program_id, coalesce(direction_id, 0), course_id) do update set
 period_theory     = EXCLUDED.period_theory,
 period_experiment = EXCLUDED.period_experiment,
 period_weeks      = EXCLUDED.period_weeks,
