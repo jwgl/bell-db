@@ -1,10 +1,12 @@
--- 教学任务
-insert into ea.task(id, is_primary, start_week, end_week, course_item_id, course_class_id, original_id)
-select id, is_primary, start_week, end_week, course_item_id, course_class_id, original_id from ea.sv_task
+-- 用户表
+insert into tm.system_user(id, name, login_name, password, email, long_phone, enabled, user_type, department_id)
+select id, name, login_name, password, email, long_phone, enabled, user_type, department_id from tm.sv_system_user
 on conflict(id) do update set
-is_primary      = EXCLUDED.is_primary,
-start_week      = EXCLUDED.start_week,
-end_week        = EXCLUDED.end_week,
-course_item_id  = EXCLUDED.course_item_id,
-course_class_id = EXCLUDED.course_class_id,
-original_id     = EXCLUDED.original_id;
+name          = EXCLUDED.name,
+login_name    = EXCLUDED.login_name,
+password      = EXCLUDED.password,
+email         = EXCLUDED.email,
+long_phone    = EXCLUDED.long_phone,
+enabled       = EXCLUDED.enabled,
+user_type     = EXCLUDED.user_type,
+department_id = EXCLUDED.department_id;
