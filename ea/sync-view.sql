@@ -1311,6 +1311,8 @@ select distinct  -- 体育
 	decode(regexp_substr(sksj, '^周(.)', 1, 1, null, 1), '一', 1, '二', 2, '三', 3, '四', 4, '五', 5, '六', 6, '日', 7, '天', 7) xqj,
 	to_number(regexp_substr(sksj, '第(\d+)(,\d+)?节', 1, 1, null, 1)) qssjd, 
 	case 
+		when regexp_like(sksj, '第\d+,\d+,\d+,\d+节') then 4
+		when regexp_like(sksj, '第\d+,\d+,\d+节') then 3
 		when regexp_like(sksj, '第\d+,\d+节') then 2
 		when regexp_like(sksj, '第\d+节') then 1
 	end as skcd,
