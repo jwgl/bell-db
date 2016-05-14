@@ -335,6 +335,91 @@ admission_id          = EXCLUDED.admission_id;
 -- postgres=# set client_encoding to 'utf8';
 update student set name = '谭龑焘' where id = '0818010172';
 
+
+---教学班ID转换
+INSERT INTO course_class_id(COURSE_CLASS_ID,ORIGINAL_ID)
+--检索全部教学班
+WITH jxrw AS
+  (SELECT DISTINCT xn,xq,kkxy,kcdm,kcmc,xkkh FROM sva_task_base a where xn='2015-2016' and xq=2 and kcmc='计算机基础'
+  ) ,
+  --获取已转换教学班的课程序号及教学班序号
+  id_old AS
+  (SELECT substr(b.COURSE_CLASS_ID,8,3) order_course,
+   substr(b.COURSE_CLASS_ID,11,3) order_class,
+    a.*
+  FROM jxrw a
+  JOIN course_class_id b
+  ON a.xkkh=b.original_id
+  ORDER BY xn,
+    xq,
+    kkxy,
+    order_course,
+    order_class
+  ) 
+  ,
+  --获取已转换最大课程序号
+  id_old_course_max AS
+  (SELECT xn,
+    xq,
+    kkxy,
+    MAX(order_course) order_course
+  FROM id_old
+  GROUP BY xn,
+    xq,
+    kkxy
+  )
+  ,--获取已转换教学班最大序号
+  id_old_class_max AS
+  (SELECT xn,
+    xq,
+    kkxy,
+    kcdm,
+    MAX(order_class) order_class
+  FROM id_old
+  GROUP BY xn,
+    xq,
+    kkxy,
+    kcdm
+  ) 
+  ,
+  id_new AS
+  (SELECT rank() over (partition BY xn,xq,kkxy order by kcdm) order_course,
+    rank() over (partition BY xn,xq,kkxy,kcdm order by xkkh) order_class,
+    a.*,a1.id
+  FROM jxrw a join sv_department a1 on a.kkxy=a1.name
+  LEFT JOIN course_class_id b
+  ON a.xkkh            =b.original_id
+  WHERE b.original_id IS NULL
+  )
+  ,
+  id_imp AS
+  (SELECT a.xn,
+    a.xq,
+    a.kkxy,a.id,
+    a.kcdm,
+    a.kcmc,
+    a.xkkh,
+	--如课程不存在，即在最大课程序号+1
+    a.order_course+decode(c.kcdm,null,NVL(b.order_course,0),0) order_course,
+    a.order_class +NVL(c.order_class,0) order_class
+  FROM id_new a
+  LEFT JOIN id_old_course_max b
+  ON a.xn   =b.xn
+  AND a.xq  =b.xq
+  AND a.kkxy=b.kkxy
+  LEFT JOIN id_old_class_max c
+  ON a.xn   =c.xn
+  AND a.xq  =c.xq
+  AND a.kkxy=c.kkxy
+  AND a.kcdm=c.kcdm
+  )
+SELECT SUBSTR(xn,0,4)
+  ||xq||id
+  ||TO_CHAR(order_course,'fm000')
+  ||TO_CHAR(order_class,'fm000'),
+  xkkh
+FROM id_imp ;
+
 -- 教学班
 insert into ea.course_class(id, period_theory, period_experiment, period_weeks, property_id, assess_type, test_type, start_week, end_week, 
 	term_id, course_id, department_id, teacher_id, original_id)

@@ -338,6 +338,14 @@ CREATE FOREIGN TABLE ea.sv_student (
     admission_id bigint
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_STUDENT');
 
+
+---教学班ID
+DROP FOREIGN TABLE IF EXISTS ea.COURSE_CLASS_ID;
+CREATE FOREIGN TABLE ea.COURSE_CLASS_ID (
+    course_class_id numeric(13),
+    original_id varchar(31)
+) SERVER zf OPTIONS (schema 'EA', table 'COURSE_CLASS_ID');
+
 --- 教学班
 DROP FOREIGN TABLE IF EXISTS ea.sv_course_class;
 CREATE FOREIGN TABLE ea.sv_course_class (
