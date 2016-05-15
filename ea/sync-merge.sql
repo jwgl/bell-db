@@ -344,8 +344,8 @@ WITH jxrw AS
   ) ,
   --获取已转换教学班的课程序号及教学班序号
   id_old AS
-  (SELECT substr(b.COURSE_CLASS_ID,8,3) order_course,
-   substr(b.COURSE_CLASS_ID,11,3) order_class,
+  (SELECT substr(b.COURSE_CLASS_ID,8,3) id_course,
+   substr(b.COURSE_CLASS_ID,11,3) id_class,
     a.*
   FROM jxrw a
   JOIN course_class_id b
@@ -353,16 +353,19 @@ WITH jxrw AS
   ORDER BY xn,
     xq,
     kkxy,
-    order_course,
-    order_class
+    id_course,
+    id_class
   ) 
+  --获取已转换课程的ID
+  ,id_course_old as
+  (select distinct id_course,xn,xq,kkxy,kcdm,kcmc from id_old)
   ,
   --获取已转换最大课程序号
   id_old_course_max AS
   (SELECT xn,
     xq,
     kkxy,
-    MAX(order_course) order_course
+    MAX(id_course) id_course
   FROM id_old
   GROUP BY xn,
     xq,
@@ -374,7 +377,7 @@ WITH jxrw AS
     xq,
     kkxy,
     kcdm,
-    MAX(order_class) order_class
+    MAX(id_class) id_class
   FROM id_old
   GROUP BY xn,
     xq,
@@ -382,15 +385,21 @@ WITH jxrw AS
     kcdm
   ) 
   ,
-  id_new AS
-  (SELECT rank() over (partition BY xn,xq,kkxy order by kcdm) order_course,
-    rank() over (partition BY xn,xq,kkxy,kcdm order by xkkh) order_class,
-    a.*,a1.id
-  FROM jxrw a join sv_department a1 on a.kkxy=a1.name
+  --获取未转换的教学班，并计算同一教学单位同一课程的教学班班序号
+  id_class_new as 
+  (select 
+    rank() over (partition BY xn,xq,kkxy,kcdm order by xkkh) id_class,
+    a.*,a1.id from jxrw a join sv_department a1 on a.kkxy=a1.name
   LEFT JOIN course_class_id b
   ON a.xkkh            =b.original_id
   WHERE b.original_id IS NULL
-  )
+  ,
+  --判断未转换的课程序号是否存在，不存在的重新编号
+  id_course_new AS
+  (SELECT nvl(b.id_course,dense_rank() over (partition BY a.xn,a.xq,a.kkxy order by a.kcdm)) id_course,
+    a.*
+  FROM id_class_new a 
+  left join id_course_old b on a.xn=b.xn and a.xq=b.xq and a.kkxy=b.kkxy and a.kcdm=b.kcdm)
   ,
   id_imp AS
   (SELECT a.xn,
@@ -400,9 +409,9 @@ WITH jxrw AS
     a.kcmc,
     a.xkkh,
 	--如课程不存在，即在最大课程序号+1
-    a.order_course+decode(c.kcdm,null,NVL(b.order_course,0),0) order_course,
-    a.order_class +NVL(c.order_class,0) order_class
-  FROM id_new a
+    a.id_course+decode(c.kcdm,null,NVL(b.id_course,0),0) id_course,
+    a.id_class +NVL(c.id_class,0) id_class
+  FROM id_course_new a
   LEFT JOIN id_old_course_max b
   ON a.xn   =b.xn
   AND a.xq  =b.xq
@@ -415,10 +424,11 @@ WITH jxrw AS
   )
 SELECT SUBSTR(xn,0,4)
   ||xq||id
-  ||TO_CHAR(order_course,'fm000')
-  ||TO_CHAR(order_class,'fm000'),
+  ||TO_CHAR(id_course,'fm000')
+  ||TO_CHAR(id_class,'fm000') id,
   xkkh
-FROM id_imp ;
+FROM id_imp
+order by id;
 
 -- 教学班
 insert into ea.course_class(id, period_theory, period_experiment, period_weeks, property_id, assess_type, test_type, start_week, end_week, 
