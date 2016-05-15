@@ -340,7 +340,7 @@ update student set name = '谭龑焘' where id = '0818010172';
 INSERT INTO course_class_id(COURSE_CLASS_ID,ORIGINAL_ID)
 --检索全部教学班
 WITH jxrw AS
-  (SELECT DISTINCT xn,xq,kkxy,kcdm,kcmc,xkkh FROM sva_task_base a where xn='2015-2016' and xq=2 and kcmc='计算机基础'
+  (SELECT DISTINCT xn,xq,kkxy,kcdm,kcmc,xkkh FROM sva_task_base a
   ) ,
   --获取已转换教学班的课程序号及教学班序号
   id_old AS

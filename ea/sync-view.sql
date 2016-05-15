@@ -767,40 +767,6 @@ select * from (
 ) where nvl(xkzt, 0) <> 4 and jszgh in (select zgh from zfxfzb.jsxxb);
 
 
-/*
- * 辅助视图 - 选课课号新旧对照视图（以往学期）
- */
-create or replace view ea.sva_prev_course_class_id as
-with unsynced as (
-	select distinct substr(xn, 1, 4) || xq || xydm as xqxy, kcdm, xkkh, case 
-		when xkkh like '%zk000%' then 
-			xkkh
-		else
-			substr(xkkh, 1, 29) || 
-			to_char(to_number(regexp_substr(xkkh, '\d+', 30)), 'fm09') || 
-			regexp_substr(xkkh, '[^0-9]$', 30) -- 把最后的数字变成01，便于排序
-		end as xkkh_normal
-	from ea.sva_task_base
-	join zfxfzb.xydmb on kkxy = xymc
-	where xn||'-'||xq < (select max(dqxn||'-'||dqxq) from zfxfzb.xxmc) -- 小于当前学期
-), jxb_xh as ( -- 选课课号在课程中的顺序号
-	select xqxy, kcdm, xkkh, 
-	rank() over (partition by xqxy, kcdm order by xkkh_normal) as jxb_sn
-	from unsynced
-), kc_xh as ( -- 课程在学院的顺序号
-	select xqxy, kcdm, rank() over (partition by xqxy order by kcdm) as kc_sn
-	from (
-		select distinct xqxy, kcdm 
-		from unsynced
-	)
-)
-select to_number(a.xqxy || to_char(a.kc_sn, 'fm009') || to_char(b.jxb_sn, 'fm009')) as course_class_id, 
-	b.xkkh as original_id
-from kc_xh a 
-join jxb_xh b on a.xqxy = b.xqxy and a.kcdm = b.kcdm
-order by course_class_id;
-
-
 
 /**
  * 辅助视图 - 选课课号新旧对照视图
