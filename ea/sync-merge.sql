@@ -338,97 +338,61 @@ update student set name = '谭龑焘' where id = '0818010172';
 
 ---教学班ID转换
 INSERT INTO course_class_id(COURSE_CLASS_ID,ORIGINAL_ID)
---检索全部教学班
-WITH jxrw AS
-  (SELECT DISTINCT xn,xq,kkxy,kcdm,kcmc,xkkh FROM sva_task_base a
-  ) ,
-  --获取已转换教学班的课程序号及教学班序号
-  id_old AS
-  (SELECT substr(b.COURSE_CLASS_ID,8,3) id_course,
-   substr(b.COURSE_CLASS_ID,11,3) id_class,
-    a.*
-  FROM jxrw a
-  JOIN course_class_id b
-  ON a.xkkh=b.original_id
-  ORDER BY xn,
-    xq,
-    kkxy,
-    id_course,
-    id_class
-  ) 
-  --获取已转换课程的ID
-  ,id_course_old as
-  (select distinct id_course,xn,xq,kkxy,kcdm,kcmc from id_old)
-  ,
-  --获取已转换最大课程序号
-  id_old_course_max AS
-  (SELECT xn,
-    xq,
-    kkxy,
-    MAX(id_course) id_course
-  FROM id_old
-  GROUP BY xn,
-    xq,
-    kkxy
-  )
-  ,--获取已转换教学班最大序号
-  id_old_class_max AS
-  (SELECT xn,
-    xq,
-    kkxy,
-    kcdm,
-    MAX(id_class) id_class
-  FROM id_old
-  GROUP BY xn,
-    xq,
-    kkxy,
-    kcdm
-  ) 
-  ,
-  --获取未转换的教学班，并计算同一教学单位同一课程的教学班班序号
-  id_class_new as 
-  (select 
-    rank() over (partition BY xn,xq,kkxy,kcdm order by xkkh) id_class,
-    a.*,a1.id from jxrw a join sv_department a1 on a.kkxy=a1.name
-  LEFT JOIN course_class_id b
-  ON a.xkkh            =b.original_id
-  WHERE b.original_id IS NULL
-  ,
-  --判断未转换的课程序号是否存在，不存在的重新编号
-  id_course_new AS
-  (SELECT nvl(b.id_course,dense_rank() over (partition BY a.xn,a.xq,a.kkxy order by a.kcdm)) id_course,
-    a.*
-  FROM id_class_new a 
-  left join id_course_old b on a.xn=b.xn and a.xq=b.xq and a.kkxy=b.kkxy and a.kcdm=b.kcdm)
-  ,
-  id_imp AS
-  (SELECT a.xn,
-    a.xq,
-    a.kkxy,a.id,
-    a.kcdm,
-    a.kcmc,
-    a.xkkh,
-	--如课程不存在，即在最大课程序号+1
-    a.id_course+decode(c.kcdm,null,NVL(b.id_course,0),0) id_course,
-    a.id_class +NVL(c.id_class,0) id_class
-  FROM id_course_new a
-  LEFT JOIN id_old_course_max b
-  ON a.xn   =b.xn
-  AND a.xq  =b.xq
-  AND a.kkxy=b.kkxy
-  LEFT JOIN id_old_class_max c
-  ON a.xn   =c.xn
-  AND a.xq  =c.xq
-  AND a.kkxy=c.kkxy
-  AND a.kcdm=c.kcdm
-  )
-SELECT SUBSTR(xn,0,4)
-  ||xq||id
-  ||TO_CHAR(id_course,'fm000')
-  ||TO_CHAR(id_class,'fm000') id,
-  xkkh
-FROM id_imp
-order by id;
+with synced as ( -- 已同步的数据
+	select substr(course_class_id, 1, 7) as pre,
+	to_number(substr(course_class_id, 8, 3)) as course_sn,
+	to_number(substr(course_class_id, 11, 3)) as class_sn,
+	substr(original_id, 15, 8) as course_id,
+	original_id
+	from ea.course_class_id
+), unsynced as ( -- 未同步的数据
+	select distinct substr(xn, 1, 4) || xq || xydm as xqxy, kcdm, xkkh, case 
+		when xkkh like '%zk000%' then 
+			xkkh
+		else
+			substr(xkkh, 1, 29) || 
+			to_char(to_number(regexp_substr(xkkh, '\d+', 30)), 'fm09') || 
+			regexp_substr(xkkh, '[^0-9]$', 30) -- 把最后的数字变成01，便于排序
+		end as xkkh_normal
+	from ea.sva_task_base a
+	join zfxfzb.xydmb b on a.kkxy = b.xymc
+	where /*xn||'-'||xq >= (select max(dqxn||'-'||dqxq) from zfxfzb.xxmc) -- 当前学期
+	and*/ xkkh not in (select original_id from ea.course_class_id) -- 未同步过的选课课号
+), jxb_xh as ( -- 选课课号在课程中的顺序号
+	-- 未同步过的课程，重新计算序号
+	select xqxy, kcdm, xkkh, rank() over (partition by xqxy, kcdm order by xkkh_normal) jxb_sn
+	from unsynced
+	where kcdm not in (select course_id from synced where pre = xqxy)
+	union
+	-- 存在已同步的课程，已有最大值+序号
+	select xqxy, kcdm, xkkh, rank() over (partition by xqxy, kcdm order by xkkh_normal)  + 
+	nvl((select max(class_sn) from synced where pre = xqxy  and course_id = kcdm), 0) as jxb_sn
+	from unsynced 
+	where kcdm in (select course_id from synced where pre = xqxy)
+), kc_xh as ( -- 课程在学院的顺序号
+	-- 未同步的课程，已有最大值+序号
+	select xqxy, kcdm, rank() over (partition by xqxy order by kcdm) + 
+	nvl((select max(course_sn) from synced where pre = xqxy), 0) kc_sn
+	from (
+		select distinct xqxy, kcdm 
+		from unsynced
+		where kcdm not in (select course_id from synced where pre = xqxy)
+	)
+	union
+	-- 已同步的课程，取同步过的课程序号
+	select xqxy, kcdm, (select distinct course_sn from synced where pre = xqxy and course_id = kcdm) as kc_sn
+	from (
+		select distinct xqxy, kcdm
+		from unsynced
+		where kcdm in (select course_id from synced where pre = xqxy)
+	)
+)
+select to_number(a.xqxy || to_char(a.kc_sn, 'fm009') || to_char(b.jxb_sn, 'fm009')) as course_class_id, 
+	b.xkkh as original_id
+from kc_xh a 
+join jxb_xh b on a.xqxy = b.xqxy and a.kcdm = b.kcdm 
+where b.xkkh not in(select original_id from synced)
+order by course_class_id;
 
 -- 教学班
 insert into ea.course_class(id, period_theory, period_experiment, period_weeks, property_id, assess_type, test_type, start_week, end_week, 
