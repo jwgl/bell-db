@@ -26,9 +26,8 @@ Insert into PERMISSION (ID,NAME) values ('PERM_VISION_READ','培养方案-查看
 Insert into PERMISSION (ID,NAME) values ('PERM_VISION_WRITE','培养方案-编辑');
 Insert into PERMISSION (ID,NAME) values ('PERM_VISION_CHECK','培养方案-审核');
 Insert into PERMISSION (ID,NAME) values ('PERM_VISION_APPROVE','培养方案-审批');
-Insert into PERMISSION (ID,NAME) values ('PERM_SUBJECT_SETUP','设置-专业');
-Insert into PERMISSION (ID,NAME) values ('PERM_SCHEME_SETUP','设置-教学计划');
-Insert into PERMISSION (ID,NAME) values ('PERM_VISION_SETUP','设置-培养方案');
+Insert into PERMISSION (ID,NAME) values ('PERM_SUBJECT_SETUP','设置-校内专业');
+Insert into PERMISSION (ID,NAME) values ('PERM_PROGRAM_SETUP','设置-教学计划');
 Insert into PERMISSION (ID,NAME) values ('PERM_ROLLCALL_WRITE','考勤-点名');
 Insert into PERMISSION (ID,NAME) values ('PERM_ROLLCALL_QUERY','考勤-统计');
 Insert into PERMISSION (ID,NAME) values ('PERM_SCHEDULE_READ','课表-查看');
@@ -45,16 +44,15 @@ Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_USER','PERM_PR
 Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_STUDENT','PERM_SCHEME_READ');
 Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_TEACHER','PERM_SCHEME_READ');
 Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_SUBJECT_DIRECTOR','PERM_SCHEME_WRITE');
-Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_DEAN_OF_TEACHING','PERM_SCHEME_CHECK');
-Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PROGRAM_ADMIN','PERM_SCHEME_APPROVE');
 Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_STUDENT','PERM_VISION_READ');
 Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_TEACHER','PERM_VISION_READ');
 Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_SUBJECT_DIRECTOR','PERM_VISION_WRITE');
+Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_DEAN_OF_TEACHING','PERM_SCHEME_CHECK');
 Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_DEAN_OF_TEACHING','PERM_VISION_CHECK');
 Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PROGRAM_ADMIN','PERM_VISION_APPROVE');
-Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PROGRAM_ADMIN','PERM_SCHEME_SETUP');
-Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PROGRAM_ADMIN','PERM_VISION_SETUP');
+Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PROGRAM_ADMIN','PERM_SCHEME_APPROVE');
 Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PROGRAM_ADMIN','PERM_SUBJECT_SETUP');
+Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PROGRAM_ADMIN','PERM_PROGRAM_SETUP');
 Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_COURSE_TEACHER','PERM_ROLLCALL_WRITE');
 Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_TEACHER','PERM_ROLLCALL_QUERY');
 Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_STUDENT','PERM_SCHEDULE_READ');
@@ -65,7 +63,6 @@ Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_TEAC
 Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_STUDENT','PERM_BOOKING_APPLY');
 Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_BOOKING_CHECKER','PERM_BOOKING_CHECK');
 Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_BOOKING_ADMIN','PERM_BOOKING_APPROVE');
-Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_TEST','PERM_TEST_ACTION');
 Insert into ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_USER','PERM_WORK_ITEMS');
 
 Insert into MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('main',          1, '主菜单',   '主菜单',   'Main');
@@ -86,11 +83,9 @@ Insert into MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,L
 Insert into MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values 
 ('main.program.schemes.edit',22,true,'main.program','教学计划-编辑','PERM_SCHEME_WRITE','/users/${userId}/schemes','编辑教学计划','Edit Scheme');
 Insert into MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values 
-('main.program.settings.subject',1,true,'main.program.settings','设置-专业','PERM_SUBJECT_SETUP','/settings/subject','专业负责人','Settings - Subject');
+('main.program.settings.subject',1,true,'main.program.settings','设置-校内专业','PERM_SUBJECT_SETUP','/settings/subject','专业负责人','Settings - Subject');
 Insert into MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values 
-('main.program.settings.vision',2,true,'main.program.settings','设置-培养方案','PERM_VISION_SETUP','/settings/vision','培养方案','Settings - Vision');
-Insert into MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values 
-('main.program.settings.scheme',3,true,'main.program.settings','设置-教学计划','PERM_SCHEME_SETUP','/settings/scheme','教学计划','Settings - Scheme');
+('main.program.settings.program',2,true,'main.program.settings','设置-教学计划','PERM_PROGRAM_SETUP','/settings/program','教学计划','Settings - Program');
 Insert into MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values 
 ('main.teaching.schedule',1,true,'main.teaching','课表','PERM_SCHEDULE_READ','/schedule','课表','Schedule');
 Insert into MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values 
