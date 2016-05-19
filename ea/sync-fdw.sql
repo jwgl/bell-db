@@ -47,9 +47,9 @@ CREATE FOREIGN TABLE ea.sv_department (
     name varchar(30),
     english_name varchar(60),
     short_name varchar(20),
-    is_teaching	boolean,
+    is_teaching boolean,
     has_students boolean,
-    enabled	boolean
+    enabled boolean
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_DEPARTMENT');
 
 --- 场地
@@ -338,13 +338,20 @@ CREATE FOREIGN TABLE ea.sv_student (
     admission_id bigint
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_STUDENT');
 
+---教学班ID映射实体表
+DROP FOREIGN TABLE IF EXISTS ea.et_course_class_mapping;
+CREATE FOREIGN TABLE ea.et_course_class_mapping (
+    course_class_id numeric(13),
+    original_id varchar(31),
+    date_created timestamp DEFAULT SYSTIMESTAMP
+) SERVER zf OPTIONS (schema 'EA', table 'COURSE_CLASS_MAPPING');
 
----教学班ID
-DROP FOREIGN TABLE IF EXISTS ea.COURSE_CLASS_ID;
-CREATE FOREIGN TABLE ea.COURSE_CLASS_ID (
+---教学班ID映射视图
+DROP FOREIGN TABLE IF EXISTS ea.sv_course_class_mapping_unsync;
+CREATE FOREIGN TABLE ea.sv_course_class_mapping_unsync (
     course_class_id numeric(13),
     original_id varchar(31)
-) SERVER zf OPTIONS (schema 'EA', table 'COURSE_CLASS_ID');
+) SERVER zf OPTIONS (schema 'EA', table 'SV_COURSE_CLASS_MAPPING_UNSYNC');
 
 --- 教学班
 DROP FOREIGN TABLE IF EXISTS ea.sv_course_class;
