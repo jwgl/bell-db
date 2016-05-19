@@ -109,7 +109,7 @@ select jsbh as id,
     to_number(substr(jykyxq, 1, 4) || substr(jykyxq, 11, 1)) as booking_term,
     decode(jyjsdx, '01', 1, '10', 2, '11', 3, 0) as booking_user,
     decode(xqdm, 0, 1, 1, 0) as is_external,
-    regexp_replace(translate(bz,  chr(10)||chr(11)||chr(13), '   '), '\s+', ' ') as note
+    regexp_replace(translate(bz, chr(10)||chr(11)||chr(13), '   '), '\s+', ' ') as note
 from zfxfzb.jxcdxxb
 order by id;
 
@@ -336,7 +336,7 @@ select to_number(program_id) as program_id, property_id, credit, is_weighted fro
 where credit <> 0 -- 去除学分为0的项
 and program_id in (select id from ea.sv_program)
 union
-select id as program_id,    -- 辅修计划
+select id as program_id, -- 辅修计划
     to_number(kcxzdm) as property_id,
     decode(kcxzmc, '辅修课', 30, '双学位课', 25) as credit,
     1 as is_weighted
@@ -989,12 +989,12 @@ join task_normal b on b.xkkh = a.xkkh
 join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh)
 union all
 (select distinct -- 带实验课程的主任务
-    a.xkkh,    1 , 0, a.jszgh,    'wl_t1' as tab
+    a.xkkh, 1, 0, a.jszgh, 'wl_t1' as tab
 from ea.sva_task_base a
 join task_with_lab b on a.xkkh = b.xkkh
 union
 select distinct -- 带实验课程的主任务（多教师）
-    a.xkkh,    1 , 0, c.jszgh,    'wl_t2' as tab
+    a.xkkh, 1, 0, c.jszgh, 'wl_t2' as tab
 from ea.sva_task_base a
 join task_with_lab b on a.xkkh = b.xkkh
 join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh)
@@ -1110,7 +1110,7 @@ join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh
 join arr_normal d on d.xkkh = a.xkkh and d.jszgh = c.jszgh)
 union all
 (select distinct -- 带实验课程的主任务
-    a.xkkh,    1 , 0, a.jszgh,
+    a.xkkh, 1, 0, a.jszgh,
     c.jsbh, c.qsz, c.jsz, c.dsz, c.xqj, c.qssjd, c.skcd, guid,
     'wl_t' as tab
 from zfxfzb.jxrwb a
@@ -1118,7 +1118,7 @@ join task_with_lab b on a.xkkh = b.xkkh
 join arr_normal c on c.xkkh = a.xkkh and c.jszgh = a.jszgh
 union
 select distinct -- 带实验课程的主任务（多教师）
-    a.xkkh,    1 , 0, c.jszgh,
+    a.xkkh, 1, 0, c.jszgh,
     d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, guid,
     'wl_t' as tab
 from zfxfzb.jxrwb a
