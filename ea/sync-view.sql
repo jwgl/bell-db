@@ -766,16 +766,6 @@ select * from (
 	join zfxfzb.tykcdmb c on c.kcdm = b.sskcdm -- 还原体育1、体育2
 ) where nvl(xkzt, 0) <> 4 and jszgh in (select zgh from zfxfzb.jsxxb);
 
-
-
-/**
- * 辅助视图 - 选课课号新旧对照视图
- */
-create or replace view ea.sva_course_class_id as 
--- 以前学期
-select course_class_id, original_id from ea.course_class_id
-order by course_class_id;
-
 /**
  * 教学班（注意：先创建ea.term，更新学期数据至最新）
  */
@@ -798,96 +788,20 @@ select distinct
 from ea.sva_task_base a
 join ea.sv_course b on a.kcdm = b.id
 join ea.term c on to_number(substr(a.xn, 1, 4)) * 10 + xq = c.id
-join ea.sva_course_class_id d on a.xkkh = d.original_id
+join ea.course_class_id d on a.xkkh = d.original_id
 join ea.sv_department e on a.kkxy = e.name
 join ea.sv_teacher f on a.jszgh = f.id
 left join ea.sv_property g on a.kcxz = g.name
 order by id;
-
-/*
-
---是否存在不一致的数据
-select count(*), count(distinct id), count(distinct original_id) from ea.sv_course_class;
-
---核对原任务表数量
-select count(distinct xkkh)
-from zfxfzb.jxrwbview
-where nvl(xkzt, 0) <> 4
-and jszgh in (select zgh from zfxfzb.jsxxb)
-and kcdm <> '74000000';
-
--- 数据不唯一
-with x as (
-	select id from ea.sv_course_class group by id having count(*) > 1
-)
-select * from ea.sv_course_class a join x on a.id = x.id;
-
-select * from zfxfzb.jxrwbview where xkkh in (
-	select original_id from ea.sv_course_class group by original_id having count(*) > 1
-) order by xkkh;
-*/
 
 /**
  * 教学班-计划
  */
 create or replace view ea.sv_course_class_program as
 select distinct b.course_class_id, to_number(a.program_id) as program_id
-from ea.sva_task_base a join ea.sva_course_class_id b on a.xkkh = b.original_id
+from ea.sva_task_base a join ea.course_class_id b on a.xkkh = b.original_id
 where program_id is not null
 order by course_class_id, program_id;
-
-/**
- * 辅助视图 - 所有教学任务
- */
-/*
-create or replace view ea.sva_task as 
-select -- 主教学任务
-	xkkh, xkkh as zkh, --主课号
-	jxjhh, zydm, zymc, zyfx, 
-	xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx, 
-	jszgh, jsxm, skdd, sksj, rs, 
-	to_number(substr(qsjsz, 1, instr(qsjsz, '-') - 1)) qsz, 
-	to_number(substr(qsjsz, instr(qsjsz, '-') + 1, 2)) jsz, 
-	bjmc, jxbmc, zxs, xkzt, mxdx, xzdx, 
-	1 sfzrw, --是否主任务 
-	tab
-from ea.sva_task_base
-union all
-select  -- 实验任务 
-	b.xkkh, substr(b.xkkh, 1, length(b.xkkh) - 1) as zkh,
-	a.jxjhh, a.zydm, a.zymc, a.zyfx, 
-	a.xn, a.xq, a.kcdm, a.kcmc, a.xf, a.kcxz, a.kclb, a.kkxy, a.kkx, 
-	b.jszgh, a.jsxm || '(' || b.jsxm || ')' jsxm, 
-	b.skdd, b.sksj, to_number(b.rs), 
-	to_number(substr(b.syqzz, 1, instr(b.syqzz, '-') - 1)) qsz, 
-	to_number(substr(b.syqzz, instr(b.syqzz, '-') + 1, 2)) jsz, 
-	a.bjmc, a.jxbmc, b.syzxs syzxs, 
-	xkzt, mxdx, xzdx,
-	0 sfzrw,
-	'dgjsskxxb-1' tab
-from ea.sva_task_base a
-join zfxfzb.dgjsskxxb b on a.xkkh = substr(b.xkkh, 1, length(b.xkkh) - 1)
-  and a.jxjhh || a.bjmc = b.bjmc
-  and a.zyfx = b.zyfx
-where substr(b.xkkh, -1, 1) >= 'A'
-union all
-select -- 多老师上课 
-	a.xkkh, a.xkkh as zkh, 
-	a.jxjhh, a.zydm, a.zymc, a.zyfx, 
-	a.xn, a.xq, a.kcdm, a.kcmc, a.xf, a.kcxz, a.kclb, a.kkxy, a.kkx,
-	b.jszgh, a.jsxm || '(' || b.jsxm || ')' jsxm, 
-	case when b.skdd is null then a.skdd else b.skdd end, 
-	case when b.sksj is null then a.sksj else b.sksj end, 
-	to_number(b.rs), 
-	to_number(substr(a.qsjsz, 1, instr(a.qsjsz, '-') - 1)) qsz, 
-	to_number(substr(a.qsjsz, instr(a.qsjsz, '-') + 1, 2)) jsz, 
-	a.bjmc, a.jxbmc, b.syzxs,
-	xkzt, mxdx, xzdx,
-	0 sfzrw,
-	'dgjsskxxb-2' tab
-from ea.sva_task_base a, zfxfzb.dgjsskxxb b 
-where (a.xkkh = b.xkkh and a.jszgh <> b.jszgh);
-*/
 
 /**
  * 辅助视图 - 所有教学任务
@@ -1240,7 +1154,7 @@ with base as (
 		skcd as total_section,
 		guid as id
 	from ea.sva_arrangement a
-	join ea.sva_course_class_id b on b.original_id = a.xkkh
+	join ea.course_class_id b on b.original_id = a.xkkh
 ), merged as ( -- 被合并项
 	select b.id /* for minus */, a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week,
 	a.odd_even, a.day_of_week, a.start_section, a.total_section + b.total_section as total_section,
