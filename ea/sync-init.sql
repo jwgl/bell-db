@@ -1,3 +1,7 @@
+/**
+ * database zf/ea
+ */
+
 CREATE TABLE EA.DISCIPLINE (
     ID   NUMBER(6,0) PRIMARY KEY,
     CODE VARCHAR2(2 BYTE),

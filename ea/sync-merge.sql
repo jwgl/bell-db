@@ -1,3 +1,7 @@
+/**
+ * database bell/ea
+ */
+
 -- 学期
 insert into ea.term (id, start_date, start_week, mid_left, mid_right,end_week, max_week)
 select id, start_date, start_week, mid_left, mid_right, end_week, max_week from ea.sv_term
