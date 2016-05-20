@@ -343,7 +343,7 @@ DROP FOREIGN TABLE IF EXISTS ea.et_course_class_mapping;
 CREATE FOREIGN TABLE ea.et_course_class_mapping (
     course_class_id numeric(13),
     original_id varchar(31),
-    date_created timestamp DEFAULT SYSTIMESTAMP
+    date_created timestamp
 ) SERVER zf OPTIONS (schema 'EA', table 'COURSE_CLASS_MAPPING');
 
 ---教学班ID映射视图
