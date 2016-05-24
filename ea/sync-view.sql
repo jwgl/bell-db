@@ -957,59 +957,45 @@ with task_with_lab as ( -- 带实验课任务
     select xkkh from task_pe
 )
 (select distinct -- 正常教学任务
-    a.xkkh, 0 as rwxh, 0 as zrwxh, a.jszgh,
-    null as course_item_id, -- 课程项目ID
-    'norm1' as tab
+    a.xkkh, a.jszgh, null as course_item_id, 'norm1' as tab
 from ea.sva_task_base a
 join task_normal b on b.xkkh = a.xkkh
 union
 select distinct -- 正常教学任务（多教师）
-    a.xkkh, 0 as rwxh, 0 as zrwxh, c.jszgh,
-    null as course_item_id,
-    'norm2' as tab
+    a.xkkh, c.jszgh, null, 'norm2'
 from ea.sva_task_base a
 join task_normal b on b.xkkh = a.xkkh
 join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh)
 union all
 (select distinct -- 带实验课程的主任务
-    a.xkkh, 1, 0, a.jszgh,
-    c.id as course_item_id,
-    'wl_t1' as tab
+    a.xkkh, a.jszgh, c.id, 'wl_t1'
 from ea.sva_task_base a
 join task_with_lab b on a.xkkh = b.xkkh
 join ea.sv_course_item c on c.course_id = a.kcdm and ordinal = 1
 union
 select distinct -- 带实验课程的主任务（多教师）
-    a.xkkh, 1, 0, c.jszgh,
-    d.id as course_item_id,
-    'wl_t2' as tab
+    a.xkkh, c.jszgh, d.id, 'wl_t2'
 from ea.sva_task_base a
 join task_with_lab b on a.xkkh = b.xkkh
 join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh
 join ea.sv_course_item d on d.course_id = a.kcdm and ordinal = 1)
 union all
 select distinct -- 带实验课程的实验任务
-    c.xkkh, 2, ascii(substr(c.xkkh, -1, 1)) - ascii('A'), c.jszgh,
-    d.id as course_item_id,
-    'wl_e' as tab
+    c.xkkh, c.jszgh, d.id, 'wl_e'
 from ea.sva_task_base a
 join task_with_lab b on b.xkkh = a.xkkh
 join zfxfzb.dgjsskxxb c on substr(c.xkkh, 1, length(c.xkkh) - 1) = a.xkkh
 join ea.sv_course_item d on d.course_id = a.kcdm and ordinal = 2
 union all
 select distinct -- 外语
-    a.xkkh, c.ordinal, 0, d.jszgh,
-    c.id as course_item_id,
-    'en' as tab
+    a.xkkh, d.jszgh, c.id, 'en'
 from ea.sva_task_base a
 join task_en b on a.xkkh = b.xkkh
 join ea.sv_course_item c on a.kcdm = c.course_id
 join zfxfzb.dgjsskxxb d on a.xkkh = d.xkkh and nvl(d.xh_bksj, xh) = c.ordinal
 union all
 select distinct -- 体育
-    a.xkkh, 0, 0, a.jszgh,
-    d.id as course_item_id,
-    'pe' as tab
+    a.xkkh, a.jszgh, d.id, 'pe'
 from zfxfzb.tykjxrwb a
 join task_pe b on b.xkkh = a.xkkh
 join ea.sv_course_item d on a.kcdm = d.task_course_id;
@@ -1088,8 +1074,7 @@ with task_normal_all as (
     group by xkkh, jszgh, jsbh, xqj, qssjd, qssj, jssj, guid
 )
 (select distinct -- 正常教学任务
-    a.xkkh, 0 as rwxh, 0 as zrwxh, a.jszgh,
-    c.jsbh, c.qsz, c.jsz, c.dsz, c.xqj, c.qssjd, c.skcd, c.guid,
+    a.xkkh, a.jszgh, c.jsbh, c.qsz, c.jsz, c.dsz, c.xqj, c.qssjd, c.skcd, c.guid,
     null as course_item_id, -- 课程项目ID
     'norm' as tab
 from zfxfzb.jxrwb a
@@ -1097,8 +1082,7 @@ join task_normal b on b.xkkh = a.xkkh
 join arr_normal c on c.xkkh = a.xkkh and c.jszgh = a.jszgh
 union
 select distinct -- 正常教学任务（多教师）
-    a.xkkh, 0 as rwxh, 0 as zrwxh, c.jszgh,
-    d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, d.guid,
+    a.xkkh, c.jszgh, d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, d.guid,
     null as course_item_id,
     'norm' as tab
 from zfxfzb.jxrwb a
@@ -1107,8 +1091,7 @@ join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh
 join arr_normal d on d.xkkh = a.xkkh and d.jszgh = c.jszgh)
 union all
 (select distinct -- 带实验课程的主任务
-    a.xkkh, 1, 0, a.jszgh,
-    c.jsbh, c.qsz, c.jsz, c.dsz, c.xqj, c.qssjd, c.skcd, c.guid,
+    a.xkkh, a.jszgh, c.jsbh, c.qsz, c.jsz, c.dsz, c.xqj, c.qssjd, c.skcd, c.guid,
     d.id as course_item_id,
     'wl_t' as tab
 from zfxfzb.jxrwb a
@@ -1117,8 +1100,7 @@ join arr_normal c on c.xkkh = a.xkkh and c.jszgh = a.jszgh
 join ea.sv_course_item d on d.course_id = a.kcdm and ordinal = 1
 union
 select distinct -- 带实验课程的主任务（多教师）
-    a.xkkh, 1, 0, c.jszgh,
-    d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, d.guid,
+    a.xkkh, c.jszgh, d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, d.guid,
     e.id as course_item_id,
     'wl_t' as tab
 from zfxfzb.jxrwb a
@@ -1128,8 +1110,7 @@ join arr_normal d on d.xkkh = a.xkkh and d.jszgh = c.jszgh
 join ea.sv_course_item e on e.course_id = a.kcdm and ordinal = 1)
 union all
 select distinct -- 带实验课程的实验任务
-    c.xkkh, 2, ascii(substr(c.xkkh, -1, 1)) - ascii('A'), c.jszgh,
-    d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, d.guid,
+    c.xkkh, c.jszgh, d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, d.guid,
     e.id as course_item_id,
     'wl_e' as tab
 from zfxfzb.jxrwb a
@@ -1139,8 +1120,7 @@ join arr_normal d on d.xkkh = c.xkkh and d.jszgh = c.jszgh
 join ea.sv_course_item e on e.course_id = a.kcdm and ordinal = 2
 union all
 select distinct -- 外语
-    b.xkkh, d.ordinal, 0, b.jszgh,
-    f.jsbh/*b.jsbh*/, b.qsz, b.jsz, decode(a.dsz, '单', 1, '双', 2, 0) as dsz, a.xqj, a.qssjd, a.skcd, b.guid,
+    b.xkkh, b.jszgh, f.jsbh/*b.jsbh*/, b.qsz, b.jsz, decode(a.dsz, '单', 1, '双', 2, 0) as dsz, a.xqj, a.qssjd, a.skcd, b.guid,
     d.id as course_item_id,
     'en' as tab
 from zfxfzb.bksjapb a
@@ -1154,7 +1134,7 @@ join zfxfzb.jsxxb g on g.zgh = b.jszgh -- 有不存在的教师
 left join zfxfzb.jxcdxxb f on b.jsbh = f.jsbh -- 有不存在的场地
 union all
 select distinct -- 其它课
-    a.xkkh, 0, 0, nvl(c.jszgh, a.jszgh) as jszgh,
+    a.xkkh, nvl(c.jszgh, a.jszgh) as jszgh,
     d.jsbh/*a.jsbh*/, a.qsz, a.jsz, decode(a.dsz, '单', 1, '双', 2, 0) dsz, a.xqj, a.qssjd, a.skcd,
     case
         when c.xkkh is not null then -- 多教师情况，用序号替换GUID后两位
@@ -1171,7 +1151,7 @@ left join zfxfzb.jxcdxxb d on a.jsbh = d.jsbh -- 有不存在的场地
 where xqj is not null
 union all
 select distinct  -- 体育
-    xkkh, 0, 0, jszgh,
+    xkkh, jszgh,
     b.jsbh,
     to_number(regexp_substr(sksj, '第(\d+)-(\d+)周', 1, 1, null, 1)) qsz,
     to_number(regexp_substr(sksj, '第(\d+)-(\d+)周', 1, 1, null, 2)) jsz,
