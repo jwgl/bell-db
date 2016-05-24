@@ -36,5 +36,6 @@ grant select on zfxfzb.bkzyfpb      to ea; -- 板块专业分配表
 grant select on zfxfzb.qtkapb       to ea; -- 其它课安排表
 grant select on zfxfzb.cxbskb       to ea; -- 特殊课安排表
 grant select on zfxfzb.jxcdxxb      to ea; -- 教学场地表
+grant select on zfxfzb.xsxkb        to ea; -- 学生选课表
 grant select on zfxfzb.cjb          to ea; -- 成绩
 grant select on zfxfzb.czrzb        to ea; -- 日志

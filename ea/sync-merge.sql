@@ -17,26 +17,26 @@ max_week   = EXCLUDED.max_week;
 insert into ea.department(id, name, english_name, short_name, is_teaching, has_students)
 select id, name, english_name, short_name, is_teaching, has_students from ea.sv_department
 on conflict(id) do update set
-name         = EXCLUDED.name, 
+name         = EXCLUDED.name,
 english_name = EXCLUDED.english_name,
-short_name   = EXCLUDED.short_name, 
-is_teaching  = EXCLUDED.is_teaching, 
+short_name   = EXCLUDED.short_name,
+is_teaching  = EXCLUDED.is_teaching,
 has_students = EXCLUDED.has_students;
 
 -- 教学场地
 insert into ea.place(id, name, english_name, building, type, seat, test_seat, enabled, can_test, is_external, note)
 select id, name, english_name, building, type, seat, test_seat, enabled, can_test, is_external, note from ea.sv_place
-on conflict(id) do update set 
-name         = EXCLUDED.name, 
+on conflict(id) do update set
+name         = EXCLUDED.name,
 english_name = EXCLUDED.english_name,
-building     = EXCLUDED.building, 
-type         = EXCLUDED.type, 
-seat         = EXCLUDED.seat, 
-test_seat    = EXCLUDED.test_seat, 
-enabled      = EXCLUDED.enabled, 
-can_test     = EXCLUDED.can_test, 
-is_external  = EXCLUDED.is_external, 
-note         = EXCLUDED.note; 
+building     = EXCLUDED.building,
+type         = EXCLUDED.type,
+seat         = EXCLUDED.seat,
+test_seat    = EXCLUDED.test_seat,
+enabled      = EXCLUDED.enabled,
+can_test     = EXCLUDED.can_test,
+is_external  = EXCLUDED.is_external,
+note         = EXCLUDED.note;
 
 -- 教学场地-允许使用单位
 insert into ea.place_department(place_id, department_id)
@@ -83,9 +83,9 @@ select field_id, discipline_id from ea.sv_field_allow_degree
 on conflict(field_id, discipline_id) do nothing;
 
 -- 校内专业
-insert into ea.subject(id, name, english_name, short_name, education_level, length_of_schooling, 
+insert into ea.subject(id, name, english_name, short_name, education_level, length_of_schooling,
     stop_enroll, is_joint_program, is_dual_degree, is_top_up, field_id, degree_id, department_id)
-select id, name, english_name, short_name, education_level, length_of_schooling, 
+select id, name, english_name, short_name, education_level, length_of_schooling,
     stop_enroll, is_joint_program, is_dual_degree, is_top_up, field_id, degree_id, department_id
 from ea.sv_subject
 on conflict(id) do update set
@@ -96,7 +96,7 @@ education_level     = EXCLUDED.education_level,
 length_of_schooling = EXCLUDED.length_of_schooling,
 stop_enroll         = EXCLUDED.stop_enroll,
 is_joint_program    = EXCLUDED.is_joint_program,
-is_dual_degree      = EXCLUDED.is_dual_degree, 
+is_dual_degree      = EXCLUDED.is_dual_degree,
 is_top_up           = EXCLUDED.is_top_up,
 field_id            = EXCLUDED.field_id,
 degree_id           = EXCLUDED.degree_id,
@@ -154,11 +154,11 @@ credit      = EXCLUDED.credit,
 is_weighted = EXCLUDED.is_weighted;
 
 -- 课程
-insert into ea.course(id, name, english_name, credit, period_theory, period_experiment, period_weeks, 
-    is_compulsory, is_practical, property_id, education_level, assess_type, 
+insert into ea.course(id, name, english_name, credit, period_theory, period_experiment, period_weeks,
+    is_compulsory, is_practical, property_id, education_level, assess_type,
     schedule_type, introduction, enabled, department_id)
-select id, name, english_name, credit, period_theory, period_experiment, period_weeks, 
-    is_compulsory, is_practical, property_id, education_level, assess_type, 
+select id, name, english_name, credit, period_theory, period_experiment, period_weeks,
+    is_compulsory, is_practical, property_id, education_level, assess_type,
     schedule_type, introduction, enabled, department_id
 from ea.sv_course
 on conflict(id) do update set
@@ -200,12 +200,12 @@ is_primary = EXCLUDED.is_primary,
 course_id  = EXCLUDED.course_id;
 
 -- 教学计划-课程
-insert into ea.program_course(program_id, course_id, direction_id, period_theory, period_experiment, period_weeks, 
-    is_compulsory, is_practical, property_id, assess_type, test_type, 
+insert into ea.program_course(program_id, course_id, direction_id, period_theory, period_experiment, period_weeks,
+    is_compulsory, is_practical, property_id, assess_type, test_type,
     start_week, end_week, suggested_term, allowed_term, schedule_type,
     department_id)
-select program_id, course_id, direction_id, period_theory, period_experiment, period_weeks, 
-    is_compulsory, is_practical, property_id, assess_type, test_type, 
+select program_id, course_id, direction_id, period_theory, period_experiment, period_weeks,
+    is_compulsory, is_practical, property_id, assess_type, test_type,
     start_week, end_week, suggested_term, allowed_term, schedule_type,
     department_id
 from ea.sv_program_course
@@ -225,13 +225,18 @@ allowed_term      = EXCLUDED.allowed_term,
 schedule_type     = EXCLUDED.schedule_type,
 department_id     = EXCLUDED.department_id;
 
+delete from program_course
+where (program_id, course_id, direction_id) not in (
+    select program_id, course_id, direction_id from ea.sv_program_course
+);
+
 -- 教师
-insert into ea.teacher(id, name, sex, birthday, political_status, nationality, academic_title, 
-    academic_level, academic_degree, educational_background, graduate_school, graduate_major, 
+insert into ea.teacher(id, name, sex, birthday, political_status, nationality, academic_title,
+    academic_level, academic_degree, educational_background, graduate_school, graduate_major,
     date_graduated, post_type, has_qualification, is_lab_technician, is_external,
     at_school, can_guidance_graduate, department_id, resume)
-select id, name, sex, birthday, political_status, nationality, academic_title, 
-    academic_level, academic_degree, educational_background, graduate_school, graduate_major, 
+select id, name, sex, birthday, political_status, nationality, academic_title,
+    academic_level, academic_degree, educational_background, graduate_school, graduate_major,
     date_graduated, post_type, has_qualification, is_lab_technician, is_external,
     at_school, can_guidance_graduate, department_id, resume
 from ea.sv_teacher
@@ -266,13 +271,13 @@ major_id      = EXCLUDED.major_id,
 department_id = EXCLUDED.department_id;
 
 -- 录取信息
-insert into ea.admission(id, student_id, subject_id, grade, name, used_name, sex, birthday, political_status, 
+insert into ea.admission(id, student_id, subject_id, grade, name, used_name, sex, birthday, political_status,
     nationality, phone_number, from_province, from_city, home_address, household_address,
-    postal_code, middle_school, candidate_number, examination_number, total_score, 
+    postal_code, middle_school, candidate_number, examination_number, total_score,
     english_score, id_number, bank_number)
-select id, student_id, subject_id, grade, name, used_name, sex, birthday, political_status, 
+select id, student_id, subject_id, grade, name, used_name, sex, birthday, political_status,
     nationality, phone_number, from_province, from_city, home_address, household_address,
-    postal_code, middle_school, candidate_number, examination_number, total_score, 
+    postal_code, middle_school, candidate_number, examination_number, total_score,
     english_score, id_number, bank_number
 from ea.sv_admission
 on conflict(id) do update set
@@ -304,12 +309,12 @@ bank_number        = EXCLUDED.bank_number;
 update admission set used_name = '刘龑' where student_id = '1017010074';
 
 -- 学生
-insert into ea.student(id, name, pinyin_name, sex, birthday, political_status, nationality, date_enrolled, 
-    date_graduated, is_enrolled, at_school, is_registed, train_range, 
+insert into ea.student(id, name, pinyin_name, sex, birthday, political_status, nationality, date_enrolled,
+    date_graduated, is_enrolled, at_school, is_registed, train_range,
     category, forign_language, forign_language_level, change_type, department_id,
     admin_class_id, major_id, direction_id, admission_id)
-select id, name, pinyin_name, sex, birthday, political_status, nationality, date_enrolled, 
-    date_graduated, is_enrolled, at_school, is_registed, train_range, 
+select id, name, pinyin_name, sex, birthday, political_status, nationality, date_enrolled,
+    date_graduated, is_enrolled, at_school, is_registed, train_range,
     category, forign_language, forign_language_level, change_type, department_id,
     admin_class_id, major_id, direction_id, admission_id
 from ea.sv_student
@@ -342,14 +347,14 @@ update student set name = '谭龑焘' where id = '0818010172';
 -- 教学班ID转换
 -- 如果出现ORA-08177: can't serialize access for this transaction，
 -- 则再执行一次，见https://github.com/laurenz/oracle_fdw中的Modifying foreign data
-insert into ea.et_course_class_mapping(course_class_id, original_id, date_created)
-select course_class_id, original_id, current_timestamp
-from ea.sv_course_class_mapping_unsync;
+insert into ea.et_course_class_map(original_id)
+select original_id
+from ea.sv_course_class_map_unsync;
 
 -- 教学班
-insert into ea.course_class(id, period_theory, period_experiment, period_weeks, property_id, assess_type, test_type, start_week, end_week, 
+insert into ea.course_class(id, period_theory, period_experiment, period_weeks, property_id, assess_type, test_type, start_week, end_week,
     term_id, course_id, department_id, teacher_id, original_id)
-select id, period_theory, period_experiment, period_weeks, property_id, assess_type, test_type, start_week, end_week, 
+select id, period_theory, period_experiment, period_weeks, property_id, assess_type, test_type, start_week, end_week,
     term_id, course_id, department_id, teacher_id, original_id
 from ea.sv_course_class
 on conflict(id) do update set
@@ -372,6 +377,11 @@ insert into ea.course_class_program(course_class_id, program_id)
 select course_class_id, program_id from ea.sv_course_class_program
 on conflict(course_class_id, program_id) do nothing;
 
+-- 任务ID转换
+insert into ea.et_task_map(original_id, course_item_id)
+select original_id, course_item_id
+from ea.sv_task_map_unsync;
+
 -- 教学任务
 insert into ea.task(id, is_primary, start_week, end_week, course_item_id, course_class_id, original_id)
 select id, is_primary, start_week, end_week, course_item_id, course_class_id, original_id from ea.sv_task
@@ -383,19 +393,33 @@ course_item_id  = EXCLUDED.course_item_id,
 course_class_id = EXCLUDED.course_class_id,
 original_id     = EXCLUDED.original_id;
 
+-- 教学任务-教师
+insert into ea.task_teacher(task_id, teacher_id)
+select task_id, teacher_id from ea.sv_task_teacher
+on conflict(task_id, teacher_id) do nothing;
+
 -- 教学安排
 insert into ea.arrangement(id, task_id, teacher_id, place_id, start_week, end_week,
     odd_even, day_of_week, start_section, total_section)
-select id::uuid, task_id, teacher_id, place_id, start_week, end_week,
+select id, task_id, teacher_id, place_id, start_week, end_week,
     odd_even, day_of_week, start_section, total_section
 from ea.sv_arrangement
 where id is not null
-on conflict(id) do update set 
-teacher_id     = EXCLUDED.teacher_id, 
+on conflict(id) do update set
+teacher_id     = EXCLUDED.teacher_id,
 place_id       = EXCLUDED.place_id,
-start_week     = EXCLUDED.start_week, 
-end_week       = EXCLUDED.end_week, 
+start_week     = EXCLUDED.start_week,
+end_week       = EXCLUDED.end_week,
 odd_even       = EXCLUDED.odd_even,
 day_of_week    = EXCLUDED.day_of_week,
 start_section  = EXCLUDED.start_section,
 total_section  = EXCLUDED.total_section;
+
+-- 学生选课
+insert into ea.task_student(task_id, student_id, date_created, register_type)
+select task_id, student_id, date_created, register_type
+from ea.sv_task_student
+where original_id like '(2015-2016-1)%'
+on conflict(task_id, student_id) do update set
+date_created     = EXCLUDED.date_created,
+register_type    = EXCLUDED.register_type;
