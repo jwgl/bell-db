@@ -745,31 +745,24 @@ select * from (
     union all
     select -- 按实际执行产生的教学计划（体育课）
         substr(xn, 1, 4) || xq jxjhh, null zydm, null zymc, null zyfx,
-        xn, xq, c.kcdm, c.kcmc, a.xf, a.kcxz, a.kclb, kkxy, kkx,
-        jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+        xn, xq, c.kcdm, c.kczwmc, a.xf, a.kcxz, a.kclb, a.kkxy, a.kkx,
+        jszgh, a.jsxm, a.xkkh, a.skdd, a.sksj, a.rs, a.qsjsz,
         null bjmc, null jxbmc, a.zxs, xkzt, mxdx, xzdx, a.ksfs, a.khfs,
         null program_id,
         'tykjxrwb' tab
     from zfxfzb.tykjxrwb a
     join zfxfzb.tykkcdmb b on a.kcdm = b.kcdm
-    join zfxfzb.tykcdmb c on c.kcdm = b.sskcdm -- 还原体育1、体育2
+    join zfxfzb.kcdmb c on c.kcdm = b.sskcdm -- 还原体育1、体育2
 ) where nvl(xkzt, 0) <> 4 and jszgh in (select zgh from zfxfzb.jsxxb);
 
 /**
  * 建立新教学班编号与原教学任务号之间的关系。
- * 本视图只查询出ea.course_class_mapping中未编号的教学班，在数据库同步时，
- * 插入到ea.course_class_mapping表中。
+ * 本视图只查询出ea.course_class_map中未编号的教学班，在数据库同步时，
+ * 插入到ea.course_class_map表中。
  */
-create or replace view ea.sv_course_class_mapping_unsync as
-with synced as ( -- 已同步的数据
-    select substr(course_class_id, 1, 7) as pre,
-        to_number(substr(course_class_id, 8, 3)) as course_sn,
-        to_number(substr(course_class_id, 11, 3)) as class_sn,
-        substr(original_id, 15, 8) as course_id,
-        original_id
-    from ea.course_class_mapping
-), unsynced as ( -- 未同步的数据
-    select distinct substr(xn, 1, 4) || xq || xydm as xqxy, kcdm, xkkh, case
+create or replace view ea.sv_course_class_map_unsync as
+with unsynced as (
+    select distinct xkkh, case
         when xkkh like '%zk000%' then
             xkkh
         else
@@ -778,42 +771,11 @@ with synced as ( -- 已同步的数据
             regexp_substr(xkkh, '[^0-9]$', 30) -- 把最后的数字变成01，便于排序
         end as xkkh_normal
     from ea.sva_task_base a
-    join zfxfzb.xydmb b on a.kkxy = b.xymc
-    where xkkh not in (select original_id from ea.course_class_mapping) -- 未同步过的选课课号
-), jxb_xh as ( -- 选课课号在课程中的顺序号
-    -- 未同步过的课程，重新计算序号
-    select xqxy, kcdm, xkkh, rank() over (partition by xqxy, kcdm order by xkkh_normal) jxb_sn
-    from unsynced
-    where kcdm not in (select course_id from synced where pre = xqxy)
-    union
-    -- 存在已同步的课程，已有最大值+序号
-    select xqxy, kcdm, xkkh, rank() over (partition by xqxy, kcdm order by xkkh_normal)  +
-        nvl((select max(class_sn) from synced where pre = xqxy  and course_id = kcdm), 0) as jxb_sn
-    from unsynced
-    where kcdm in (select course_id from synced where pre = xqxy)
-), kc_xh as ( -- 课程在学院的顺序号
-    -- 未同步的课程，已有最大值+序号
-    select xqxy, kcdm, rank() over (partition by xqxy order by kcdm) +
-        nvl((select max(course_sn) from synced where pre = xqxy), 0) kc_sn
-    from (
-        select distinct xqxy, kcdm
-        from unsynced
-        where kcdm not in (select course_id from synced where pre = xqxy)
-    )
-    union
-    -- 已同步的课程，取同步过的课程序号
-    select xqxy, kcdm, (select distinct course_sn from synced where pre = xqxy and course_id = kcdm) as kc_sn
-    from (
-        select distinct xqxy, kcdm
-        from unsynced
-        where kcdm in (select course_id from synced where pre = xqxy)
-    )
+    where xkkh not in (select original_id from ea.course_class_map) -- 未同步过的选课课号
 )
-select to_number(a.xqxy || to_char(a.kc_sn, 'fm009') || to_char(b.jxb_sn, 'fm009')) as course_class_id, b.xkkh as original_id
-from kc_xh a
-join jxb_xh b on a.xqxy = b.xqxy and a.kcdm = b.kcdm
-where b.xkkh not in (select original_id from synced)
-order by course_class_id;
+select xkkh
+from unsynced
+order by xkkh_normal;
 
 /**
  * 教学班（注意：先创建ea.term，更新学期数据至最新）
@@ -837,18 +799,18 @@ select distinct
 from ea.sva_task_base a
 join ea.sv_course b on a.kcdm = b.id
 join ea.term c on to_number(substr(a.xn, 1, 4)) * 10 + xq = c.id
-join ea.course_class_mapping d on a.xkkh = d.original_id
+join ea.course_class_map d on a.xkkh = d.original_id
 join ea.sv_department e on a.kkxy = e.name
 join ea.sv_teacher f on a.jszgh = f.id
 left join ea.sv_property g on a.kcxz = g.name
-order by id;
+order by a.xkkh;
 
 /**
  * 教学班-计划
  */
 create or replace view ea.sv_course_class_program as
 select distinct b.course_class_id, to_number(a.program_id) as program_id
-from ea.sva_task_base a join ea.course_class_mapping b on a.xkkh = b.original_id
+from ea.sva_task_base a join ea.course_class_map b on a.xkkh = b.original_id
 where program_id is not null
 order by course_class_id, program_id;
 
@@ -889,33 +851,25 @@ select distinct -- 正常教学任务
     qsjsz, -- 起始结束周
     1 as is_primary, -- 是否主任务
     null as course_item_id, -- 课程项目ID
-    0 as rwxh, -- 任务序号
-    0 as zrwxh, -- 子任务序号
     'norm' as tab
 from ea.sva_task_base a
 join task_normal b on a.xkkh = b.xkkh
 union all
 select distinct -- 带实验课程的主任务
-    a.xkkh, a.xkkh as zkh, qsjsz, c.is_primary, c.id,
-    1 as rwxh, 0 as zrwxh,
-    'wl_t' as tab
+    a.xkkh, a.xkkh as zkh, qsjsz, c.is_primary, c.id, 'wl_t' as tab
 from ea.sva_task_base a
 join task_with_lab b on a.xkkh = b.xkkh
 join ea.sv_course_item c on a.kcdm = c.course_id and ordinal = 1
 union all
 select distinct -- 带实验课程的实验任务
-    d.xkkh, a.xkkh as zkh, qsjsz, c.is_primary, c.id,
-    2 as rwxh, ascii(substr(d.xkkh, -1, 1)) - ascii('A') as zrwxh,
-    'wl_e' as tab
+    d.xkkh, a.xkkh as zkh, qsjsz, c.is_primary, c.id, 'wl_e' as tab
 from ea.sva_task_base a
 join task_with_lab b on a.xkkh = b.xkkh
 join ea.sv_course_item c on c.course_id = a.kcdm and ordinal = 2
 join zfxfzb.dgjsskxxb d on a.xkkh = substr(d.xkkh, 1, length(d.xkkh) - 1)
 union all
 select distinct -- 外语
-    a.xkkh, a.xkkh as zkh, qsjsz, c.is_primary, c.id,
-    c.ordinal as rwxh, 0 as zrwxh,
-    'en' as tab
+    a.xkkh, a.xkkh as zkh, qsjsz, c.is_primary, c.id, 'en' as tab
 from ea.sva_task_base a
 join task_en b on a.xkkh = b.xkkh
 join ea.sv_course_item c on a.kcdm = c.course_id
@@ -923,19 +877,42 @@ join zfxfzb.bkdjjsfpb d on a.xkkh = d.xkkh and d.bz = c.name
 --join zfxfzb.dgjsskxxb d on a.xkkh = d.xkkh and nvl(d.xh_bksj, xh) = c.ordinal
 union all
 select distinct -- 体育
-    a.xkkh, a.xkkh as zkh, qsjsz, 1, d.id,
-    0 as rwxh, 0 as zrwxh,
-    'pe' as tab
+    a.xkkh, a.xkkh as zkh, qsjsz, 1, d.id, 'pe' as tab
 from zfxfzb.tykjxrwb a
 join task_pe b on b.xkkh = a.xkkh
 join ea.sv_course_item d on a.kcdm = d.task_course_id;
+
+/**
+ * 任务ID映射表
+ */
+create or replace view ea.sv_task_map_unsync as
+with normal as (
+    select xkkh, nvl(course_item_id, '0000000000') as course_item_id -- 注意反向操作
+    from ea.sva_task
+), unsynced as (
+    select distinct xkkh, course_item_id, case
+        when xkkh like '%zk000%' then
+            xkkh
+        else
+            substr(xkkh, 1, 29) ||
+            to_char(to_number(regexp_substr(xkkh, '\d+', 30)), 'fm09') ||
+            regexp_substr(xkkh, '[^0-9]$', 30) -- 把最后的数字变成01，便于排序
+        end as xkkh_normal
+    from normal
+    where (xkkh, course_item_id) not in (
+        select original_id, course_item_id from ea.task_map
+    ) -- 未同步过的选课课号
+)
+select xkkh, course_item_id as course_item_id
+from unsynced
+order by xkkh_normal, course_item_id;
 
 /**
  * 教学任务
  */
 create or replace view ea.sv_task as
 select distinct
-    to_number(b.id || to_char(rwxh, 'fm09') || to_char(zrwxh, 'fm09')) as id,
+    c.task_id as id,
     a.is_primary,
     nvl(to_number(regexp_substr(qsjsz, '^\d+')), b.start_week) as start_week,
     nvl(to_number(regexp_substr(qsjsz, '\d+$')), b.end_week) as end_week,
@@ -943,7 +920,9 @@ select distinct
     b.id as course_class_id,
     a.xkkh as original_id
 from ea.sva_task a
-join ea.sv_course_class b on b.original_id = a.zkh;
+join ea.sv_course_class b on b.original_id = a.zkh
+join ea.task_map c on a.xkkh = c.original_id and nvl(a.course_item_id, '0000000000') = c.course_item_id;
+
 
 /**
  * 辅助视图 - 教学任务-教师
@@ -978,42 +957,59 @@ with task_with_lab as ( -- 带实验课任务
     select xkkh from task_pe
 )
 (select distinct -- 正常教学任务
-    a.xkkh, 0 as rwxh, 0 as zrwxh, a.jszgh, 'norm1' as tab
+    a.xkkh, 0 as rwxh, 0 as zrwxh, a.jszgh,
+    null as course_item_id, -- 课程项目ID
+    'norm1' as tab
 from ea.sva_task_base a
 join task_normal b on b.xkkh = a.xkkh
 union
 select distinct -- 正常教学任务（多教师）
-    a.xkkh, 0 as rwxh, 0 as zrwxh, c.jszgh, 'norm2' as tab
+    a.xkkh, 0 as rwxh, 0 as zrwxh, c.jszgh,
+    null as course_item_id,
+    'norm2' as tab
 from ea.sva_task_base a
 join task_normal b on b.xkkh = a.xkkh
 join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh)
 union all
 (select distinct -- 带实验课程的主任务
-    a.xkkh, 1, 0, a.jszgh, 'wl_t1' as tab
+    a.xkkh, 1, 0, a.jszgh,
+    c.id as course_item_id,
+    'wl_t1' as tab
 from ea.sva_task_base a
 join task_with_lab b on a.xkkh = b.xkkh
+join ea.sv_course_item c on c.course_id = a.kcdm and ordinal = 1
 union
 select distinct -- 带实验课程的主任务（多教师）
-    a.xkkh, 1, 0, c.jszgh, 'wl_t2' as tab
+    a.xkkh, 1, 0, c.jszgh,
+    d.id as course_item_id,
+    'wl_t2' as tab
 from ea.sva_task_base a
 join task_with_lab b on a.xkkh = b.xkkh
-join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh)
+join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh
+join ea.sv_course_item d on d.course_id = a.kcdm and ordinal = 1)
 union all
 select distinct -- 带实验课程的实验任务
-    a.xkkh, 2, ascii(substr(c.xkkh, -1, 1)) - ascii('A'), c.jszgh, 'wl_e' as tab
+    c.xkkh, 2, ascii(substr(c.xkkh, -1, 1)) - ascii('A'), c.jszgh,
+    d.id as course_item_id,
+    'wl_e' as tab
 from ea.sva_task_base a
 join task_with_lab b on b.xkkh = a.xkkh
 join zfxfzb.dgjsskxxb c on substr(c.xkkh, 1, length(c.xkkh) - 1) = a.xkkh
+join ea.sv_course_item d on d.course_id = a.kcdm and ordinal = 2
 union all
 select distinct -- 外语
-    a.xkkh, c.ordinal, 0, d.jszgh, 'en' as tab
+    a.xkkh, c.ordinal, 0, d.jszgh,
+    c.id as course_item_id,
+    'en' as tab
 from ea.sva_task_base a
 join task_en b on a.xkkh = b.xkkh
 join ea.sv_course_item c on a.kcdm = c.course_id
 join zfxfzb.dgjsskxxb d on a.xkkh = d.xkkh and nvl(d.xh_bksj, xh) = c.ordinal
 union all
 select distinct -- 体育
-    a.xkkh, 0, 0, a.jszgh, 'pe' as tab
+    a.xkkh, 0, 0, a.jszgh,
+    d.id as course_item_id,
+    'pe' as tab
 from zfxfzb.tykjxrwb a
 join task_pe b on b.xkkh = a.xkkh
 join ea.sv_course_item d on a.kcdm = d.task_course_id;
@@ -1022,10 +1018,9 @@ join ea.sv_course_item d on a.kcdm = d.task_course_id;
  * 教学任务-教师
  */
 create or replace view ea.sv_task_teacher as
-select distinct b.id || to_char(rwxh, 'fm09') || to_char(zrwxh, 'fm09') as task_id,
-    jszgh as teacher_id
+select distinct b.task_id, jszgh as teacher_id
 from ea.sva_task_teacher a
-join ea.sv_course_class b on b.original_id = a.xkkh
+join ea.task_map b on b.original_id = a.xkkh and b.course_item_id = nvl(a.course_item_id, '0000000000')
 join zfxfzb.jsxxb c on c.zgh = a.jszgh;
 
 /**
@@ -1094,7 +1089,8 @@ with task_normal_all as (
 )
 (select distinct -- 正常教学任务
     a.xkkh, 0 as rwxh, 0 as zrwxh, a.jszgh,
-    c.jsbh, c.qsz, c.jsz, c.dsz, c.xqj, c.qssjd, c.skcd, guid,
+    c.jsbh, c.qsz, c.jsz, c.dsz, c.xqj, c.qssjd, c.skcd, c.guid,
+    null as course_item_id, -- 课程项目ID
     'norm' as tab
 from zfxfzb.jxrwb a
 join task_normal b on b.xkkh = a.xkkh
@@ -1102,7 +1098,8 @@ join arr_normal c on c.xkkh = a.xkkh and c.jszgh = a.jszgh
 union
 select distinct -- 正常教学任务（多教师）
     a.xkkh, 0 as rwxh, 0 as zrwxh, c.jszgh,
-    d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, guid,
+    d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, d.guid,
+    null as course_item_id,
     'norm' as tab
 from zfxfzb.jxrwb a
 join task_normal b on b.xkkh = a.xkkh
@@ -1111,33 +1108,40 @@ join arr_normal d on d.xkkh = a.xkkh and d.jszgh = c.jszgh)
 union all
 (select distinct -- 带实验课程的主任务
     a.xkkh, 1, 0, a.jszgh,
-    c.jsbh, c.qsz, c.jsz, c.dsz, c.xqj, c.qssjd, c.skcd, guid,
+    c.jsbh, c.qsz, c.jsz, c.dsz, c.xqj, c.qssjd, c.skcd, c.guid,
+    d.id as course_item_id,
     'wl_t' as tab
 from zfxfzb.jxrwb a
 join task_with_lab b on a.xkkh = b.xkkh
 join arr_normal c on c.xkkh = a.xkkh and c.jszgh = a.jszgh
+join ea.sv_course_item d on d.course_id = a.kcdm and ordinal = 1
 union
 select distinct -- 带实验课程的主任务（多教师）
     a.xkkh, 1, 0, c.jszgh,
-    d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, guid,
+    d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, d.guid,
+    e.id as course_item_id,
     'wl_t' as tab
 from zfxfzb.jxrwb a
 join task_with_lab b on a.xkkh = b.xkkh
 join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh
-join arr_normal d on d.xkkh = a.xkkh and d.jszgh = c.jszgh)
+join arr_normal d on d.xkkh = a.xkkh and d.jszgh = c.jszgh
+join ea.sv_course_item e on e.course_id = a.kcdm and ordinal = 1)
 union all
 select distinct -- 带实验课程的实验任务
-    a.xkkh, 2, ascii(substr(c.xkkh, -1, 1)) - ascii('A'), c.jszgh,
-    d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, guid,
+    c.xkkh, 2, ascii(substr(c.xkkh, -1, 1)) - ascii('A'), c.jszgh,
+    d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, d.guid,
+    e.id as course_item_id,
     'wl_e' as tab
 from zfxfzb.jxrwb a
 join task_with_lab b on b.xkkh = a.xkkh
 join zfxfzb.dgjsskxxb c on substr(c.xkkh, 1, length(c.xkkh) - 1) = a.xkkh
 join arr_normal d on d.xkkh = c.xkkh and d.jszgh = c.jszgh
+join ea.sv_course_item e on e.course_id = a.kcdm and ordinal = 2
 union all
 select distinct -- 外语
     b.xkkh, d.ordinal, 0, b.jszgh,
-    f.jsbh/*b.jsbh*/, b.qsz, b.jsz, decode(a.dsz, '单', 1, '双', 2, 0) as dsz, a.xqj, a.qssjd, a.skcd, guid,
+    f.jsbh/*b.jsbh*/, b.qsz, b.jsz, decode(a.dsz, '单', 1, '双', 2, 0) as dsz, a.xqj, a.qssjd, a.skcd, b.guid,
+    d.id as course_item_id,
     'en' as tab
 from zfxfzb.bksjapb a
 join zfxfzb.bkdjjsfpb b on b.bkdm = a.bkdm and b.bkkcmc = a.bkkcmc and
@@ -1158,6 +1162,7 @@ select distinct -- 其它课
         else
             a.bz
     end as guid,
+    null as course_item_id, -- todo: verify
     'qt' tab
 from zfxfzb.qtkapb a
 join task_other b on a.xkkh = b.xkkh
@@ -1172,18 +1177,19 @@ select distinct  -- 体育
     to_number(regexp_substr(sksj, '第(\d+)-(\d+)周', 1, 1, null, 2)) jsz,
     0 as dsz,
     decode(regexp_substr(sksj, '^周(.)', 1, 1, null, 1), '一', 1, '二', 2, '三', 3, '四', 4, '五', 5, '六', 6, '日', 7, '天', 7) xqj,
-    to_number(regexp_substr(sksj, '第(\d+)(,\d+)?节', 1, 1, null, 1)) qssjd,
+    to_number(regexp_substr(sksj, '第(\d+)(,\d+)?(,\d+)?(,\d+)?节', 1, 1, null, 1)) qssjd,
     case
         when regexp_like(sksj, '第\d+,\d+,\d+,\d+节') then 4
         when regexp_like(sksj, '第\d+,\d+,\d+节') then 3
         when regexp_like(sksj, '第\d+,\d+节') then 2
         when regexp_like(sksj, '第\d+节') then 1
     end as skcd,
-    guid,
+    a.guid,
+    c.id as course_item_id,
     'pe' tab
 from zfxfzb.tykjxrwb a
 join zfxfzb.jxcdxxb b on a.skdd = b.jsmc
-join ea.sv_course_item c on c.task_course_id = substr(a.xkkh, 15, 8)
+join ea.sv_course_item c on c.task_course_id = a.kcdm
 where nvl(a.xkzt, 0) <> 4;
 
 /**
@@ -1191,7 +1197,7 @@ where nvl(a.xkzt, 0) <> 4;
  */
 create or replace view ea.sv_arrangement as
 with base as (
-    select distinct b.course_class_id || to_char(rwxh, 'fm09') || to_char(zrwxh, 'fm09') as task_id,
+    select distinct b.task_id,
         jszgh as teacher_id,
         jsbh as place_id,
         qsz as start_week,
@@ -1202,7 +1208,7 @@ with base as (
         skcd as total_section,
         guid as id
     from ea.sva_arrangement a
-    join ea.course_class_mapping b on b.original_id = a.xkkh
+    join ea.task_map b on b.original_id = a.xkkh and b.course_item_id = nvl(a.course_item_id, '0000000000')
 ), merged as ( -- 被合并项
     select b.id /* for minus */, a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week,
         a.odd_even, a.day_of_week, a.start_section, a.total_section + b.total_section as total_section,
@@ -1220,7 +1226,7 @@ with base as (
         and (a.start_section + a.total_section = b.start_section)
         and b.start_section not in (5, 10) -- 段间无连接
 )
-select a.id, to_number(a.task_id) as task_id, a.teacher_id, a.place_id, a.start_week, a.end_week, a.odd_even, a.day_of_week,
+select HEXTORAW(a.id) as id, a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week, a.odd_even, a.day_of_week,
     a.start_section, nvl(b.total_section, a.total_section) as total_section
 from base a
 left join merged b on a.task_id = b.task_id
@@ -1232,6 +1238,17 @@ left join merged b on a.task_id = b.task_id
     and a.day_of_week = b.day_of_week
     and a.start_section = b.start_section
 minus
-select id, to_number(task_id) as task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week,
+select HEXTORAW(id) as id, task_id as task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week,
     start_section_2, total_section_2
 from merged;
+
+/**
+ * 学生选课
+ */
+create or replace view ea.sv_task_student as
+select HEXTORAW(t.task_id) as task_id,
+    xh as student_id, to_date(xksj, 'yyyy-mm-dd HH24:MI:SS') as date_created,
+    0 as register_type,
+    xkkh as original_id
+from zfxfzb.xsxkb x
+join ea.task_map t on t.original_id = x.xkkh;

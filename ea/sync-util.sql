@@ -106,17 +106,3 @@ CREATE OR REPLACE PACKAGE BODY "EA"."UTIL" as
 end util;
 
 /
-
-/**
- * 保存当前学期已同步的教学班数据。
- * 由于当前学期的教学任务可能变化，如临时新增任务，导致按顺序生成ID的方法失效。
- * 在每次同步前，需要将EA中当前学期的教学班ID和选课课号的映射关系写回ZF数据库EA用户
- * 的curr_course_class_id表中，写回前必须清空表中已有数据。
- * 同步过程中，需要查找不在curr_course_class_id表中数据，rank后，加上已有数据的最
- * 大值，从而产生新的对应关系。
- */
-create table ea.curr_course_class_id (
-	course_class_id number(13),
-	original_id varchar2(31),
-	primary key(course_class_id, original_id)
-);
