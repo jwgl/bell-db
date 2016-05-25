@@ -399,11 +399,11 @@ select task_id, teacher_id from ea.sv_task_teacher
 on conflict(task_id, teacher_id) do nothing;
 
 -- 教学安排
-insert into ea.arrangement(id, task_id, teacher_id, place_id, start_week, end_week,
+insert into ea.task_schedule(id, task_id, teacher_id, place_id, start_week, end_week,
     odd_even, day_of_week, start_section, total_section)
 select id, task_id, teacher_id, place_id, start_week, end_week,
     odd_even, day_of_week, start_section, total_section
-from ea.sv_arrangement
+from ea.sv_task_schedule
 where id is not null
 on conflict(id) do update set
 teacher_id     = EXCLUDED.teacher_id,

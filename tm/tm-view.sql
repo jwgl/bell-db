@@ -39,9 +39,9 @@ where exists(
     select *
     from ea.course_class
     join ea.task on task.course_class_id = course_class.id
-    join ea.arrangement on arrangement.task_id = task.id
+    join ea.task_schedule on task_schedule.task_id = task.id
     where course_class.term_id = (select id from ea.term where active = true)
-    and arrangement.teacher_id = t.id
+    and task_schedule.teacher_id = t.id
 );
 
 -- 计划-课程

@@ -30,4 +30,6 @@ grant select on ea.field_class       to tm;
 grant select on ea.discipline        to tm;
 grant select on ea.course_class      to tm;
 grant select on ea.task              to tm;
-grant select on ea.arrangement       to tm;
+grant select on ea.task_schedule     to tm;
+grant select on ea.task_teacher      to tm;
+grant select on ea.task_student      to tm;
