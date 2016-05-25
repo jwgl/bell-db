@@ -1012,7 +1012,7 @@ join zfxfzb.jsxxb c on c.zgh = a.jszgh;
 /**
  * 辅助视图 - 教学安排
  */
-create or replace view ea.sva_arrangement as
+create or replace view ea.sva_task_schedule as
 with task_normal_all as (
     select distinct jxjhh, xkkh, bjmc, zyfx, jszgh
     from zfxfzb.jxrwb
@@ -1175,7 +1175,7 @@ where nvl(a.xkzt, 0) <> 4;
 /**
  * 教学安排
  */
-create or replace view ea.sv_arrangement as
+create or replace view ea.sv_task_schedule as
 with base as (
     select distinct b.task_id,
         jszgh as teacher_id,
@@ -1187,7 +1187,7 @@ with base as (
         qssjd as start_section,
         skcd as total_section,
         guid as id
-    from ea.sva_arrangement a
+    from ea.sva_task_schedule a
     join ea.task_map b on b.original_id = a.xkkh and b.course_item_id = nvl(a.course_item_id, '0000000000')
 ), merged as ( -- 被合并项
     select b.id /* for minus */, a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week,

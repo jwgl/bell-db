@@ -410,8 +410,8 @@ CREATE FOREIGN TABLE ea.sv_task_teacher (
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK_TEACHER');
 
 --- 教学安排
-DROP FOREIGN TABLE IF EXISTS ea.sv_arrangement;
-CREATE FOREIGN TABLE ea.sv_arrangement (
+DROP FOREIGN TABLE IF EXISTS ea.sv_task_schedule;
+CREATE FOREIGN TABLE ea.sv_task_schedule (
     id uuid,
     task_id uuid,
     teacher_id char(5),
@@ -422,7 +422,7 @@ CREATE FOREIGN TABLE ea.sv_arrangement (
     day_of_week integer,
     start_section integer,
     total_section integer
-) SERVER zf OPTIONS (schema 'EA', table 'SV_ARRANGEMENT');
+) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK_SCHEDULE');
 
 -- 学生选课
 DROP FOREIGN TABLE IF EXISTS ea.sv_task_student;
@@ -432,4 +432,4 @@ CREATE FOREIGN TABLE ea.sv_task_student (
     date_created timestamp,
     register_type integer,
     original_id varchar(31)
-) SERVER zf OPTIONS (schema 'EA', table 'SV_REGISTERED_STUDENT');
+) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK_STUDENT');
