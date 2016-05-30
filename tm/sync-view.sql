@@ -25,8 +25,8 @@ with teacher as (
     from zfxfzb.yhb
     join zfxfzb.jsxxb on yhm = zgh -- 以职工号为用户名
     left join zfxfzb.xydmb on bm = xymc
-    where (ty is null or ty = 'F')
-    and (sfzg is null or sfzg = '是')
+    where (ty is null or ty = 'F') -- 停用
+    and (sfzg is null or sfzg = '是') -- 是否在职
     and (yhm in (select yhm from zfxfzb.czrzb where czsj > '2012') -- 近两年登录过系统
       or yhm in (select jszgh from zfxfzb.jxrwbview where xn > '2012') -- 近两年有教学任务
     )

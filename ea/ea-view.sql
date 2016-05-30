@@ -37,7 +37,7 @@ group by term_id, task.id, c.id, c.name, task.original_id;
 create or replace view v_task_schedule as
 select a.id, cc.term_id, c.id as course_id, c.name as course_name,
     te.id as teacher_id, te.name as teacher_name, a.start_week, a.end_week,
-    day_of_week, start_section, total_section, odd_even, place_id, task_id, course_class_id
+    day_of_week, start_section, total_section, odd_even, place_id, task_id, task.original_id, course_class_id
 from task_schedule a
 join task on a.task_id = task.id
 join course_class cc on cc.id = task.course_class_id

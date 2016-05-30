@@ -756,6 +756,7 @@ select * from (
 ) where nvl(xkzt, 0) <> 4 and jszgh in (select zgh from zfxfzb.jsxxb);
 
 /**
+ * 教学班ID映射（未同步）
  * 建立新教学班编号与原教学任务号之间的关系。
  * 本视图只查询出ea.course_class_map中未编号的教学班，在数据库同步时，
  * 插入到ea.course_class_map表中。
@@ -776,6 +777,13 @@ with unsynced as (
 select xkkh
 from unsynced
 order by xkkh_normal;
+
+/**
+ * 教学班ID映射（已同步）
+ */
+create or replace view ea.sv_course_class_map as
+select original_id, course_class_id, date_created
+from ea.course_class_map;
 
 /**
  * 教学班（注意：先创建ea.term，更新学期数据至最新）
@@ -883,7 +891,7 @@ join task_pe b on b.xkkh = a.xkkh
 join ea.sv_course_item d on a.kcdm = d.task_course_id;
 
 /**
- * 任务ID映射表
+ * 任务ID映射（未同步）
  */
 create or replace view ea.sv_task_map_unsync as
 with normal as (
@@ -908,6 +916,13 @@ from unsynced
 order by xkkh_normal, course_item_id;
 
 /**
+ * 任务ID映射（已同步）
+ */
+create or replace view ea.sv_task_map as
+select original_id, course_item_id, task_id, date_created
+from ea.task_map;
+
+/**
  * 教学任务
  */
 create or replace view ea.sv_task as
@@ -922,7 +937,6 @@ select distinct
 from ea.sva_task a
 join ea.sv_course_class b on b.original_id = a.zkh
 join ea.task_map c on a.xkkh = c.original_id and nvl(a.course_item_id, '0000000000') = c.course_item_id;
-
 
 /**
  * 辅助视图 - 教学任务-教师
@@ -1173,54 +1187,22 @@ join ea.sv_course_item c on c.task_course_id = a.kcdm
 where nvl(a.xkzt, 0) <> 4;
 
 /**
- * 教学安排
+ * 教学安排（未合并）
  */
 create or replace view ea.sv_task_schedule as
-with base as (
-    select distinct b.task_id,
-        jszgh as teacher_id,
-        jsbh as place_id,
-        qsz as start_week,
-        jsz as end_week,
-        dsz as odd_even,
-        xqj as day_of_week,
-        qssjd as start_section,
-        skcd as total_section,
-        guid as id
-    from ea.sva_task_schedule a
-    join ea.task_map b on b.original_id = a.xkkh and b.course_item_id = nvl(a.course_item_id, '0000000000')
-), merged as ( -- 被合并项
-    select b.id /* for minus */, a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week,
-        a.odd_even, a.day_of_week, a.start_section, a.total_section + b.total_section as total_section,
-        b.start_section as start_section_2, b.total_section as total_section_2
-    from base a
-    join base b on a.task_id = b.task_id
-        and a.teacher_id = b.teacher_id
-        and nvl(a.place_id, '0') = nvl(b.place_id, '0')
-        and a.start_week = b.start_week
-        and a.end_week = b.end_week
-        and a.odd_even = b.odd_even
-        and a.day_of_week = b.day_of_week
-        and a.start_section < b.start_section
-        and (a.total_section = 1 or b.total_section = 1)
-        and (a.start_section + a.total_section = b.start_section)
-        and b.start_section not in (5, 10) -- 段间无连接
-)
-select HEXTORAW(a.id) as id, a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week, a.odd_even, a.day_of_week,
-    a.start_section, nvl(b.total_section, a.total_section) as total_section
-from base a
-left join merged b on a.task_id = b.task_id
-    and a.teacher_id = b.teacher_id
-    and nvl(a.place_id, '0') = nvl(b.place_id, '0')
-    and a.start_week = b.start_week
-    and a.end_week = b.end_week
-    and a.odd_even = b.odd_even
-    and a.day_of_week = b.day_of_week
-    and a.start_section = b.start_section
-minus
-select HEXTORAW(id) as id, task_id as task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week,
-    start_section_2, total_section_2
-from merged;
+select distinct
+    HEXTORAW(guid) as id,
+    b.task_id,
+    jszgh as teacher_id,
+    jsbh as place_id,
+    qsz as start_week,
+    jsz as end_week,
+    dsz as odd_even,
+    xqj as day_of_week,
+    qssjd as start_section,
+    skcd as total_section
+from ea.sva_task_schedule a
+join ea.task_map b on b.original_id = a.xkkh and b.course_item_id = nvl(a.course_item_id, '0000000000');
 
 /**
  * 学生选课
