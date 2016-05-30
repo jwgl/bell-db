@@ -399,12 +399,29 @@ select task_id, teacher_id from ea.sv_task_teacher
 on conflict(task_id, teacher_id) do nothing;
 
 -- 教学安排
+-- Oracle 11g端合并性能低，合并逻辑移到PostgreSQL端
 insert into ea.task_schedule(id, task_id, teacher_id, place_id, start_week, end_week,
     odd_even, day_of_week, start_section, total_section)
-select id, task_id, teacher_id, place_id, start_week, end_week,
-    odd_even, day_of_week, start_section, total_section
-from ea.sv_task_schedule
-where id is not null
+with formal as (
+    select case when b.total_section is null then a.id else b.id end as id, -- 统一ID为长度不等于1的安排
+        a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week,
+        a.odd_even, a.day_of_week, a.start_section, a.total_section
+    from sv_task_schedule a
+    left join sv_task_schedule b on a.task_id = b.task_id
+    and a.teacher_id = b.teacher_id
+    and (a.place_id = b.place_id or a.place_id is null and b.place_id is null)
+    and a.start_week = b.start_week
+    and a.end_week = b.end_week
+    and a.odd_even = b.odd_even
+    and a.day_of_week = b.day_of_week
+    and a.total_section = 1
+    and (a.start_section + a.total_section = b.start_section and b.start_section not in (5, 10)
+      or b.start_section + b.total_section = a.start_section and a.start_section not in (5, 10))
+)
+select id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week,
+    min(start_section), sum(total_section) as total_section
+from formal
+group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week
 on conflict(id) do update set
 teacher_id     = EXCLUDED.teacher_id,
 place_id       = EXCLUDED.place_id,
