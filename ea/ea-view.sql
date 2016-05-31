@@ -1,5 +1,5 @@
 -- 菜单
-create or replace view tm.v_menu as
+create or replace view ea.v_menu as
 with recursive r as (
     select m.id, m.name, m.label_cn, m.label_en,
         m.id as root,
@@ -21,23 +21,23 @@ order by display_order;
 
 -- Helper View
 -- 教学任务
-create or replace view v_task as
+create or replace view ea.v_task as
 select task.id, cc.term_id, c.id as course_id, c.name as course_name,
     array_agg(t.name) as teacher_name,
     count(t.id) as teacher_count,
-    task.original_id
+    task.code
 from task
 join course_class cc on cc.id = task.course_class_id
 join course c on c.id = cc.course_id
 join task_teacher tt on tt.task_id = task.id
 join teacher t on t.id = tt.teacher_id
-group by term_id, task.id, c.id, c.name, task.original_id;
+group by term_id, task.id, c.id, c.name, task.code;
 
 -- 教学安排
-create or replace view v_task_schedule as
+create or replace view ea.v_task_schedule as
 select a.id, cc.term_id, c.id as course_id, c.name as course_name,
     te.id as teacher_id, te.name as teacher_name, a.start_week, a.end_week,
-    day_of_week, start_section, total_section, odd_even, place_id, task_id, task.original_id, course_class_id
+    day_of_week, start_section, total_section, odd_even, place_id, task_id, task.code as task_code, course_class_id
 from task_schedule a
 join task on a.task_id = task.id
 join course_class cc on cc.id = task.course_class_id
