@@ -772,17 +772,18 @@ with unsynced as (
             regexp_substr(xkkh, '[^0-9]$', 30) -- 把最后的数字变成01，便于排序
         end as xkkh_normal
     from ea.sva_task_base a
-    where xkkh not in (select original_id from ea.course_class_map) -- 未同步过的选课课号
+    where kcdm <> '74000000'
+    and xkkh not in (select course_class_code from ea.course_class_map) -- 未同步过的选课课号
 )
-select xkkh
+select xkkh as course_class_code
 from unsynced
-order by xkkh_normal;
+order by course_class_code;
 
 /**
  * 教学班ID映射（已同步）
  */
-create or replace view ea.sv_course_class_map as
-select original_id, course_class_id, date_created
+create or replace view ea.sv_course_class_map_synced as
+select course_class_id, course_class_code, date_created
 from ea.course_class_map;
 
 /**
@@ -791,6 +792,7 @@ from ea.course_class_map;
 create or replace view ea.sv_course_class as
 select distinct
     d.course_class_id as id,
+    d.course_class_code as code,
     nvl(case when regexp_like(zxs, '^\d+\.\d?')  then to_number(regexp_substr(zxs, '^\d+\.\d?')) else 0 end, b.period_theory) as period_theory,
     nvl(case when regexp_like(zxs, '-\d+\.\d?$') then to_number(regexp_substr(zxs, '\d+\.\d?$')) else 0 end, b.period_experiment) as period_experiment,
     nvl(case when regexp_like(zxs, '^\+\d+$')    then to_number(regexp_substr(zxs, '\d+'))       else 0 end, b.period_weeks) as period_weeks,
@@ -802,23 +804,23 @@ select distinct
     c.id as term_id,
     b.id as course_id,
     e.id as department_id,
-    f.id as teacher_id,
-    a.xkkh as original_id
+    f.id as teacher_id
 from ea.sva_task_base a
 join ea.sv_course b on a.kcdm = b.id
 join ea.term c on to_number(substr(a.xn, 1, 4)) * 10 + xq = c.id
-join ea.course_class_map d on a.xkkh = d.original_id
+join ea.course_class_map d on a.xkkh = d.course_class_code
 join ea.sv_department e on a.kkxy = e.name
 join ea.sv_teacher f on a.jszgh = f.id
 left join ea.sv_property g on a.kcxz = g.name
-order by a.xkkh;
+order by code;
 
 /**
  * 教学班-计划
  */
 create or replace view ea.sv_course_class_program as
 select distinct b.course_class_id, to_number(a.program_id) as program_id
-from ea.sva_task_base a join ea.course_class_map b on a.xkkh = b.original_id
+from ea.sva_task_base a
+join ea.course_class_map b on b.course_class_code = a.xkkh
 where program_id is not null
 order by course_class_id, program_id;
 
@@ -908,18 +910,18 @@ with normal as (
         end as xkkh_normal
     from normal
     where (xkkh, course_item_id) not in (
-        select original_id, course_item_id from ea.task_map
+        select task_code, course_item_id from ea.task_map
     ) -- 未同步过的选课课号
 )
-select xkkh, course_item_id as course_item_id
+select xkkh as task_code, course_item_id as course_item_id
 from unsynced
-order by xkkh_normal, course_item_id;
+order by task_code, course_item_id;
 
 /**
  * 任务ID映射（已同步）
  */
-create or replace view ea.sv_task_map as
-select original_id, course_item_id, task_id, date_created
+create or replace view ea.sv_task_map_synced as
+select task_id, task_code, course_item_id, date_created
 from ea.task_map;
 
 /**
@@ -928,15 +930,15 @@ from ea.task_map;
 create or replace view ea.sv_task as
 select distinct
     c.task_id as id,
+    c.task_code as code,
     a.is_primary,
     nvl(to_number(regexp_substr(qsjsz, '^\d+')), b.start_week) as start_week,
     nvl(to_number(regexp_substr(qsjsz, '\d+$')), b.end_week) as end_week,
     a.course_item_id,
-    b.id as course_class_id,
-    a.xkkh as original_id
+    b.id as course_class_id
 from ea.sva_task a
-join ea.sv_course_class b on b.original_id = a.zkh
-join ea.task_map c on a.xkkh = c.original_id and nvl(a.course_item_id, '0000000000') = c.course_item_id;
+join ea.sv_course_class b on b.code = a.zkh
+join ea.task_map c on c.task_code = a.xkkh and nvl(a.course_item_id, '0000000000') = c.course_item_id;
 
 /**
  * 辅助视图 - 教学任务-教师
@@ -1005,22 +1007,22 @@ select distinct -- 外语
     a.xkkh, d.jszgh, c.id, 'en'
 from ea.sva_task_base a
 join task_en b on a.xkkh = b.xkkh
-join ea.sv_course_item c on a.kcdm = c.course_id
-join zfxfzb.dgjsskxxb d on a.xkkh = d.xkkh and nvl(d.xh_bksj, xh) = c.ordinal
+join ea.sv_course_item c on c.course_id = a.kcdm
+join zfxfzb.dgjsskxxb d on d.xkkh = a.xkkh and nvl(d.xh_bksj, xh) = c.ordinal
 union all
 select distinct -- 体育
-    a.xkkh, a.jszgh, d.id, 'pe'
+    a.xkkh, a.jszgh, c.id, 'pe'
 from zfxfzb.tykjxrwb a
 join task_pe b on b.xkkh = a.xkkh
-join ea.sv_course_item d on a.kcdm = d.task_course_id;
+join ea.sv_course_item c on c.task_course_id = a.kcdm;
 
 /**
  * 教学任务-教师
  */
 create or replace view ea.sv_task_teacher as
-select distinct b.task_id, jszgh as teacher_id
+select distinct b.task_id, b.task_code, jszgh as teacher_id
 from ea.sva_task_teacher a
-join ea.task_map b on b.original_id = a.xkkh and b.course_item_id = nvl(a.course_item_id, '0000000000')
+join ea.task_map b on b.task_code = a.xkkh and b.course_item_id = nvl(a.course_item_id, '0000000000')
 join zfxfzb.jsxxb c on c.zgh = a.jszgh;
 
 /**
@@ -1182,7 +1184,7 @@ select distinct  -- 体育
     c.id as course_item_id,
     'pe' tab
 from zfxfzb.tykjxrwb a
-join zfxfzb.jxcdxxb b on a.skdd = b.jsmc
+join zfxfzb.jxcdxxb b on b.jsmc = a.skdd
 join ea.sv_course_item c on c.task_course_id = a.kcdm
 where nvl(a.xkzt, 0) <> 4;
 
@@ -1193,6 +1195,7 @@ create or replace view ea.sv_task_schedule as
 select distinct
     HEXTORAW(guid) as id,
     b.task_id,
+    b.task_code,
     jszgh as teacher_id,
     jsbh as place_id,
     qsz as start_week,
@@ -1202,15 +1205,17 @@ select distinct
     qssjd as start_section,
     skcd as total_section
 from ea.sva_task_schedule a
-join ea.task_map b on b.original_id = a.xkkh and b.course_item_id = nvl(a.course_item_id, '0000000000');
+join ea.task_map b on b.task_code = a.xkkh and b.course_item_id = nvl(a.course_item_id, '0000000000');
 
 /**
  * 学生选课
  */
 create or replace view ea.sv_task_student as
-select HEXTORAW(t.task_id) as task_id,
-    xh as student_id, to_date(xksj, 'yyyy-mm-dd HH24:MI:SS') as date_created,
-    0 as register_type,
-    xkkh as original_id
+select
+    t.task_id,
+    t.task_code,
+    xh as student_id,
+    to_date(xksj, 'yyyy-mm-dd HH24:MI:SS') as date_created,
+    0 as register_type
 from zfxfzb.xsxkb x
-join ea.task_map t on t.original_id = x.xkkh;
+join ea.task_map t on t.task_code = x.xkkh;

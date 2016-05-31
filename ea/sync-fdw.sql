@@ -341,50 +341,51 @@ CREATE FOREIGN TABLE ea.sv_student (
 ---教学班ID映射实体表
 DROP FOREIGN TABLE IF EXISTS ea.et_course_class_map;
 CREATE FOREIGN TABLE ea.et_course_class_map (
-    original_id varchar(31)
+    course_class_code varchar(31) OPTIONS(key 'true')
 ) SERVER zf OPTIONS (schema 'EA', table 'COURSE_CLASS_MAP');
 
 ---教学班ID映射视图（未同步）
 DROP FOREIGN TABLE IF EXISTS ea.sv_course_class_map_unsync;
 CREATE FOREIGN TABLE ea.sv_course_class_map_unsync (
-    original_id varchar(31)
+    course_class_code varchar(31)
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_COURSE_CLASS_MAP_UNSYNC');
 
 ---教学班ID映射视图（已同步）
-DROP FOREIGN TABLE IF EXISTS ea.sv_course_class_map;
-CREATE FOREIGN TABLE ea.sv_course_class_map (
-    original_id varchar(31),
+DROP FOREIGN TABLE IF EXISTS ea.sv_course_class_map_synced;
+CREATE FOREIGN TABLE ea.sv_course_class_map_synced (
     course_class_id uuid,
+    course_class_code varchar(31),
     date_created timestamp
-) SERVER zf OPTIONS (schema 'EA', table 'SV_COURSE_CLASS_MAP');
+) SERVER zf OPTIONS (schema 'EA', table 'SV_COURSE_CLASS_MAP_SYNCED');
 
 ---教学任务ID映射实体表
 DROP FOREIGN TABLE IF EXISTS ea.et_task_map;
 CREATE FOREIGN TABLE ea.et_task_map (
-    original_id varchar(31),
-    course_item_id varchar(10)
+    task_code varchar(31) OPTIONS(key 'true'),
+    course_item_id varchar(10) OPTIONS(key 'true')
 ) SERVER zf OPTIONS (schema 'EA', table 'TASK_MAP');
 
 ---教学任务ID映射视图（未同步）
 DROP FOREIGN TABLE IF EXISTS ea.sv_task_map_unsync;
 CREATE FOREIGN TABLE ea.sv_task_map_unsync (
-    original_id varchar(31),
+    task_code varchar(31),
     course_item_id varchar(10)
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK_MAP_UNSYNC');
 
 ---教学任务ID映射视图（已同步）
-DROP FOREIGN TABLE IF EXISTS ea.sv_task_map;
-CREATE FOREIGN TABLE ea.sv_task_map (
-    original_id varchar(31),
-    course_item_id varchar(10),
+DROP FOREIGN TABLE IF EXISTS ea.sv_task_map_synced;
+CREATE FOREIGN TABLE ea.sv_task_map_synced (
     task_id uuid,
+    task_code varchar(31),
+    course_item_id varchar(10),
     date_created timestamp
-) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK_MAP');
+) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK_MAP_SYNCED');
 
 --- 教学班
 DROP FOREIGN TABLE IF EXISTS ea.sv_course_class;
 CREATE FOREIGN TABLE ea.sv_course_class (
     id uuid,
+    code varchar(31),
     period_theory integer,
     period_experiment integer,
     period_weeks integer,
@@ -396,8 +397,7 @@ CREATE FOREIGN TABLE ea.sv_course_class (
     term_id numeric(5),
     course_id char(8),
     department_id char(2),
-    teacher_id char(5),
-    original_id varchar(32)
+    teacher_id char(5)
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_COURSE_CLASS');
 
 --- 教学班-计划
@@ -411,18 +411,19 @@ CREATE FOREIGN TABLE ea.sv_course_class_program (
 DROP FOREIGN TABLE IF EXISTS ea.sv_task;
 CREATE FOREIGN TABLE ea.sv_task (
     id uuid,
+    code varchar(31),
     is_primary boolean,
     start_week integer,
     end_week integer,
     course_item_id char(10),
-    course_class_id uuid,
-    original_id varchar(31)
+    course_class_id uuid
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK');
 
 --- 教学任务-教师
 DROP FOREIGN TABLE IF EXISTS ea.sv_task_teacher;
 CREATE FOREIGN TABLE ea.sv_task_teacher (
     task_id uuid,
+    task_code varchar(31),
     teacher_id char(5)
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK_TEACHER');
 
@@ -431,6 +432,7 @@ DROP FOREIGN TABLE IF EXISTS ea.sv_task_schedule;
 CREATE FOREIGN TABLE ea.sv_task_schedule (
     id uuid,
     task_id uuid,
+    task_code varchar(31),
     teacher_id char(5),
     place_id char(6),
     start_week integer,
@@ -445,8 +447,8 @@ CREATE FOREIGN TABLE ea.sv_task_schedule (
 DROP FOREIGN TABLE IF EXISTS ea.sv_task_student;
 CREATE FOREIGN TABLE ea.sv_task_student (
     task_id uuid,
+    task_code varchar(31),
     student_id char(10),
     date_created timestamp,
-    register_type integer,
-    original_id varchar(31)
+    register_type integer
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK_STUDENT');
