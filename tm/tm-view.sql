@@ -1,5 +1,5 @@
 -- 菜单
-create or replace view tm.v_menu as
+create or replace view tm.dv_menu as
 with recursive r as (
     select m.id, m.name, m.label_cn, m.label_en,
         m.id as root,
@@ -20,7 +20,7 @@ where path_level > 1
 order by display_order;
 
 -- 应用角色
-create or replace view tm.v_user_app_role as
+create or replace view tm.dv_user_app_role as
 select t.id as user_id, 'ROLE_IN_SCHOOL_TEACHER' as role_id
 from ea.teacher t
 where t.at_school = true
@@ -45,7 +45,7 @@ where exists(
 );
 
 -- 计划-课程
-create or replace view tm.v_scheme_course as
+create or replace view tm.dv_scheme_course as
 select c.id, c.name, c.credit,
     c.period_theory as theory_period,
     c.period_experiment as experiment_period,
