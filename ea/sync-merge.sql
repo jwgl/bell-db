@@ -379,6 +379,11 @@ insert into ea.course_class_program(course_class_id, program_id)
 select course_class_id, program_id from ea.sv_course_class_program
 on conflict(course_class_id, program_id) do nothing;
 
+delete from ea.course_class_program
+where course_class_id not in (
+    select id from ea.sv_course_class
+);
+
 -- 任务ID转换
 insert into ea.et_task_map(task_code, course_item_id)
 select task_code, course_item_id
@@ -399,6 +404,22 @@ course_class_id = EXCLUDED.course_class_id;
 insert into ea.task_teacher(task_id, teacher_id)
 select task_id, teacher_id from ea.sv_task_teacher
 on conflict(task_id, teacher_id) do nothing;
+
+delete from ea.task_teacher
+where task_id not in (
+    select id from ea.sv_task
+);
+
+delete from ea.task
+where id not in (
+    select id from ea.sv_task
+);
+
+delete from ea.course_class
+where id not in (
+    select id from ea.sv_course_class
+);
+
 
 -- 教学安排
 -- Oracle 11g端合并性能低，合并逻辑移到PostgreSQL端
@@ -434,6 +455,11 @@ day_of_week    = EXCLUDED.day_of_week,
 start_section  = EXCLUDED.start_section,
 total_section  = EXCLUDED.total_section;
 
+delete from ea.task_schedule
+where id not in (
+    select id from ea.sv_task_schedule
+);
+
 -- 学生选课
 insert into ea.task_student(task_id, student_id, date_created, register_type)
 select task_id, student_id, date_created, register_type
@@ -442,3 +468,10 @@ where task_code like '(2015-2016-1)%'
 on conflict(task_id, student_id) do update set
 date_created     = EXCLUDED.date_created,
 register_type    = EXCLUDED.register_type;
+
+delete from ea.task_student
+where (task_id, student_id) not in (
+    select task_id, student_id
+    from ea.sv_task_student
+    where task_code like '(2015-2016-1)%'
+);
