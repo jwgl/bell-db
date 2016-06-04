@@ -163,6 +163,7 @@ select zydm as id,
     xz as length_of_schooling,
     case
         when (select enabled from ea.sv_department where id = ssxydm) = 0 then 1 -- 学院停用
+        when zymc like '%国际课程班' then 1 -- 停办
         when not exists(select 1 from zfxfzb.jxjhzyxxb where nj > 2012 and a.zydm = zydm) then 1 -- 2012级之后没有计划
         when tjzymc is not null and b.id is null then 1 -- 新版招生目录中没有
         else 0
@@ -321,10 +322,99 @@ from (
 ) b
 order by program_id, property_id;
 
+/*
+ * 辅助视图 - 主教学任务（jxrwbview简化版）
+ */
+create or replace view ea.sva_task_base as
+with task as (
+    select -- 按专业培养方案产生的教学计划（主修）
+        jxjhh, zydm, zymc, zyfx,
+        xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
+        jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+        bjmc, jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
+        jxjhh || '0' as program_id,
+        'jxrwb-1' tab
+    from zfxfzb.jxrwb
+    where jxjhh in (select jxjhh from zfxfzb.jxjhkcxxb)
+    union all
+    select -- 按实际执行产生的教学计划（外语）
+        jxjhh, zydm, zymc, zyfx,
+        xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
+        jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+        bjmc, jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
+        null as program_id,
+        'jxrwb-2' tab
+    from zfxfzb.jxrwb
+    where jxjhh not in (select jxjhh from zfxfzb.jxjhkcxxb)
+    union all
+    select -- 按实际执行产生的教学计划（公选，政治）
+        substr(xn, 1, 4) || xq jxjhh, null zydm, null zymc, null zyfx,
+        xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
+        jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+        null bjmc, null jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
+        null as program_id,
+        'xxkjxrwb' tab
+    from zfxfzb.xxkjxrwb
+    union all
+    select -- 按专业培养方案产生的教学计划（辅修）
+        jxjhh, zydm, zymc, null zyfx,
+        xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
+        jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+        null bjmc, null jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
+        jxjhh || case
+            when substr(jxjhh, 1, 4) < 2012 then '9'
+            when substr(jxjhh, 1, 4) = 2012 then decode(fxbs, 1, '9', '1')
+            when substr(jxjhh, 1, 4) > 2012 then decode(fxbs, 1, '2', '1')
+        end as program_id,
+        'fxkjxrwb' tab
+    from zfxfzb.fxkjxrwb
+    where jxjhh in (select jxjhh from zfxfzb.fxjxjhkcxxb) -- 存在错误数据（教学任务问题37）
+    union all
+    select -- 按实际执行产生的教学计划（特殊课）
+        case when mxnj is null then substr(xn, 1, 4) else mxnj end || xq jxjhh, null zydm, null zymc, null zyfx,
+        xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
+        jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+        null bjmc, null jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
+        null as program_id,
+        'cfbjxrwb' tab
+    from zfxfzb.cfbjxrwb
+    where kcdm <> '74000000'
+    union all
+    select -- 按实际执行产生的教学计划（体育课）
+        substr(xn, 1, 4) || xq jxjhh, null zydm, null zymc, null zyfx,
+        xn, xq, c.kcdm, c.kczwmc, a.xf, a.kcxz, a.kclb, a.kkxy, a.kkx,
+        jszgh, a.jsxm, a.xkkh, a.skdd, a.sksj, a.rs, a.qsjsz,
+        null bjmc, null jxbmc, a.zxs, xkzt, mxdx, xzdx, a.ksfs, a.khfs,
+        null program_id,
+        'tykjxrwb' tab
+    from zfxfzb.tykjxrwb a
+    join zfxfzb.tykkcdmb b on a.kcdm = b.kcdm
+    join zfxfzb.kcdmb c on c.kcdm = b.sskcdm -- 还原体育1、体育2
+)
+select jxjhh, zydm, zymc, zyfx,
+        xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
+        jszgh, jsxm, xkkh, skdd, sksj, rs,
+        nvl(to_number(regexp_substr(qsjsz, '^\d+')), term.start_week) as qsz,
+        nvl(to_number(regexp_substr(qsjsz, '\d+$')), term.end_week) as jsz,
+        bjmc, jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
+        program_id, tab
+from task
+join term on term.id = substr(xn, 1, 4) || xq
+where nvl(xkzt, 0) <> 4;
+
 /**
  * 课程
  */
 create or replace view ea.sv_course as
+with scheduled as ( -- 已排课的代码
+    select distinct kcdm as pk_kcdm
+    from ea.sva_task_base a
+    where (skdd is not null or sksj is not null) and xkzt <> 4
+    union
+    select distinct kcdm as pk_kcdm
+    from zfxfzb.kcdmb
+    where kcdm not in (select kcdm from zfxfzb.cjb)
+)
 select kcdm as id,
     kczwmc as name,
     kcywmc as english_name,
@@ -337,20 +427,13 @@ select kcdm as id,
     case when regexp_like(zxs, '^\+\d+$') then 1 else 0 end as is_practical,
     decode(xlcc,'本科', 1, '本科毕业生', 1, '硕士研究生', 2, /*其它或空*/ 9) as education_level,
     decode(khfs, '考试', 1, '考查', 2, '论文', 3, /*空*/ 9) as assess_type,
-    nvl(sfpk, 1) as schedule_type,
+    nvl2(pk_kcdm, 1, 0) as schedule_type,
     kcjj as introduction,
     decode(tkbj, '1', 0, 1) enabled,
     case when kkbmdm is null then substr(kcdm, 1, 2) else kkbmdm end as department_id
 from zfxfzb.kcdmb a
 left join zfxfzb.kcxzdmb b on kcxzmc = kcxz
-left join ( -- 是否排课
-    select kcdm as pk_kcdm, decode(sfpk, 0, 0, 1) as sfpk  from(
-        select kcdm, sum (case when skdd is null and sksj is null then 0 else 1 end) as sfpk
-        from zfxfzb.jxrwbview a
-        where xkzt <> 4
-        group by kcdm
-    )
-) on kcdm = pk_kcdm
+left join scheduled on kcdm = pk_kcdm
 where kcxz is not null
 order by id;
 
@@ -407,7 +490,11 @@ order by id;
  * 教学计划-课程
  */
 create or replace view ea.sv_program_course as
-with x as (
+with scheduled as ( -- 已排课的代码
+    select distinct jxjhh as pk_jxjhh, kcdm as pk_kcdm, zyfx as pk_zyfx
+    from ea.sva_task_base a
+    where (skdd is not null or sksj is not null) and xkzt <> 4
+), all_program as (
     select
         jxjhh || '0' as program_id,
         kcdm as course_id,
@@ -421,24 +508,17 @@ with x as (
         decode(ksfs, '集中', 1, '分散', 2, /*缺省集中*/ 1) as test_type,
         to_number(regexp_substr(qsjsz, '^\d+')) as start_week,
         to_number(regexp_substr(qsjsz, '\d+$')) as end_week,
-        case when jyxdxq > 8 then 7 else jyxdxq end as suggested_term, -- error > 8
+        jyxdxq as suggested_term, -- error > 8
         ea.util.csv_bit_to_number(kkkxq, jyxdxq) as allowed_term,
-        nvl(sfpk, sv_course.schedule_type) as schedule_type,
+        nvl2(pk_kcdm, 1, 0) as schedule_type,
         xydm as department_id,
         sv_direction.id as direction_id
     from zfxfzb.jxjhkcxxb
     join zfxfzb.kcxzdmb on kcxz = kcxzmc
     join zfxfzb.xydmb on kkxy = xymc
     join ea.sv_course on kcdm = sv_course.id
-    left join sv_direction on sv_direction.name = zyfx and sv_direction.program_id = jxjhh || 0
-    left join ( -- 是否排课
-        select jxjhh as pk_jxjhh, kcdm as pk_kcdm, zyfx as pk_zyfx, decode(sfpk, 0, 0, 1) as sfpk  from(
-            select jxjhh, kcdm, zyfx, sum (case when skdd is null and sksj is null then 0 else 1 end) as sfpk
-            from zfxfzb.jxrwbview a
-            where xkzt <> 4
-            group by jxjhh, kcdm, zyfx
-        )
-    ) on jxjhh = pk_jxjhh and kcdm = pk_kcdm and zyfx = pk_zyfx
+    left join ea.sv_direction on sv_direction.name = zyfx and sv_direction.program_id = jxjhh || 0
+    left join scheduled on jxjhh = pk_jxjhh and kcdm = pk_kcdm and zyfx = pk_zyfx
     union all
     select
         jxjhh || case
@@ -459,32 +539,24 @@ with x as (
         to_number(regexp_substr(qsjsz, '\d+$')) as end_week,
         jyxdxq as suggested_term,
         ea.util.csv_bit_to_number(kkkxq, jyxdxq) as allowed_term,
-        nvl(sfpk, sv_course.schedule_type) as schedule_type,
+        nvl2(pk_kcdm, 1, 0) as schedule_type,
         xydm as department_id,
         /*zyfxdm*/ null as direction_id
     from zfxfzb.fxjxjhkcxxb
     join zfxfzb.kcxzdmb on kcxz = kcxzmc
     join zfxfzb.xydmb on kkxy = xymc
     join ea.sv_course on kcdm = sv_course.id
-    /* left join zfxfzb.zyfxb on zyfxmc = zyfx and jxjhh = substr(zyfxdm, 1, 8) */ -- 辅修课不处理专业方向
-    left join ( -- 是否排课
-        select jxjhh as pk_jxjhh, kcdm as pk_kcdm, zyfx as pk_zyfx, decode(sfpk, 0, 0, 1) as sfpk  from(
-            select jxjhh, kcdm, zyfx, sum (case when skdd is null and sksj is null then 0 else 1 end) as sfpk
-            from zfxfzb.jxrwbview a
-            where xkzt <> 4
-            group by jxjhh, kcdm, zyfx
-        )
-    ) on jxjhh = pk_jxjhh and kcdm = pk_kcdm and zyfx = pk_zyfx
+    -- left join ea.sv_direction on sv_direction.name = zyfx and sv_direction.program_id = jxjhh || 0 -- 辅修课暂不处理专业方向
+    left join scheduled on jxjhh = pk_jxjhh and kcdm = pk_kcdm and zyfx = pk_zyfx
 )
 select to_number(program_id) as program_id, course_id, period_theory, period_experiment,
     case
         when period_weeks <> 0 then period_weeks
-        when (end_week - start_week + 1) >= 16 then 18
         else (end_week - start_week + 1)
     end as period_weeks, is_compulsory, is_practical,
     property_id, assess_type, test_type, start_week, end_week,
     suggested_term, allowed_term, schedule_type, department_id, direction_id
-from x
+from all_program
 where program_id in (select id from ea.sv_program)
 order by program_id, suggested_term, course_id;
 
@@ -568,8 +640,8 @@ select
     xh as student_id,
     nvl(b.zydm, a.zydm) as subject_id, -- 还原入学专业
     to_number('20' || substr(xh, 1, 2)) as grade, -- 还原入学年级
-    case xh when '0818010172' then '待修复' else xm end as name,
-    case when xh in('0416020026', '1017010074') then NULL else zym end as used_name,
+    xm as name,
+    zym as used_name,
     xb as sex,
     case
         when regexp_like(csrq, '\d{8}') then to_date(csrq, 'yyyymmdd') -- 19810101
@@ -600,7 +672,7 @@ order by id;
 create or replace view ea.sv_student as
 select xh as id,
     xsmm as password,
-    case xh when '0818010172' then '待修复' else xm end as name,
+    xm as name,
     xmpy as pinyin_name,
     xb as sex,
     case
@@ -658,86 +730,6 @@ left join ea.sv_admin_class on xzb = name
 left join ea.sv_major on dqszj || zydm = sv_major.id
 left join ea.sv_direction on zyfx = sv_direction.name and (dqszj || zydm || '0') = sv_direction.program_id
 order by id;
-
-/*
- * 辅助视图 - 主教学任务（jxrwbview简化版）
- */
-create or replace view ea.sva_task_base as
-with task as (
-    select -- 按专业培养方案产生的教学计划（主修）
-        jxjhh, zydm, zymc, zyfx,
-        xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
-        jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
-        bjmc, jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
-        jxjhh || '0' as program_id,
-        'jxrwb-1' tab
-    from zfxfzb.jxrwb
-    where jxjhh in (select jxjhh from zfxfzb.jxjhkcxxb)
-    union all
-    select -- 按实际执行产生的教学计划（外语）
-        jxjhh, zydm, zymc, zyfx,
-        xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
-        jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
-        bjmc, jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
-        null as program_id,
-        'jxrwb-2' tab
-    from zfxfzb.jxrwb
-    where jxjhh not in (select jxjhh from zfxfzb.jxjhkcxxb)
-    union all
-    select -- 按实际执行产生的教学计划（公选，政治）
-        substr(xn, 1, 4) || xq jxjhh, null zydm, null zymc, null zyfx,
-        xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
-        jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
-        null bjmc, null jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
-        null as program_id,
-        'xxkjxrwb' tab
-    from zfxfzb.xxkjxrwb
-    union all
-    select -- 按专业培养方案产生的教学计划（辅修）
-        jxjhh, zydm, zymc, null zyfx,
-        xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
-        jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
-        null bjmc, null jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
-        jxjhh || case
-            when substr(jxjhh, 1, 4) < 2012 then '9'
-            when substr(jxjhh, 1, 4) = 2012 then decode(fxbs, 1, '9', '1')
-            when substr(jxjhh, 1, 4) > 2012 then decode(fxbs, 1, '2', '1')
-        end as program_id,
-        'fxkjxrwb' tab
-    from zfxfzb.fxkjxrwb
-    where jxjhh in (select jxjhh from zfxfzb.fxjxjhkcxxb) -- 存在错误数据（教学任务问题37）
-    union all
-    select -- 按实际执行产生的教学计划（特殊课）
-        case when mxnj is null then substr(xn, 1, 4) else mxnj end || xq jxjhh, null zydm, null zymc, null zyfx,
-        xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
-        jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
-        null bjmc, null jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
-        null as program_id,
-        'cfbjxrwb' tab
-    from zfxfzb.cfbjxrwb
-    where kcdm <> '74000000'
-    union all
-    select -- 按实际执行产生的教学计划（体育课）
-        substr(xn, 1, 4) || xq jxjhh, null zydm, null zymc, null zyfx,
-        xn, xq, c.kcdm, c.kczwmc, a.xf, a.kcxz, a.kclb, a.kkxy, a.kkx,
-        jszgh, a.jsxm, a.xkkh, a.skdd, a.sksj, a.rs, a.qsjsz,
-        null bjmc, null jxbmc, a.zxs, xkzt, mxdx, xzdx, a.ksfs, a.khfs,
-        null program_id,
-        'tykjxrwb' tab
-    from zfxfzb.tykjxrwb a
-    join zfxfzb.tykkcdmb b on a.kcdm = b.kcdm
-    join zfxfzb.kcdmb c on c.kcdm = b.sskcdm -- 还原体育1、体育2
-)
-select jxjhh, zydm, zymc, zyfx,
-        xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
-        jszgh, jsxm, xkkh, skdd, sksj, rs,
-        nvl(to_number(regexp_substr(qsjsz, '^\d+')), term.start_week) as qsz,
-        nvl(to_number(regexp_substr(qsjsz, '\d+$')), term.end_week) as jsz,
-        bjmc, jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
-        program_id, tab
-from task
-join term on term.id = substr(xn, 1, 4) || xq
-where nvl(xkzt, 0) <> 4;
 
 /**
  * 教学班ID映射（未同步）

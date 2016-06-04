@@ -225,11 +225,6 @@ allowed_term      = EXCLUDED.allowed_term,
 schedule_type     = EXCLUDED.schedule_type,
 department_id     = EXCLUDED.department_id;
 
-delete from program_course
-where (program_id, course_id, direction_id) not in (
-    select program_id, course_id, direction_id from ea.sv_program_course
-);
-
 -- 教师
 insert into ea.teacher(id, name, sex, birthday, political_status, nationality, academic_title,
     academic_level, academic_degree, educational_background, graduate_school, graduate_major,
@@ -304,10 +299,6 @@ english_score      = EXCLUDED.english_score,
 id_number          = EXCLUDED.id_number,
 bank_number        = EXCLUDED.bank_number;
 
--- postgres=# set client_encoding to 'utf8';
--- update admission set used_name = '李' where student_id = '0416020026';
-update admission set used_name = '刘龑' where student_id = '1017010074';
-
 -- 学生
 insert into ea.student(id, name, pinyin_name, sex, birthday, political_status, nationality, date_enrolled,
     date_graduated, is_enrolled, at_school, is_registed, train_range,
@@ -340,9 +331,6 @@ admin_class_id        = EXCLUDED.admin_class_id,
 major_id              = EXCLUDED.major_id,
 direction_id          = EXCLUDED.direction_id,
 admission_id          = EXCLUDED.admission_id;
-
--- postgres=# set client_encoding to 'utf8';
-update student set name = '谭龑焘' where id = '0818010172';
 
 -- 教学班ID转换
 -- 如果出现ORA-08177: can't serialize access for this transaction，
@@ -379,11 +367,6 @@ insert into ea.course_class_program(course_class_id, program_id)
 select course_class_id, program_id from ea.sv_course_class_program
 on conflict(course_class_id, program_id) do nothing;
 
-delete from ea.course_class_program
-where course_class_id not in (
-    select id from ea.sv_course_class
-);
-
 -- 任务ID转换
 insert into ea.et_task_map(task_code, course_item_id)
 select task_code, course_item_id
@@ -404,22 +387,6 @@ course_class_id = EXCLUDED.course_class_id;
 insert into ea.task_teacher(task_id, teacher_id)
 select task_id, teacher_id from ea.sv_task_teacher
 on conflict(task_id, teacher_id) do nothing;
-
-delete from ea.task_teacher
-where task_id not in (
-    select id from ea.sv_task
-);
-
-delete from ea.task
-where id not in (
-    select id from ea.sv_task
-);
-
-delete from ea.course_class
-where id not in (
-    select id from ea.sv_course_class
-);
-
 
 -- 教学安排
 -- Oracle 11g端合并性能低，合并逻辑移到PostgreSQL端
@@ -455,11 +422,6 @@ day_of_week    = EXCLUDED.day_of_week,
 start_section  = EXCLUDED.start_section,
 total_section  = EXCLUDED.total_section;
 
-delete from ea.task_schedule
-where id not in (
-    select id from ea.sv_task_schedule
-);
-
 -- 学生选课
 insert into ea.task_student(task_id, student_id, date_created, register_type)
 select task_id, student_id, date_created, register_type
@@ -468,6 +430,37 @@ where task_code like '(2015-2016-1)%'
 on conflict(task_id, student_id) do update set
 date_created     = EXCLUDED.date_created,
 register_type    = EXCLUDED.register_type;
+
+-- 删除数据
+delete from ea.course_class_program
+where course_class_id not in (
+    select id from ea.sv_course_class
+);
+
+delete from ea.task_teacher
+where task_id not in (
+    select id from ea.sv_task
+);
+
+delete from ea.task
+where id not in (
+    select id from ea.sv_task
+);
+
+delete from ea.course_class
+where id not in (
+    select id from ea.sv_course_class
+);
+
+delete from ea.program_course
+where (program_id, coalesce(direction_id, 0), course_id) not in (
+    select program_id, coalesce(direction_id, 0), course_id from ea.sv_program_course
+);
+
+delete from ea.task_schedule
+where id not in (
+    select id from ea.sv_task_schedule
+);
 
 delete from ea.task_student
 where (task_id, student_id) not in (
