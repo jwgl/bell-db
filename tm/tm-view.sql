@@ -20,7 +20,7 @@ where path_level > 1
 order by display_order;
 
 -- 应用角色
-create or replace view tm.dv_user_app_role as
+create or replace view tm.dv_teacher_role as
 select t.id as user_id, 'ROLE_IN_SCHOOL_TEACHER' as role_id
 from ea.teacher t
 where t.at_school = true
@@ -44,6 +44,15 @@ where exists(
     and task_schedule.teacher_id = t.id
 );
 
+create or replace view tm.dv_student_role as
+select s.id as user_id, 'ROLE_IN_SCHOOL_STUDENT' as role_id
+from ea.student s
+where s.at_school = true
+;
+
+create or replace view tm.dv_external_role as
+    select '' as userId, '' as role_id where 1 = 2
+;
 -- 计划-课程
 create or replace view tm.dv_scheme_course as
 select c.id, c.name, c.credit,
@@ -70,3 +79,8 @@ select c.id || '', c.name, c.credit,
     true as is_temp_course
 from tm.temp_course c
 join ea.department d on c.department_id = d.id;
+
+-- 补办学生证申请表-统计
+create or replace view tm.dv_card_reissue_form_rank as
+select id as form_id, rank() over (partition by student_id order by date_created) as rank
+from tm.card_reissue_form;
