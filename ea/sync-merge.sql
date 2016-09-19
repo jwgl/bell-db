@@ -177,19 +177,6 @@ introduction      = EXCLUDED.introduction,
 enabled           = EXCLUDED.enabled,
 department_id     = EXCLUDED.department_id;
 
-update ea.course set period_theory = 0, period_experiment = 2 where id = '11190431';
-update ea.course set period_theory = 0, period_experiment = 2 where id = '17110890';
-update ea.course set period_theory = 1 where id = '17110900';
-update ea.course set period_theory = 1 where id = '20190530';
-update ea.course set period_weeks = 6 where id = '06110700';
-update ea.course set period_experiment = 1 where id = '01190061';
-update ea.course set period_experiment = 1 where id = '01190350';
-update ea.course set period_experiment = 1 where id = '01190380';
-update ea.course set period_theory = 2, period_experiment = 2 where id = '01110261';
-update ea.course set period_theory = 0, period_experiment = 2 where id = '12190550';
-update ea.course set period_theory = 0, period_experiment = 2 where id = '01111220';
-update ea.course set period_theory = 0, period_experiment = 4 where id = '01111230';
-
 --课程项目
 insert into ea.course_item(id, name, ordinal, is_primary, course_id)
 select id, name, ordinal, is_primary, course_id from ea.sv_course_item
@@ -413,6 +400,7 @@ select id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of
 from formal
 group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week
 on conflict(id) do update set
+task_id        = EXCLUDED.task_id,
 teacher_id     = EXCLUDED.teacher_id,
 place_id       = EXCLUDED.place_id,
 start_week     = EXCLUDED.start_week,
@@ -431,15 +419,28 @@ on conflict(task_id, student_id) do update set
 date_created     = EXCLUDED.date_created,
 register_type    = EXCLUDED.register_type;
 
+
 -- 删除数据
 delete from ea.course_class_program
 where course_class_id not in (
     select id from ea.sv_course_class
 );
 
+delete from ea.task_student
+where (task_id, student_id) not in (
+    select task_id, student_id
+    from ea.sv_task_student
+    where task_code like '(2015-2016-1)%'
+) and task_code like '(2015-2016-1)%';
+
 delete from ea.task_teacher
 where task_id not in (
     select id from ea.sv_task
+);
+
+delete from ea.task_schedule
+where id not in (
+    select id from ea.sv_task_schedule
 );
 
 delete from ea.task
@@ -457,14 +458,17 @@ where (program_id, coalesce(direction_id, 0), course_id) not in (
     select program_id, coalesce(direction_id, 0), course_id from ea.sv_program_course
 );
 
-delete from ea.task_schedule
-where id not in (
-    select id from ea.sv_task_schedule
+delete from ea.program_property
+where (program_id, property_id) not in (
+    select program_id, property_id from ea.sv_program_property
 );
 
-delete from ea.task_student
-where (task_id, student_id) not in (
-    select task_id, student_id
-    from ea.sv_task_student
-    where task_code like '(2015-2016-1)%'
-);
+delete from ea.direction
+where id not in (
+    select id from ea.sv_direction
+) and id > 2016000000;
+
+delete from program where id not in (select id from sv_program);
+
+delete from major where id not in (select id from sv_major);
+

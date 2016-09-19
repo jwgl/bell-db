@@ -1,10 +1,11 @@
-﻿/**
+/**
  * database bell/ea
  */
 grant usage on schema ea to tm;
 
 grant references on ea.admin_class   to tm;
 grant references on ea.teacher       to tm;
+grant references on ea.student       to tm;
 grant references on ea.program       to tm;
 grant references on ea.department    to tm;
 grant references on ea.property      to tm;
@@ -16,6 +17,8 @@ grant references on ea.field         to tm;
 grant select on ea.term              to tm;
 grant select on ea.admin_class       to tm;
 grant select on ea.teacher           to tm;
+grant select on ea.student           to tm;
+grant select on ea.admission         to tm;
 grant select on ea.program           to tm;
 grant select on ea.program_course    to tm;
 grant select on ea.department        to tm;
