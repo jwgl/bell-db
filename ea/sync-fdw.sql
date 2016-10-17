@@ -84,13 +84,6 @@ CREATE FOREIGN TABLE ea.sv_place_booking_term (
     term_id integer
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_PLACE_BOOKING_TERM', readonly 'true');
 
---- 教学场地-允许借用用户类型
-DROP FOREIGN TABLE IF EXISTS ea.sv_place_booking_user_type;
-CREATE FOREIGN TABLE ea.sv_place_booking_user_type (
-    place_id char(6),
-    user_type integer
-) SERVER zf OPTIONS (schema 'EA', table 'SV_PLACE_BOOKING_USER_TYPE', readonly 'true');
-
 --- 学科门类
 DROP FOREIGN TABLE IF EXISTS ea.sv_discipline;
 CREATE FOREIGN TABLE ea.sv_discipline (
