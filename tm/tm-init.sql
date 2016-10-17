@@ -1,156 +1,177 @@
-Insert into tm.ROLE (ID,NAME) values ('ROLE_SYSTEM_ADMIN','系统管理员');
-Insert into tm.ROLE (ID,NAME) values ('ROLE_DEPARTMENT_ADMIN','部门管理员');
-Insert into tm.ROLE (ID,NAME) values ('ROLE_USER','用户');
-Insert into tm.ROLE (ID,NAME) values ('ROLE_TEACHER','教师');
-Insert into tm.ROLE (ID,NAME) values ('ROLE_IN_SCHOOL_TEACHER','在校教师');
-Insert into tm.ROLE (ID,NAME) values ('ROLE_COURSE_TEACHER','任课教师');
-Insert into tm.ROLE (ID,NAME) values ('ROLE_SUBJECT_DIRECTOR','专业负责人');
-Insert into tm.ROLE (ID,NAME) values ('ROLE_DEAN_OF_TEACHING','教学院长');
-Insert into tm.ROLE (ID,NAME) values ('ROLE_TEACHING_SECRETARY','教务秘书');
+Insert into tm.ROLE (ID,NAME) values ('ROLE_SYSTEM_ADMIN',           '系统管理员');
+Insert into tm.ROLE (ID,NAME) values ('ROLE_DEPARTMENT_ADMIN',       '部门管理员');
+Insert into tm.ROLE (ID,NAME) values ('ROLE_USER',                   '用户');
+Insert into tm.ROLE (ID,NAME) values ('ROLE_TEACHER',                '教师');
+Insert into tm.ROLE (ID,NAME) values ('ROLE_IN_SCHOOL_TEACHER',      '在校教师');
+Insert into tm.ROLE (ID,NAME) values ('ROLE_COURSE_TEACHER',         '任课教师');
+Insert into tm.ROLE (ID,NAME) values ('ROLE_SUBJECT_DIRECTOR',       '专业负责人');
+Insert into tm.ROLE (ID,NAME) values ('ROLE_DEAN_OF_TEACHING',       '教学院长');
+Insert into tm.ROLE (ID,NAME) values ('ROLE_TEACHING_SECRETARY',     '教务秘书');
 Insert into tm.ROLE (ID,NAME) values ('ROLE_STUDENT_ABSENCE_CHECKER','学生批假人');
-Insert into tm.ROLE (ID,NAME) values ('ROLE_BOOKING_CHECKER','借教室审核人');
-Insert into tm.ROLE (ID,NAME) values ('ROLE_BOOKING_ADMIN','借教室管理员');
-Insert into tm.ROLE (ID,NAME) values ('ROLE_PROGRAM_ADMIN','计划管理员');
-Insert into tm.ROLE (ID,NAME) values ('ROLE_REGISTER_ADMIN','学籍管理员');
-Insert into tm.ROLE (ID,NAME) values ('ROLE_STUDENT','学生');
-Insert into tm.ROLE (ID,NAME) values ('ROLE_IN_SCHOOL_STUDENT','在校学生');
+Insert into tm.ROLE (ID,NAME) values ('ROLE_PLACE_BOOKING_CHECKER',  '借教室审核人');
+Insert into tm.ROLE (ID,NAME) values ('ROLE_PLACE_BOOKING_ADMIN',    '借教室管理员');
+Insert into tm.ROLE (ID,NAME) values ('ROLE_PROGRAM_ADMIN',          '计划管理员');
+Insert into tm.ROLE (ID,NAME) values ('ROLE_REGISTER_ADMIN',         '学籍管理员');
+Insert into tm.ROLE (ID,NAME) values ('ROLE_STUDENT',                '学生');
+Insert into tm.ROLE (ID,NAME) values ('ROLE_IN_SCHOOL_STUDENT',      '在校学生');
 Insert into tm.ROLE (ID,NAME) values ('ROLE_COURSE_REGISTER_STUDENT','可选课学生');
 
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_WORK_ITEMS','待办事项');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_SYSTEM_SETUP','系统设置');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_PROFILE_SETUP','个人设置');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_SCHEME_READ','教学计划-查看');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_SCHEME_WRITE','教学计划-编辑');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_SCHEME_CHECK','教学计划-审核');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_SCHEME_APPROVE','教学计划-审批');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_VISION_READ','培养方案-查看');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_VISION_WRITE','培养方案-编辑');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_VISION_CHECK','培养方案-审核');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_VISION_APPROVE','培养方案-审批');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_SUBJECT_SETUP','设置-校内专业');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_PROGRAM_SETUP','设置-教学计划');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_ROLLCALL_WRITE','考勤-点名');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_ROLLCALL_QUERY','考勤-统计');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_SCHEDULE_READ','课表-查看');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_COURSE_REGISTER','学生选课');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_COURSE_EVALUATE','学生评教');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_WORK_ITEMS',           '待办事项');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_SYSTEM_SETUP',         '系统设置');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_PROFILE_SETUP',        '个人设置');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_SCHEME_READ',          '教学计划-查看');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_SCHEME_WRITE',         '教学计划-编辑');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_SCHEME_CHECK',         '教学计划-审核');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_SCHEME_APPROVE',       '教学计划-审批');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_VISION_READ',          '培养方案-查看');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_VISION_WRITE',         '培养方案-编辑');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_VISION_CHECK',         '培养方案-审核');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_VISION_APPROVE',       '培养方案-审批');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_SUBJECT_SETUP',        '设置-校内专业');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_PROGRAM_SETUP',        '设置-教学计划');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_ROLLCALL_WRITE',       '考勤-点名');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_ROLLCALL_QUERY',       '考勤-统计');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_SCHEDULE_READ',        '课表-查看');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_COURSE_REGISTER',      '学生选课');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_COURSE_EVALUATE',      '学生评教');
 Insert into tm.PERMISSION (ID,NAME) values ('PERM_STUDENT_ABSENCE_WRITE','学生请假');
 Insert into tm.PERMISSION (ID,NAME) values ('PERM_STUDENT_ABSENCE_CHECK','学生批假');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_BOOKING_WRITE','借教室-申请');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_BOOKING_CHECK','借教室-审核');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_BOOKING_APPROVE','借教室-审批');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_CARD_REISSUE_WRITE','补办学生证-编辑');
-Insert into tm.PERMISSION (ID,NAME) values ('PERM_CARD_REISSUE_CHECK','补办学生证-审核');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_PLACE_BOOKING_WRITE',  '借教室-申请');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_PLACE_BOOKING_CHECK',  '借教室-审核');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_PLACE_BOOKING_APPROVE','借教室-审批');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_CARD_REISSUE_WRITE',   '补办学生证-编辑');
+Insert into tm.PERMISSION (ID,NAME) values ('PERM_CARD_REISSUE_CHECK',   '补办学生证-审核');
 
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_SYSTEM_ADMIN','PERM_SYSTEM_SETUP');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_USER','PERM_PROFILE_SETUP');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_STUDENT','PERM_SCHEME_READ');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_TEACHER','PERM_SCHEME_READ');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_SUBJECT_DIRECTOR','PERM_SCHEME_WRITE');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_STUDENT','PERM_VISION_READ');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_TEACHER','PERM_VISION_READ');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_SUBJECT_DIRECTOR','PERM_VISION_WRITE');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_DEAN_OF_TEACHING','PERM_SCHEME_CHECK');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_DEAN_OF_TEACHING','PERM_VISION_CHECK');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PROGRAM_ADMIN','PERM_VISION_APPROVE');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PROGRAM_ADMIN','PERM_SCHEME_APPROVE');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PROGRAM_ADMIN','PERM_SUBJECT_SETUP');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PROGRAM_ADMIN','PERM_PROGRAM_SETUP');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_COURSE_TEACHER','PERM_ROLLCALL_WRITE');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_TEACHER','PERM_ROLLCALL_QUERY');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_STUDENT','PERM_CARD_REISSUE_WRITE');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_STUDENT','PERM_SCHEDULE_READ');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_STUDENT','PERM_COURSE_EVALUATE');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_STUDENT','PERM_STUDENT_ABSENCE_WRITE');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_ABSENCE_CHECKER','PERM_ABSENCE_CHECK');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_TEACHER','PERM_BOOKING_APPLY');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_STUDENT','PERM_BOOKING_APPLY');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_BOOKING_CHECKER','PERM_BOOKING_CHECK');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_BOOKING_ADMIN','PERM_BOOKING_APPROVE');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_REGISTER_ADMIN','PERM_CARD_REISSUE_CHECK');
-Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_USER','PERM_WORK_ITEMS');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_SYSTEM_ADMIN',            'PERM_SYSTEM_SETUP');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_USER',                    'PERM_PROFILE_SETUP');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_STUDENT',                 'PERM_SCHEME_READ');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_TEACHER',                 'PERM_SCHEME_READ');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_SUBJECT_DIRECTOR',        'PERM_SCHEME_WRITE');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_DEAN_OF_TEACHING',        'PERM_SCHEME_CHECK');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PROGRAM_ADMIN',           'PERM_SCHEME_APPROVE');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_STUDENT',                 'PERM_VISION_READ');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_TEACHER',                 'PERM_VISION_READ');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_SUBJECT_DIRECTOR',        'PERM_VISION_WRITE');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_DEAN_OF_TEACHING',        'PERM_VISION_CHECK');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PROGRAM_ADMIN',           'PERM_VISION_APPROVE');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PROGRAM_ADMIN',           'PERM_SUBJECT_SETUP');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PROGRAM_ADMIN',           'PERM_PROGRAM_SETUP');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_COURSE_TEACHER',          'PERM_ROLLCALL_WRITE');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_TEACHER',       'PERM_ROLLCALL_QUERY');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_STUDENT',       'PERM_SCHEDULE_READ');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_STUDENT',       'PERM_COURSE_EVALUATE');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_STUDENT',       'PERM_STUDENT_ABSENCE_WRITE');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_STUDENT_ABSENCE_CHECKER', 'PERM_STUDENT_ABSENCE_CHECK');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_TEACHER',       'PERM_PLACE_BOOKING_WRITE');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_STUDENT',       'PERM_PLACE_BOOKING_WRITE');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PLACE_BOOKING_CHECKER',   'PERM_PLACE_BOOKING_CHECK');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_PLACE_BOOKING_ADMIN',     'PERM_PLACE_BOOKING_APPROVE');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_IN_SCHOOL_STUDENT',       'PERM_CARD_REISSUE_WRITE');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_REGISTER_ADMIN',          'PERM_CARD_REISSUE_CHECK');
+Insert into tm.ROLE_PERMISSION (ROLE_ID,PERMISSION_ID) values ('ROLE_USER',                    'PERM_WORK_ITEMS');
 
-Insert into tm.MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('main',          1, '主菜单',   '主菜单',   'Main');
-Insert into tm.MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('main.program',  1, '培养方案', '培养方案', 'Scheme');
-Insert into tm.MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('main.program.settings',  100, '参数设置', '参数设置', 'Settings');
-Insert into tm.MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('main.teaching', 2, '教学过程', '教学过程', 'Process');
-Insert into tm.MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('main.affair',   3, '事务处理', '事务处理', 'Affair');
-Insert into tm.MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('main.system',   9, '系统设置', '系统设置', 'System');
-Insert into tm.MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('user',          2, '用户菜单', '用户菜单', 'User');
-Insert into tm.MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('user.profile',  1, '用户菜单', '用户菜单', 'Profile');
+Insert into tm.MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('main',                  1,   '主菜单',   '主菜单',   'Main');
+Insert into tm.MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('main.program',          1,   '培养方案', '培养方案', 'Scheme');
+Insert into tm.MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('main.program.settings', 100, '参数设置', '参数设置', 'Settings');
+Insert into tm.MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('main.teaching',         2,   '教学过程', '教学过程', 'Process');
+Insert into tm.MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('main.affair',           3,   '事务处理', '事务处理', 'Affair');
+Insert into tm.MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('main.system',           9,   '系统设置', '系统设置', 'System');
+Insert into tm.MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('user',                  2,   '用户菜单', '用户菜单', 'User');
+Insert into tm.MENU (ID,DISPLAY_ORDER,NAME,LABEL_CN,LABEL_EN) values ('user.profile',          1,   '用户菜单', '用户菜单', 'Profile');
 
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.program.visions',11,true,'main.program','培养方案-列表','PERM_VISION_READ','/visions','培养方案目录','Vision List');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.program.visions.edit',12,true,'main.program','培养方案-编辑','PERM_VISION_WRITE','/users/${userId}/visions','编辑培养方案','Edit Vision');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.program.schemes',21,true,'main.program','教学计划-列表','PERM_SCHEME_READ','/schemes','教学计划目录','Scheme List');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.program.schemes.edit',22,true,'main.program','教学计划-编辑','PERM_SCHEME_WRITE','/users/${userId}/schemes','编辑教学计划','Edit Scheme');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.program.settings.subject',1,true,'main.program.settings','设置-校内专业','PERM_SUBJECT_SETUP','/settings/subject','专业负责人','Settings - Subject');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.program.settings.program',2,true,'main.program.settings','设置-教学计划','PERM_PROGRAM_SETUP','/settings/program','教学计划','Settings - Program');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.teaching.schedule',1,true,'main.teaching','课表','PERM_SCHEDULE_READ','/schedule','课表','Schedule');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.teaching.rollcall',2,true,'main.teaching','点名','PERM_ROLLCALL_WRITE','/rollcall','点名','Rollcall');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.teaching.rollcallStatis',3,true,'main.teaching','考勤统计','PERM_ROLLCALL_QUERY','/rollcall-statis','考勤情况','Rollcall Statis');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.teaching.courseRegister',4,true,'main.teaching','学生选课','PERM_COURSE_REGISTER','/register','选课','Register Course');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.teaching.courseEvaluation',5,true,'main.teaching','学生评教','PERM_COURSE_EVALUATE','/evaluation','评教','Evaluate Course');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.system.user',1,true,'main.system','用户','PERM_SYSTEM_SETUP','/system/users','用户','Users');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.system.role',2,true,'main.system','角色','PERM_SYSTEM_SETUP','/system/roles','角色','Roles');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.system.perm',3,true,'main.system','权限','PERM_SYSTEM_SETUP','/system/permissions','权限','Permissions');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('user.profile.modify',1,true,'user.profile','修改个人信息','PERM_PROFILE_SETUP','/profile','修改个人信息','Modify Profile');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('user.profile.password',2,true,'user.profile','修改密码','PERM_PROFILE_SETUP','/password','修改密码','Modify Password');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.affair.workItems',1,true,'main.affair','待办事项','PERM_WORK_ITEMS','/users/${userId}/works','待办事项','Work Items');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.affair.absenceForm',2,true,'main.affair','请假','PERM_STUDENT_ABSENCE_WRITE','/users/${userId}/absences','请假','Request For Leave');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.affair.bookingForm',3,true,'main.affair','借用教室','PERM_BOOKING_WRITE','/users/${userId}/bookings','借教室','Classroom Booking');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.affair.cardReissueForm',40,true,'main.affair','补办学生证','PERM_CARD_REISSUE_WRITE','/users/${userId}/cardReissues','补办学生证','ID Card Reissue');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.affair.cardReissueAdmin',41,true,'main.affair','补办学生证申请','PERM_CARD_REISSUE_CHECK','/cardReissues','补办学生证申请','Card Reissue Forms');
-Insert into tm.MENU_ITEM (ID,DISPLAY_ORDER,ENABLED,MENU_ID,NAME,PERMISSION_ID,URL,LABEL_CN,LABEL_EN) values
-('main.affair.cardReissueOrder',42,true,'main.affair','补办学生证订单','PERM_CARD_REISSUE_CHECK','/cardReissueOrders','补办学生证订单','Card Reissue Orders');
-
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.program',         'main.program.visions.list',     11,true,'培养方案-列表', '培养方案目录',  'Vision List',        'PERM_VISION_READ',          '/web/plan/visions');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.program',         'main.program.visions.edit',     12,true,'培养方案-编辑', '编辑培养方案',  'Edit Vision',        'PERM_VISION_WRITE',         '/web/plan/users/${userId}/visions');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.program',         'main.program.schemes.list',     21,true,'教学计划-列表', '教学计划目录',  'Scheme List',        'PERM_SCHEME_READ',          '/web/plan/schemes');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.program',         'main.program.schemes.edit',     22,true,'教学计划-编辑', '编辑教学计划',  'Edit Scheme',        'PERM_SCHEME_WRITE',         '/web/plan/users/${userId}/schemes');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.program.settings','main.program.settings.subject', 1, true,'设置-校内专业', '专业负责人',    'Settings - Subject', 'PERM_SUBJECT_SETUP',        '/web/plan/settings/subject');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.program.settings','main.program.settings.program', 2, true,'设置-教学计划', '教学计划',      'Settings - Program', 'PERM_PROGRAM_SETUP',        '/web/plan/settings/program');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.teaching',        'main.teaching.schedule',        1, true,'课表',          '课表',          'Schedule',           'PERM_SCHEDULE_READ',        '/web/roll/schedule');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.teaching',        'main.teaching.rollcall',        2, true,'点名',          '点名',          'Rollcall',           'PERM_ROLLCALL_WRITE',       '/web/roll/rollcall');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.teaching',        'main.teaching.rollcallStatis',  3, true,'考勤统计',      '考勤情况',      'Rollcall Statis',    'PERM_ROLLCALL_QUERY',       '/web/roll/rollcallStatis');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.teaching',        'main.teaching.courseRegister',  4, true,'学生选课',      '选课',          'Register Course',    'PERM_COURSE_REGISTER',      '/web/course/register');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.teaching',        'main.teaching.courseEvaluation',5, true,'学生评教',      '评教',          'Evaluate Course',    'PERM_COURSE_EVALUATE',      '/web/course/evaluation');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.system',          'main.system.user',              1, true,'用户',          '用户',          'Users',              'PERM_SYSTEM_SETUP',         '/web/system/users');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.system',          'main.system.role',              2, true,'角色',          '角色',          'Roles',              'PERM_SYSTEM_SETUP',         '/web/system/roles');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.system',          'main.system.perm',              3, true,'权限',          '权限',          'Permissions',        'PERM_SYSTEM_SETUP',         '/web/system/permissions');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.affair',          'main.affair.workItems',         1, true,'待办事项',      '待办事项',      'Work Items',         'PERM_WORK_ITEMS',           '/web/core/users/${userId}/works');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.affair',          'main.affair.absenceForm',       2, true,'请假',          '请假',          'Request For Leave',  'PERM_STUDENT_ABSENCE_WRITE','/web/roll/users/${userId}/absences');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.affair',          'main.affair.bookingForm',       3, true,'借用教室',      '借教室',        'Classroom Booking',  'PERM_BOOKING_WRITE',        '/web/place/users/${userId}/bookings');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.affair',          'main.affair.cardReissueForm',   40,true,'补办学生证',    '补办学生证',    'ID Card Reissue',    'PERM_CARD_REISSUE_WRITE',   '/web/card/users/${userId}/cardReissues');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.affair',          'main.affair.cardReissueAdmin',  41,true,'补办学生证申请','补办学生证申请','Card Reissue Forms', 'PERM_CARD_REISSUE_CHECK',   '/web/card/cardReissues');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('main.affair',          'main.affair.cardReissueOrder',  42,true,'补办学生证订单','补办学生证订单','Card Reissue Orders','PERM_CARD_REISSUE_CHECK',   '/web/card/cardReissueOrders');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('user.profile',         'user.profile.modify',           1, true,'修改个人信息',  '修改个人信息',  'Modify Profile',     'PERM_PROFILE_SETUP',        '/web/user/profile');
+Insert into tm.MENU_ITEM (MENU_ID,ID,DISPLAY_ORDER,ENABLED,NAME,LABEL_CN,LABEL_EN,PERMISSION_ID,URL) values ('user.profile',         'user.profile.password',         2, true,'修改密码',      '修改密码',      'Modify Password',    'PERM_PROFILE_SETUP',        '/web/user/password');
 
 Insert into tm.WORKFLOW (ID,NAME) values ('scheme.create','教学计划编制');
 Insert into tm.WORKFLOW (ID,NAME) values ('scheme.revise','教学计划变更');
 Insert into tm.WORKFLOW (ID,NAME) values ('vision.create','培养方案编制');
 Insert into tm.WORKFLOW (ID,NAME) values ('vision.revise','培养方案变更');
 Insert into tm.WORKFLOW (ID,NAME) values ('card.reissue', '补办学生证申请');
+Insert into tm.WORKFLOW (ID,NAME) values ('place.booking', '借用教室申请');
 
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('scheme.create.approve','审批','/schemes/${id}/reviews/${workitem}','scheme.create');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('scheme.create.check',  '审核','/schemes/${id}/reviews/${workitem}','scheme.create');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('scheme.create.reject', '退回','/users/${userId}/schemes#/${id}',   'scheme.create');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('scheme.create.review', '加签','/schemes/${id}/reviews/${workitem}','scheme.create');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('scheme.create.view',   '查看','/users/${userId}/schemes#/${id}',   'scheme.create');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('scheme.revise.approve','审批','/schemes/${id}/reviews/${workitem}','scheme.revise');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('scheme.revise.check',  '审核','/schemes/${id}/reviews/${workitem}','scheme.revise');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('scheme.revise.reject', '退回','/users/${userId}/schemes#/${id}',   'scheme.revise');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('scheme.revise.review', '加签','/schemes/${id}/reviews/${workitem}','scheme.revise');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('scheme.revise.view',   '查看','/users/${userId}/schemes#/${id}',   'scheme.revise');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('vision.create.approve','审批','/visions/${id}/reviews/${workitem}','vision.create');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('vision.create.check',  '审核','/visions/${id}/reviews/${workitem}','vision.create');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('vision.create.reject', '退回','/users/${userId}/visions#/${id}',   'vision.create');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('vision.create.review', '加签','/visions/${id}/reviews/${workitem}','vision.create');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('vision.create.view',   '查看','/users/${userId}/visions#/${id}',   'vision.create');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('vision.revise.approve','审批','/visions/${id}/reviews/${workitem}','vision.revise');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('vision.revise.check',  '审核','/visions/${id}/reviews/${workitem}','vision.revise');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('vision.revise.reject', '退回','/users/${userId}/visions#/${id}',   'vision.revise');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('vision.revise.review', '加签','/visions/${id}/reviews/${workitem}','vision.revise');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('vision.revise.view',   '查看','/users/${userId}/visions#/${id}',   'vision.revise');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('card.reissue.check',   '审核','/cardReissues/${id}/reviews/${workitem}','card.reissue');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('card.reissue.reject',  '退回','/users/${userId}/cardReissues#/${id}',   'card.reissue');
-Insert into tm.WORKFLOW_ACTIVITY (ID,NAME,URL,WORKFLOW_ID) values ('card.reissue.view',    '查看','/users/${userId}/cardReissues#/${id}',   'card.reissue');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('scheme.create','scheme.create.approve','审批','/web/plan/schemes/${id}/reviews/${workitem}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('scheme.create','scheme.create.check',  '审核','/web/plan/schemes/${id}/reviews/${workitem}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('scheme.create','scheme.create.reject', '退回','/web/plan/users/${userId}/schemes#/${id}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('scheme.create','scheme.create.review', '加签','/web/plan/schemes/${id}/reviews/${workitem}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('scheme.create','scheme.create.view',   '查看','/web/plan/users/${userId}/schemes#/${id}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('scheme.revise','scheme.revise.approve','审批','/web/plan/schemes/${id}/reviews/${workitem}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('scheme.revise','scheme.revise.check',  '审核','/web/plan/schemes/${id}/reviews/${workitem}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('scheme.revise','scheme.revise.reject', '退回','/web/plan/users/${userId}/schemes#/${id}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('scheme.revise','scheme.revise.review', '加签','/web/plan/schemes/${id}/reviews/${workitem}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('scheme.revise','scheme.revise.view',   '查看','/web/plan/users/${userId}/schemes#/${id}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('vision.create','vision.create.approve','审批','/web/plan/visions/${id}/reviews/${workitem}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('vision.create','vision.create.check',  '审核','/web/plan/visions/${id}/reviews/${workitem}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('vision.create','vision.create.reject', '退回','/web/plan/users/${userId}/visions#/${id}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('vision.create','vision.create.review', '加签','/web/plan/visions/${id}/reviews/${workitem}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('vision.create','vision.create.view',   '查看','/web/plan/users/${userId}/visions#/${id}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('vision.revise','vision.revise.approve','审批','/web/plan/visions/${id}/reviews/${workitem}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('vision.revise','vision.revise.check',  '审核','/web/plan/visions/${id}/reviews/${workitem}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('vision.revise','vision.revise.reject', '退回','/web/plan/users/${userId}/visions#/${id}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('vision.revise','vision.revise.review', '加签','/web/plan/visions/${id}/reviews/${workitem}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('vision.revise','vision.revise.view',   '查看','/web/plan/users/${userId}/visions#/${id}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('card.reissue', 'card.reissue.check',   '审核','/web/card/cardReissues/${id}/reviews/${workitem}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('card.reissue', 'card.reissue.reject',  '退回','/web/card/users/${userId}/cardReissues#/${id}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('card.reissue', 'card.reissue.view',    '查看','/web/card/users/${userId}/cardReissues#/${id}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('place.booking','place.booking.approve','审批','/web/place/bookingForms/${id}/reviews/${workitem}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('place.booking','place.booking.check',  '审核','/web/place/bookingForms/${id}/reviews/${workitem}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('place.booking','place.booking.reject', '退回','/web/place/users/${userId}/bookingForms#/${id}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('place.booking','place.booking.review', '加签','/web/place/bookingForms/${id}/reviews/${workitem}');
+Insert into tm.WORKFLOW_ACTIVITY (WORKFLOW_ID,ID,NAME,URL) values ('place.booking','place.booking.view',   '查看','/web/place/users/${userId}/bookingForms#/${id}');
+
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/schemes/${id}/reviews/${workitem}' where id='scheme.create.approve';
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/schemes/${id}/reviews/${workitem}' where id='scheme.create.check'  ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/users/${userId}/schemes#/${id}' where id='scheme.create.reject' ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/schemes/${id}/reviews/${workitem}' where id='scheme.create.review' ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/users/${userId}/schemes#/${id}' where id='scheme.create.view'   ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/schemes/${id}/reviews/${workitem}' where id='scheme.revise.approve';
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/schemes/${id}/reviews/${workitem}' where id='scheme.revise.check'  ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/users/${userId}/schemes#/${id}' where id='scheme.revise.reject' ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/schemes/${id}/reviews/${workitem}' where id='scheme.revise.review' ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/users/${userId}/schemes#/${id}' where id='scheme.revise.view'   ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/visions/${id}/reviews/${workitem}' where id='vision.create.approve';
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/visions/${id}/reviews/${workitem}' where id='vision.create.check'  ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/users/${userId}/visions#/${id}' where id='vision.create.reject' ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/visions/${id}/reviews/${workitem}' where id='vision.create.review' ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/users/${userId}/visions#/${id}' where id='vision.create.view'   ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/visions/${id}/reviews/${workitem}' where id='vision.revise.approve';
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/visions/${id}/reviews/${workitem}' where id='vision.revise.check'  ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/users/${userId}/visions#/${id}' where id='vision.revise.reject' ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/visions/${id}/reviews/${workitem}' where id='vision.revise.review' ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/plan/users/${userId}/visions#/${id}' where id='vision.revise.view'   ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/card/reissueForms/${id}' where id='card.reissue.check'   ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/card/users/${userId}/reissueForms#/${id}' where id='card.reissue.reject'  ;
+update tm.WORKFLOW_ACTIVITY set URL='/web/card/users/${userId}/reissueForms#/${id}' where id='card.reissue.view'    ;
+
+insert into tm.BOOKING_SECTION(id, display_order, name, start, total, includes) values (1,   1, '1-2节',           1,  2,  '{1}'::int[]);
+insert into tm.BOOKING_SECTION(id, display_order, name, start, total, includes) values (3,   2, '3-4节',           3,  2,  '{3}'::int[]);
+insert into tm.BOOKING_SECTION(id, display_order, name, start, total, includes) values (5,   3, '5-6节',           5,  2,  '{5}'::int[]);
+insert into tm.BOOKING_SECTION(id, display_order, name, start, total, includes) values (7,   4, '7-8节',           7,  2,  '{7}'::int[]);
+insert into tm.BOOKING_SECTION(id, display_order, name, start, total, includes) values (9,   5, '第9节',           9,  1,  '{9}'::int[]);
+insert into tm.BOOKING_SECTION(id, display_order, name, start, total, includes) values (10,  6, '10-11节',         10, 2,  '{10}'::int[]);
+insert into tm.BOOKING_SECTION(id, display_order, name, start, total, includes) values (12,  7, '12-13节',         12, 2,  '{12}'::int[]);
+insert into tm.BOOKING_SECTION(id, display_order, name, start, total, includes) values (-1,  8, '白天（1-9节）',   1,  9,  '{1,3,5,7,9}'::int[]);
+insert into tm.BOOKING_SECTION(id, display_order, name, start, total, includes) values (-2,  9, '上午（1-4节）',   1,  4,  '{1,3}'::int[]);
+insert into tm.BOOKING_SECTION(id, display_order, name, start, total, includes) values (0,  10, '中午',            0,  1,  '{0}'::int[]);
+insert into tm.BOOKING_SECTION(id, display_order, name, start, total, includes) values (-3, 11, '下午（5-9节）',   5,  5,  '{5,7,9}'::int[]);
+insert into tm.BOOKING_SECTION(id, display_order, name, start, total, includes) values (-4, 12, '晚上（10-13节）', 10, 4,  '{10,12}'::int[]);
+insert into tm.BOOKING_SECTION(id, display_order, name, start, total, includes) values (-5, 13, '全天',            1,  13, '{0,1,3,5,7,9,10,12}'::int[]);

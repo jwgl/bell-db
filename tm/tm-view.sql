@@ -84,3 +84,7 @@ join ea.department d on c.department_id = d.id;
 create or replace view tm.dv_card_reissue_form_rank as
 select id as form_id, rank() over (partition by student_id order by date_created) as rank
 from tm.card_reissue_form;
+
+-- 场地使用情况视图
+create or replace view tm.dv_place_usage as
+select * from ev_place_usage;

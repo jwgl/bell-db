@@ -137,17 +137,6 @@ from zfxfzb.jxcdxxb
 where jykyxq is not null;
 
 /**
- * 教学场地-允许借用用户类型
- */
-create or replace view ea.sv_place_booking_user_type as
-select jsbh as place_id, 1 as user_type from zfxfzb.jxcdxxb
-where substr(jyjsdx, 2, 1) = '1' -- 教师
-union all
-select jsbh as place_id, 2 as user_type from zfxfzb.jxcdxxb
-where substr(jyjsdx, 1, 1) = '1' -- 学生
-order by place_id, user_type;
-
-/**
  * 校内专业
  */
 create or replace view ea.sv_subject as

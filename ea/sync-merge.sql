@@ -48,11 +48,6 @@ insert into ea.place_booking_term(place_id, term_id)
 select place_id, term_id from  ea.sv_place_booking_term
 on conflict(place_id, term_id) do nothing;
 
- -- 教学场地-允许借用用户类型
-insert into ea.place_booking_user_type(place_id, user_type)
-select place_id, user_type from ea.sv_place_booking_user_type
-on conflict(place_id, user_type) do nothing;
-
 -- 学科门类
 insert into ea.discipline(id, name, code)
 select id, name, code from ea.sv_discipline

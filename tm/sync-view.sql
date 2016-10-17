@@ -69,3 +69,35 @@ select nj || sszydm || substr(bjdm, -2, 2) as admin_class_id,
 from zfxfzb.bjdmb
 where bzrxm2 is not null and bzrxm2 in (select zgh from zfxfzb.jsxxb)
 order by admin_class_id, type;
+
+/**
+ * 教学场地-允许借用用户类型
+ */
+create or replace view tm.sv_place_user_type as
+select jsbh as place_id, 1 as user_type from zfxfzb.jxcdxxb
+where substr(jyjsdx, 2, 1) = '1' -- 教师
+union all
+select jsbh as place_id, 2 as user_type from zfxfzb.jxcdxxb
+where substr(jyjsdx, 1, 1) = '1' -- 学生
+order by place_id, user_type;
+
+/**
+ * 教学场地使用视图
+ */
+create or replace view tm.dv_place_usage as
+    select distinct to_number(substr(xn, 1, 4) || xq) as term_id,
+       jsbh as place_id,
+       nvl(qsz, 1) as start_week,
+       case when k.xkkh is not null then (nvl(jsz, 30)-1) else nvl(jsz, 30) end as end_week,
+       case dsz when '单' then 1 when '双' then 2 else 0 end as odd_even,
+       to_number(xqj) as day_of_week,
+       sjd as start_section,
+       skcd as total_section,
+       lb as type,
+       sydw as department,
+       bz as description
+from zfxfzb.jxcdview_old_tms t
+left join (select * from zfxfzb.ttksqb
+     where bdlb='考试' and shbj='1') k on t.xkkh=k.xkkh
+     and t.xqj=k.yxqj and to_char(t.sjd)=k.ysjd and to_char(t.jsz)=k.yjsz
+where jsbh is not null;
