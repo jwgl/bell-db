@@ -331,48 +331,22 @@ CREATE FOREIGN TABLE ea.sv_student (
     admission_id bigint
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_STUDENT', readonly 'true');
 
----教学班ID映射实体表
-DROP FOREIGN TABLE IF EXISTS ea.et_course_class_map;
-CREATE FOREIGN TABLE ea.et_course_class_map (
-    course_class_code varchar(31) OPTIONS(key 'true')
-) SERVER zf OPTIONS (schema 'EA', table 'COURSE_CLASS_MAP');
-
----教学班ID映射视图（未同步）
-DROP FOREIGN TABLE IF EXISTS ea.sv_course_class_map_unsync;
-CREATE FOREIGN TABLE ea.sv_course_class_map_unsync (
-    course_class_code varchar(31)
-) SERVER zf OPTIONS (schema 'EA', table 'SV_COURSE_CLASS_MAP_UNSYNC', readonly 'true');
-
----教学班ID映射视图（已同步）
-DROP FOREIGN TABLE IF EXISTS ea.sv_course_class_map_synced;
-CREATE FOREIGN TABLE ea.sv_course_class_map_synced (
+---教学班ID映射，使用insert触发
+DROP FOREIGN TABLE IF EXISTS ea.sv_course_class_map;
+CREATE FOREIGN TABLE ea.sv_course_class_map (
     course_class_id uuid,
     course_class_code varchar(31),
     date_created timestamp
-) SERVER zf OPTIONS (schema 'EA', table 'SV_COURSE_CLASS_MAP_SYNCED', readonly 'true');
+) SERVER zf OPTIONS (schema 'EA', table 'SV_COURSE_CLASS_MAP');
 
----教学任务ID映射实体表
-DROP FOREIGN TABLE IF EXISTS ea.et_task_map;
-CREATE FOREIGN TABLE ea.et_task_map (
-    task_code varchar(31) OPTIONS(key 'true'),
-    course_item_id varchar(10) OPTIONS(key 'true')
-) SERVER zf OPTIONS (schema 'EA', table 'TASK_MAP');
-
----教学任务ID映射视图（未同步）
-DROP FOREIGN TABLE IF EXISTS ea.sv_task_map_unsync;
-CREATE FOREIGN TABLE ea.sv_task_map_unsync (
-    task_code varchar(31),
-    course_item_id varchar(10)
-) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK_MAP_UNSYNC', readonly 'true');
-
----教学任务ID映射视图（已同步）
-DROP FOREIGN TABLE IF EXISTS ea.sv_task_map_synced;
-CREATE FOREIGN TABLE ea.sv_task_map_synced (
+---教学任务ID映射实体表，使用insert触发
+DROP FOREIGN TABLE IF EXISTS ea.sv_task_map;
+CREATE FOREIGN TABLE ea.sv_task_map (
     task_id uuid,
     task_code varchar(31),
     course_item_id varchar(10),
     date_created timestamp
-) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK_MAP_SYNCED', readonly 'true');
+) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK_MAP');
 
 --- 教学班
 DROP FOREIGN TABLE IF EXISTS ea.sv_course_class;

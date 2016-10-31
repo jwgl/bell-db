@@ -42,7 +42,11 @@ where exists(
     join ea.task_schedule on task_schedule.task_id = task.id
     where course_class.term_id = (select id from ea.term where active = true)
     and task_schedule.teacher_id = t.id
-);
+)
+union all
+select t.id as user_id, 'ROLE_PLACE_BOOKING_CHECKER' as role_id
+from ea.teacher t
+join booking_checker bc on bc.checker_id = t.id;
 
 create or replace view tm.dv_student_role as
 select s.id as user_id, 'ROLE_IN_SCHOOL_STUDENT' as role_id

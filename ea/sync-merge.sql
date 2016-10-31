@@ -314,12 +314,8 @@ major_id              = EXCLUDED.major_id,
 direction_id          = EXCLUDED.direction_id,
 admission_id          = EXCLUDED.admission_id;
 
--- 教学班ID转换
--- 如果出现ORA-08177: can't serialize access for this transaction，
--- 则再执行一次，见https://github.com/laurenz/oracle_fdw中的Modifying foreign data
-insert into ea.et_course_class_map(course_class_code)
-select course_class_code
-from ea.sv_course_class_map_unsync;
+-- 生成course_class_id与course_class_code对应关系，通过视图触发器实现
+insert into ea.sv_course_class_map values(null, null, null);
 
 -- 教学班
 insert into ea.course_class(id, code, period_theory, period_experiment, period_weeks,
@@ -349,10 +345,8 @@ insert into ea.course_class_program(course_class_id, program_id)
 select course_class_id, program_id from ea.sv_course_class_program
 on conflict(course_class_id, program_id) do nothing;
 
--- 任务ID转换
-insert into ea.et_task_map(task_code, course_item_id)
-select task_code, course_item_id
-from ea.sv_task_map_unsync;
+-- 生成task_id与task_code对应关系，通过视图触发器实现
+insert into ea.sv_task_map values(null, null, null, null);
 
 -- 教学任务
 insert into ea.task(id, code, is_primary, start_week, end_week, course_item_id, course_class_id)
@@ -409,11 +403,10 @@ total_section  = EXCLUDED.total_section;
 insert into ea.task_student(task_id, student_id, date_created, register_type)
 select task_id, student_id, date_created, register_type
 from ea.sv_task_student
-where task_code like '(2015-2016-1)%'
+where task_code like '(2015-2016-2)%'
 on conflict(task_id, student_id) do update set
 date_created     = EXCLUDED.date_created,
 register_type    = EXCLUDED.register_type;
-
 
 -- 删除数据
 delete from ea.course_class_program
