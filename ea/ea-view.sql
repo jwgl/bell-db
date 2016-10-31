@@ -24,6 +24,7 @@ order by display_order;
 -- 教学任务
 create or replace view ea.av_task as
 select task.id, cc.term_id, c.id as course_id, c.name as course_name,
+    ci.name as course_item,
     array_agg(t.name) as teacher_name,
     count(t.id) as teacher_count,
     task.code
@@ -32,7 +33,8 @@ join course_class cc on cc.id = task.course_class_id
 join course c on c.id = cc.course_id
 join task_teacher tt on tt.task_id = task.id
 join teacher t on t.id = tt.teacher_id
-group by term_id, task.id, c.id, c.name, task.code;
+left join course_item ci on task.course_item_id = ci.id
+group by term_id, task.id, c.id, c.name, ci.name, task.code;
 
 -- 教学安排
 create or replace view ea.av_task_schedule as

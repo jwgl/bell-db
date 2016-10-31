@@ -434,9 +434,6 @@ with sykc as ( -- 实验课
     select distinct substr(xkkh, 15, 8) as kcdm
     from zfxfzb.dgjsskxxb
     where substr(xkkh, -1, 1) between 'A' and 'Z'
-), tykc as ( -- 体育课
-    select kcdm, rank() over (partition by sskcdm order by kcdm) r
-    from zfxfzb.tykkcdmb
 )
 -- 理论
 select kcdm || '01' as id,
@@ -465,14 +462,14 @@ select bkkcdm || to_char(xh, 'fm09') as id,
     bkkcdm as task_course_id
 from zfxfzb.bkkcfldmb
 union all
--- 体育
-select sskcdm || to_char(r, 'fm09') as id,
+-- 体育（体育课有效位+项目后4位）
+select substr(sskcdm, 0, 4) || substr(sskcdm, 7, 2) || substr(kcdm, 5, 4)  as id,
     kczwmc as name,
-    r as ordinal,
+    to_number(substr(kcdm, 5, 4)) as ordinal,
     0 as is_primary,
     sskcdm as course_id,
-    a.kcdm as task_course_id
-from zfxfzb.tykkcdmb a join tykc b on a.kcdm = b.kcdm
+    kcdm as task_course_id
+from zfxfzb.tykkcdmb
 order by id;
 
 /**
@@ -721,13 +718,21 @@ left join ea.sv_direction on zyfx = sv_direction.name and (dqszj || zydm || '0')
 order by id;
 
 /**
- * 教学班ID映射（未同步）
- * 建立新教学班编号与原教学任务号之间的关系。
- * 本视图只查询出ea.course_class_map中未编号的教学班，在数据库同步时，
- * 插入到ea.course_class_map表中。
+ * 教学班ID映射
  */
-create or replace view ea.sv_course_class_map_unsync as
-with unsynced as (
+create or replace view ea.sv_course_class_map as
+select course_class_id, course_class_code, date_created
+from ea.course_class_map;
+
+/**
+ * 用于同步时触发生成course_class_map数据，使用insert语句触发
+ */
+create or replace trigger ea.sv_course_class_map_trigger
+  instead of insert
+  on ea.sv_course_class_map
+begin
+  insert into ea.course_class_map(course_class_code)
+  with unsynced as (
     select distinct xkkh, case
         when xkkh like '%zk000%' then
             xkkh
@@ -738,17 +743,18 @@ with unsynced as (
         end as xkkh_normal
     from ea.sva_task_base a
     where xkkh not in (select course_class_code from ea.course_class_map) -- 未同步过的选课课号
-)
-select xkkh as course_class_code
-from unsynced
-order by course_class_code;
+  )
+  select xkkh as course_class_code
+  from unsynced
+  order by course_class_code;
 
-/**
- * 教学班ID映射（已同步）
- */
-create or replace view ea.sv_course_class_map_synced as
-select course_class_id, course_class_code, date_created
-from ea.course_class_map;
+  delete from ea.course_class_map
+  where course_class_code not in (
+    select xkkh
+    from ea.sva_task_base
+  );
+end;
+/
 
 /**
  * 教学班（注意：先创建ea.term，更新学期数据至最新）
@@ -831,59 +837,71 @@ select distinct -- 带实验课程的主任务
     a.xkkh, a.xkkh as zkh, a.qsz, a.jsz, c.is_primary, c.id, 'wl_t' as tab
 from ea.sva_task_base a
 join task_with_lab b on a.xkkh = b.xkkh
-join ea.sv_course_item c on a.kcdm = c.course_id and ordinal = 1
+join ea.sv_course_item c on a.kcdm = c.task_course_id and ordinal = 1
 union all
 select distinct -- 带实验课程的实验任务
     d.xkkh, a.xkkh as zkh, a.qsz, a.jsz, c.is_primary, c.id, 'wl_e' as tab
 from ea.sva_task_base a
 join task_with_lab b on a.xkkh = b.xkkh
-join ea.sv_course_item c on c.course_id = a.kcdm and ordinal = 2
+join ea.sv_course_item c on a.kcdm = c.task_course_id and ordinal = 2
 join zfxfzb.dgjsskxxb d on a.xkkh = substr(d.xkkh, 1, length(d.xkkh) - 1)
 union all
 select distinct -- 外语
     a.xkkh, a.xkkh as zkh, a.qsz, a.jsz, c.is_primary, c.id, 'en' as tab
 from ea.sva_task_base a
 join task_en b on a.xkkh = b.xkkh
-join ea.sv_course_item c on a.kcdm = c.course_id
+join ea.sv_course_item c on a.kcdm = c.task_course_id
 join zfxfzb.bkdjjsfpb d on a.xkkh = d.xkkh and d.bz = c.name
 union all
 select distinct -- 体育
-    a.xkkh, a.xkkh as zkh, a.qsz, a.jsz, 1, d.id, 'pe' as tab
+    a.xkkh, a.xkkh as zkh, a.qsz, a.jsz, 1, c.id, 'pe' as tab
 from zfxfzb.tykjxrwb a
 join task_pe b on b.xkkh = a.xkkh
-join ea.sv_course_item d on a.kcdm = d.task_course_id;
+join ea.sv_course_item c on a.kcdm = c.task_course_id;
 
 /**
- * 任务ID映射（未同步）
+ * 教学任务ID映射
  */
-create or replace view ea.sv_task_map_unsync as
-with normal as (
-    select xkkh, nvl(course_item_id, '0000000000') as course_item_id -- 注意反向操作
-    from ea.sva_task
-), unsynced as (
-    select distinct xkkh, course_item_id, case
-        when xkkh like '%zk000%' then
-            xkkh
-        else
-            substr(xkkh, 1, 29) ||
-            to_char(to_number(regexp_substr(xkkh, '\d+', 30)), 'fm09') ||
-            regexp_substr(xkkh, '[^0-9]$', 30) -- 把最后的数字变成01，便于排序
-        end as xkkh_normal
-    from normal
-    where (xkkh, course_item_id) not in (
-        select task_code, course_item_id from ea.task_map
-    ) -- 未同步过的选课课号
-)
-select xkkh as task_code, course_item_id as course_item_id
-from unsynced
-order by task_code, course_item_id;
-
-/**
- * 任务ID映射（已同步）
- */
-create or replace view ea.sv_task_map_synced as
+create or replace view ea.sv_task_map as
 select task_id, task_code, course_item_id, date_created
 from ea.task_map;
+
+/**
+ * 用于同步时触发生成task_map数据，使用insert语句触发
+ */
+create or replace trigger ea.sv_task_map_trigger
+  instead of insert
+  on ea.sv_task_map
+begin
+  insert into ea.task_map(task_code, course_item_id)
+  with normal as (
+    select xkkh, nvl(course_item_id, '0000000000') as course_item_id -- 注意反向操作
+    from ea.sva_task
+  ), unsynced as (
+      select distinct xkkh, course_item_id, case
+          when xkkh like '%zk000%' then
+              xkkh
+          else
+              substr(xkkh, 1, 29) ||
+              to_char(to_number(regexp_substr(xkkh, '\d+', 30)), 'fm09') ||
+              regexp_substr(xkkh, '[^0-9]$', 30) -- 把最后的数字变成01，便于排序
+          end as xkkh_normal
+      from normal
+      where (xkkh, course_item_id) not in (
+          select task_code, course_item_id from ea.task_map
+      ) -- 未同步过的选课课号
+  )
+  select xkkh as task_code, course_item_id
+  from unsynced
+  order by task_code, course_item_id;
+
+  delete from ea.task_map
+  where task_code not in (
+    select xkkh
+    from ea.sva_task
+  );
+end;
+/
 
 /**
  * 教学任务
@@ -969,7 +987,7 @@ select distinct -- 外语
 from ea.sva_task_base a
 join task_en b on a.xkkh = b.xkkh
 join ea.sv_course_item c on c.course_id = a.kcdm
-join zfxfzb.dgjsskxxb d on d.xkkh = a.xkkh and nvl(d.xh_bksj, xh) = c.ordinal
+join zfxfzb.dgjsskxxb d on d.xkkh = a.xkkh and nvl(d.xh, xh) = c.ordinal
 union all
 select distinct -- 体育
     a.xkkh, a.jszgh, c.id, 'pe'
@@ -1065,32 +1083,29 @@ join arr_normal d on d.xkkh = a.xkkh and d.jszgh = c.jszgh)
 union all
 (select distinct -- 带实验课程的主任务
     a.xkkh, a.jszgh, c.jsbh, c.qsz, c.jsz, c.dsz, c.xqj, c.qssjd, c.skcd, c.guid,
-    d.id as course_item_id,
+    a.kcdm || '01' as course_item_id,
     'wl_t' as tabset
 from zfxfzb.jxrwb a
 join task_with_lab b on a.xkkh = b.xkkh
 join arr_normal c on c.xkkh = a.xkkh and c.jszgh = a.jszgh
-join ea.sv_course_item d on d.course_id = a.kcdm and ordinal = 1
 union
 select distinct -- 带实验课程的主任务（多教师）
     a.xkkh, c.jszgh, d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, d.guid,
-    e.id as course_item_id,
+    a.kcdm || '01' as course_item_id,
     'wl_t' as tab
 from zfxfzb.jxrwb a
 join task_with_lab b on a.xkkh = b.xkkh
 join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh
-join arr_normal d on d.xkkh = a.xkkh and d.jszgh = c.jszgh
-join ea.sv_course_item e on e.course_id = a.kcdm and ordinal = 1)
+join arr_normal d on d.xkkh = a.xkkh and d.jszgh = c.jszgh)
 union all
 select distinct -- 带实验课程的实验任务
     c.xkkh, c.jszgh, d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, d.guid,
-    e.id as course_item_id,
+    a.kcdm || '02' as course_item_id,
     'wl_e' as tab
 from zfxfzb.jxrwb a
-join task_with_lab b on b.xkkh = a.xkkh
+join task_with_lab b on a.xkkh = b.xkkh
 join zfxfzb.dgjsskxxb c on substr(c.xkkh, 1, length(c.xkkh) - 1) = a.xkkh
 join arr_normal d on d.xkkh = c.xkkh and d.jszgh = c.jszgh
-join ea.sv_course_item e on e.course_id = a.kcdm and ordinal = 2
 union all
 select distinct -- 外语
     b.xkkh, b.jszgh, f.jsbh/*b.jsbh*/, b.qsz, b.jsz, decode(a.dsz, '单', 1, '双', 2, 0) as dsz, a.xqj, a.qssjd, a.skcd, b.guid,
@@ -1149,8 +1164,7 @@ where nvl(a.xkzt, 0) <> 4;
  * 教学安排（未合并）
  */
 create or replace view ea.sv_task_schedule as
-select distinct
-    HEXTORAW(guid) as id,
+select HEXTORAW(guid) as id,
     b.task_id,
     b.task_code,
     jszgh as teacher_id,
