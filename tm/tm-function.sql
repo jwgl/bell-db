@@ -44,7 +44,7 @@ begin
     join booking_item bi on bf.id = bi.form_id
     join booking_section bs on bs.id = bi.section_id
     where bf.term_id = p_term_id
-    and bf.status in (1, 2)
+    and bf.status in ('SUBMITTED', 'CHECKED')
     and bi.day_of_week = p_day_of_week
     and bs.includes && p_includes
     and exists (
