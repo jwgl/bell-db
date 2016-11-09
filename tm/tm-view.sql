@@ -27,11 +27,11 @@ where t.at_school = true
 union all
 select t.id as user_id, 'ROLE_SUBJECT_DIRECTOR' as role_id
 from ea.teacher t
-where exists(
-    select *
-    from tm.subject_director
-    where subject_director.teacher_id = t.id
-)
+where exists(select * from tm.subject_settings where director_id = t.id)
+union all
+select t.id as user_id, 'ROLE_SUBJECT_SECRETARY' as role_id
+from ea.teacher t
+where exists(select * from tm.subject_settings where secretary_id = t.id)
 union all
 select t.id as user_id, 'ROLE_COURSE_TEACHER' as role_id
 from ea.teacher t
