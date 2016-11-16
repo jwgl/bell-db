@@ -1,4 +1,8 @@
 /**
+ * database zf/tm
+ */
+
+/**
  * 用户表
  */
 create or replace view tm.sv_system_user as
@@ -101,3 +105,123 @@ left join (select * from zfxfzb.ttksqb
      where bdlb='考试' and shbj='1') k on t.xkkh=k.xkkh
      and t.xqj=k.yxqj and to_char(t.sjd)=k.ysjd and to_char(t.jsz)=k.yjsz
 where jsbh is not null;
+
+/**
+ * 教学计划-课程视图，用于插入数据
+ */
+create or replace view tm.iv_program_course as
+select
+    program_id,
+    course_id,
+    period_theory,
+    period_experiment,
+    period_weeks,
+    is_compulsory,
+    is_practical,
+    property_id,
+    assess_type,
+    test_type,
+    start_week,
+    end_week,
+    suggested_term,
+    allowed_term,
+    schedule_type,
+    department_id,
+    direction_id
+from tm.program_course;
+
+/**
+ * 教学计划-课程触发器，插入数据
+ * TODO：处理国企辅修教学计划
+ */
+create or replace trigger tm.iv_program_course_trigger
+  instead of insert
+  on tm.iv_program_course
+declare
+  zydm varchar2(4);
+  zymc varchar2(40);
+  nj number(4, 0);
+  kcmc varchar2(100);
+  xf varchar2(5);
+  zxs varchar2(9);
+  kcxz varchar2(20);
+  kclb varchar2(20);
+  kkxy varchar2(30);
+  zyfx varchar2(100);
+  zhxs varchar2(9);
+  jkxs varchar2(9);
+  syxs varchar2(9);
+begin
+  select s.id, s.name, m.grade
+  into zydm, zymc, nj
+  from ea.sv_program p
+  join ea.sv_major m on p.major_id = m.id
+  join ea.sv_subject s on m.subject_id = s.id
+  where p.id = :new.program_id;
+
+  select c.name, to_char(c.credit, 'fm90.0')
+  into kcmc, xf
+  from ea.sv_course c
+  where c.id = :new.course_id;
+
+  if :new.period_theory = 0 and :new.period_experiment = 0 then
+    zxs := '+' || :new.period_weeks;
+    zhxs := '0';
+    jkxs := '0';
+    syxs := '0';
+  else
+    zxs := to_char(:new.period_theory, 'fm90.0') || '-' || to_char(:new.period_experiment, 'fm90.0');
+    zhxs := to_char((:new.end_week - :new.start_week + 1) * (:new.period_theory + :new.period_experiment));
+    jkxs := to_char((:new.end_week - :new.start_week + 1) * (:new.period_theory));
+    syxs := to_char((:new.end_week - :new.start_week + 1) * (:new.period_experiment));
+  end if;
+
+  select name, case name
+    when '实践教学' then '实践环节'
+    else case IS_COMPULSORY
+      when 1 then '必修课'
+      else '选修课'
+      end
+    end
+  into kcxz, kclb
+  from ea.sv_property
+  where id = :new.property_id;
+
+  select name
+  into kkxy
+  from ea.sv_department
+  where id = :new.department_id;
+
+  if :new.direction_id is null then
+    zyfx := '无方向';
+  else
+    select name
+    into zyfx
+    from ea.sv_direction
+    where id = :new.direction_id;
+  end if;
+
+  if mod(:new.program_id, 10) = 0 then
+    insert into zfxfzb.jxjhkcxxb(jxjhh,
+        zydm, zymc, nj, kcdm, kcmc, xf, zxs, kcxz, kclb,
+        khfs, ksfs,
+        qsz, jsz, qsjsz,
+        kkxy, zyfx,
+        jyxdxq, kkkxq,
+        zhxs, jkxs, syxs, sjxs,
+        qzxs,
+        bz
+    )
+    values(to_char(floor(:new.program_id / 10)),
+        zydm, zymc, nj, :new.course_id, kcmc, xf, zxs, kcxz, kclb,
+        decode(:new.assess_type, 1, '考试', 2, '考查', 3, '论文', 9, null),
+        decode(:new.test_type, 1, '集中', 2, '分散', null) ,
+        :new.start_week, :new.end_week, to_char(:new.start_week, 'fm09') || '-' || to_char(:new.end_week, 'fm09'),
+        kkxy, zyfx,
+        :new.suggested_term, ea.util.number_to_csv_bit(:new.allowed_term, :new.suggested_term),
+        zhxs, jkxs, syxs, '0',
+        '1.0',
+        'TM'
+    );
+  end if;
+end;

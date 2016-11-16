@@ -1,3 +1,7 @@
+/**
+ * database bell/tm
+ */
+
 -- 用户表
 insert into tm.system_user(id, name, login_name, password, email, long_phone, enabled, user_type, department_id)
 select id, name, login_name, password, email, long_phone, enabled, user_type, department_id from tm.sv_system_user

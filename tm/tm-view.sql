@@ -92,3 +92,7 @@ from tm.card_reissue_form;
 -- 场地使用情况视图
 create or replace view tm.dv_place_usage as
 select * from ev_place_usage;
+
+-- 直接获取的同步视图，计划-课程
+create or replace view tm.dv_program_course as
+select * from ea.sv_program_course;
