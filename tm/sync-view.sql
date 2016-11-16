@@ -218,7 +218,7 @@ begin
         decode(:new.test_type, 1, '集中', 2, '分散', null) ,
         :new.start_week, :new.end_week, to_char(:new.start_week, 'fm09') || '-' || to_char(:new.end_week, 'fm09'),
         kkxy, zyfx,
-        :new.suggested_term, ea.util.number_to_csv_bit(:new.allowed_term, :new.suggested_term),
+        :new.suggested_term, tm.util.number_to_csv_bit(:new.allowed_term, :new.suggested_term),
         zhxs, jkxs, syxs, '0',
         '1.0',
         'TM'
