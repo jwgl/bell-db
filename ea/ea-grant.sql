@@ -43,3 +43,4 @@ grant select on ea.place_booking_term to tm;
 grant select on ea.place_department   to tm;
 grant select on ea.term_swap_date     to tm;
 
+grant select on ea.sv_program_course  to tm;

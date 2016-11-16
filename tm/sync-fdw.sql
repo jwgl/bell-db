@@ -1,3 +1,7 @@
+/**
+ * database bell/tm
+ */
+
 --- 用户
 DROP FOREIGN TABLE IF EXISTS tm.sv_system_user;
 CREATE FOREIGN TABLE tm.sv_system_user (
@@ -34,3 +38,25 @@ CREATE FOREIGN TABLE tm.ev_place_usage (
     department  varchar(70),
     description varchar(240)
 ) SERVER zf OPTIONS (schema 'TM', table 'DV_PLACE_USAGE', readonly 'true');
+
+-- 教学计划-课程，用于插入ZF
+DROP FOREIGN TABLE IF EXISTS tm.et_program_course;
+CREATE FOREIGN TABLE tm.et_program_course (
+    program_id integer,
+    course_id char(8),
+    period_theory integer,
+    period_experiment integer,
+    period_weeks integer,
+    is_compulsory boolean,
+    is_practical boolean,
+    property_id integer,
+    assess_type integer,
+    test_type integer,
+    start_week integer,
+    end_week integer,
+    suggested_term integer,
+    allowed_term integer,
+    schedule_type integer,
+    department_id char(2),
+    direction_id integer
+) SERVER zf OPTIONS (schema 'TM', table 'IV_PROGRAM_COURSE');

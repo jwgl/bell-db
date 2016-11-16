@@ -1,8 +1,8 @@
 /**
- * database zf/ea
+ * database zf/tm
  */
 
-CREATE OR REPLACE PACKAGE "EA"."UTIL" AS 
+CREATE OR REPLACE PACKAGE "TM"."UTIL" AS 
   /**
    * 按位或
    * bitor(1, 2) => 3
@@ -19,7 +19,7 @@ CREATE OR REPLACE PACKAGE "EA"."UTIL" AS
    */
   function bitnot(x in number) return number;
   
-  /**
+  /** 
    * 逗句分隔字符串转换为整数
    * csv_bit_to_number('1,2,3')    => 7(0111)
    * csv_bit_to_number('1,3', 2)   => 7(0111)
@@ -41,7 +41,7 @@ END UTIL;
 
 /
 
-CREATE OR REPLACE PACKAGE BODY "EA"."UTIL" as
+CREATE OR REPLACE PACKAGE BODY "TM"."UTIL" as
   /**
    * 按位或
    */
@@ -121,7 +121,7 @@ CREATE OR REPLACE PACKAGE BODY "EA"."UTIL" as
       newInit := init;
     end if;
 
-    newValue := bitor(floor(value / power(2, 16)), bitand(value, power(2, 16) - 1));
+    newValue := bitor(floor(value / power(2, 16)), bitand(value, power(2, 16) - 1));    
 
     initFlag := power(2, newInit - 1);
 

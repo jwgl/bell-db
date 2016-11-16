@@ -418,8 +418,12 @@ delete from ea.task_student
 where (task_id, student_id) not in (
     select task_id, student_id
     from ea.sv_task_student
-    where task_code like '(2015-2016-1)%'
-) and task_code like '(2015-2016-1)%';
+    where task_code like '(2015-2016-2)%'
+) and task_id in (
+    select task_id
+    from ea.task
+    where code like '(2015-2016-2)%'
+);
 
 delete from ea.task_teacher
 where task_id not in (
@@ -459,4 +463,3 @@ where id not in (
 delete from program where id not in (select id from sv_program);
 
 delete from major where id not in (select id from sv_major);
-
