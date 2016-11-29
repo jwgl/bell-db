@@ -152,11 +152,11 @@ declare
   jkxs varchar2(9);
   syxs varchar2(9);
 begin
-  select s.id, s.name, m.grade
+  select s.zydm, s.zymc, m.grade
   into zydm, zymc, nj
   from ea.sv_program p
   join ea.sv_major m on p.major_id = m.id
-  join ea.sv_subject s on m.subject_id = s.id
+  join zfxfzb.zydmb s on m.subject_id = s.zydm
   where p.id = :new.program_id;
 
   select c.name, to_char(c.credit, 'fm90.0')
