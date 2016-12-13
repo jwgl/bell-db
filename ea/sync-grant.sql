@@ -15,6 +15,7 @@ grant select on zfxfzb.jxjhzyxxb     to ea with grant option; -- 计划-专业
 grant select on zfxfzb.jxjhkcxxb     to ea with grant option; -- 计划-课程
 grant select on zfxfzb.zyfxb         to ea with grant option; -- 辅修
 grant select on zfxfzb.fxjxjhkcxxb   to ea with grant option; -- 辅修-课程
+grant select on zfxfzb.fxmkb         to ea with grant option; -- 辅修-模块
 grant select on zfxfzb.kcdmb         to ea with grant option; -- 课程
 grant select on zfxfzb.tykcdmb       to ea; -- 体育课
 grant select on zfxfzb.tykkcdmb      to ea with grant option; -- 体育课项目

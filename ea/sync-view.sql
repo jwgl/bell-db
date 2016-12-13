@@ -230,6 +230,10 @@ create or replace view ea.sv_direction as
 select to_number(substr(zyfxdm, 1, 8) || '0' || substr(zyfxdm, 9, 1)) as id,
     to_number(substr(zyfxdm, 1, 8) || '0') as program_id, zyfxmc as name
 from zfxfzb.zyfxb
+union
+select to_number(substr(fxmkdm, 1, 8) || '2' || substr(fxmkdm, 10, 1)) as id,
+    to_number(substr(fxmkdm, 1, 8) || '2') as program_id, fxmkmc as name
+from zfxfzb.fxmkb
 order by id;
 
 /**
@@ -527,12 +531,12 @@ with scheduled as ( -- 已排课的代码
         ea.util.csv_bit_to_number(kkkxq, jyxdxq) as allowed_term,
         nvl2(pk_kcdm, 1, 0) as schedule_type,
         xydm as department_id,
-        /*zyfxdm*/ null as direction_id
+        sv_direction.id as direction_id
     from zfxfzb.fxjxjhkcxxb
     join zfxfzb.kcxzdmb on kcxz = kcxzmc
     join zfxfzb.xydmb on kkxy = xymc
     join ea.sv_course on kcdm = sv_course.id
-    -- left join ea.sv_direction on sv_direction.name = zyfx and sv_direction.program_id = jxjhh || 0 -- 辅修课暂不处理专业方向
+    left join ea.sv_direction on sv_direction.name = fxmkmc and sv_direction.program_id = jxjhh || 2 -- 辅修课从模块取专业方向
     left join scheduled on jxjhh = pk_jxjhh and kcdm = pk_kcdm and zyfx = pk_zyfx
 )
 select to_number(program_id) as program_id, course_id, period_theory, period_experiment,
