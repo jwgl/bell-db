@@ -44,8 +44,8 @@ DROP FOREIGN TABLE IF EXISTS tm.et_program_course;
 CREATE FOREIGN TABLE tm.et_program_course (
     program_id integer,
     course_id char(8),
-    period_theory integer,
-    period_experiment integer,
+    period_theory numeric(3, 1),
+    period_experiment numeric(3, 1),
     period_weeks integer,
     is_compulsory boolean,
     is_practical boolean,
