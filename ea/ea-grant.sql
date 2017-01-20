@@ -15,6 +15,8 @@ grant references on ea.subject        to tm;
 grant references on ea.field          to tm;
 grant references on ea.place          to tm;
 grant references on ea.term           to tm;
+grant references on ea.task_schedule  to tm;
+
 
 grant select on ea.term               to tm;
 grant select on ea.admin_class        to tm;
@@ -27,6 +29,7 @@ grant select on ea.department         to tm;
 grant select on ea.property           to tm;
 grant select on ea.program_property   to tm;
 grant select on ea.course             to tm;
+grant select on ea.course_item        to tm;
 grant select on ea.direction          to tm;
 grant select on ea.subject            to tm;
 grant select on ea.major              to tm;
