@@ -21,6 +21,13 @@ order by display_order;
 
 -- 应用角色
 create or replace view tm.dv_teacher_role as
+with admin_class_at_school as (
+    select ac.supervisor_id, ac.counsellor_id
+    from ea.admin_class ac
+    join ea.major m on ac.major_id = m.id
+    join ea.subject s on m.subject_id = s.id
+    where current_date < make_date(grade + length_of_schooling, 7, 1)
+)
 select t.id as user_id, 'ROLE_IN_SCHOOL_TEACHER' as role_id
 from ea.teacher t
 where t.at_school = true
@@ -46,7 +53,16 @@ where exists(
 union all
 select t.id as user_id, 'ROLE_PLACE_BOOKING_CHECKER' as role_id
 from ea.teacher t
-join booking_checker bc on bc.checker_id = t.id;
+join booking_checker bc on bc.checker_id = t.id
+union all
+select t.id as user_id, 'ROLE_CLASS_SUPERVISOR' as role_id
+from ea.teacher t
+where exists(select * from admin_class_at_school where supervisor_id = t.id)
+union all
+select t.id as user_id, 'ROLE_STUDENT_COUNSELLOR' as role_id
+from ea.teacher t
+where exists(select * from admin_class_at_school where counsellor_id = t.id)
+;
 
 create or replace view tm.dv_student_role as
 select s.id as user_id, 'ROLE_IN_SCHOOL_STUDENT' as role_id

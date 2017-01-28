@@ -271,7 +271,9 @@ CREATE FOREIGN TABLE ea.sv_admin_class (
     id bigint,
     name varchar(50),
     major_id integer,
-    department_id char(2)
+    department_id char(2),
+    supervisor_id char(5),
+    counsellor_id char(5)
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_ADMIN_CLASS', readonly 'true');
 
 --- 录取信息
