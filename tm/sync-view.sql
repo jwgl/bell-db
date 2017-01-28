@@ -60,21 +60,6 @@ union all
 select * from student;
 
 /**
- * 行政班管理员
- */
-create or replace view tm.sv_admin_class_manager as
-select nj || sszydm || substr(bjdm, -2, 2) as admin_class_id,
-    bzrxm as teacher_id, 1 as type
-from zfxfzb.bjdmb
-where bzrxm is not null and bzrxm in (select zgh from zfxfzb.jsxxb)
-union
-select nj || sszydm || substr(bjdm, -2, 2) as admin_class_id,
-    bzrxm2 as teacher_id, 2 as type
-from zfxfzb.bjdmb
-where bzrxm2 is not null and bzrxm2 in (select zgh from zfxfzb.jsxxb)
-order by admin_class_id, type;
-
-/**
  * 教学场地-允许借用用户类型
  */
 create or replace view tm.sv_place_user_type as

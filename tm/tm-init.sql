@@ -28,7 +28,8 @@ INSERT INTO tm.role (id,name) VALUES ('ROLE_SUBJECT_DIRECTOR',       '专业负�
 INSERT INTO tm.role (id,name) VALUES ('ROLE_DEAN_OF_TEACHING',       '教学院长');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_ACADEMIC_SECRETARY',     '教务秘书');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_SUBJECT_SECRETARY',      '教务秘书-校内专业');
-INSERT INTO tm.role (id,name) VALUES ('ROLE_STUDENT_ABSENCE_CHECKER','学生批假人');
+INSERT INTO tm.role (id,name) VALUES ('ROLE_CLASS_SUPERVISOR',       '班主任');
+INSERT INTO tm.role (id,name) VALUES ('ROLE_STUDENT_COUNSELLOR',     '辅导员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_PLACE_BOOKING_CHECKER',  '借教室审核人');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_PLACE_BOOKING_ADMIN',    '借教室管理员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_PROGRAM_ADMIN',          '计划管理员');
@@ -59,8 +60,8 @@ INSERT INTO tm.permission (id,name) VALUES ('PERM_ROLLCALL_QUERY',       '考勤
 INSERT INTO tm.permission (id,name) VALUES ('PERM_SCHEDULE_READ',        '课表-查看');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_COURSE_REGISTER',      '学生选课');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_COURSE_EVALUATE',      '学生评教');
-INSERT INTO tm.permission (id,name) VALUES ('PERM_STUDENT_ABSENCE_WRITE','学生请假');
-INSERT INTO tm.permission (id,name) VALUES ('PERM_STUDENT_ABSENCE_CHECK','学生批假');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_STUDENT_LEAVE_WRITE',  '学生请假');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_STUDENT_LEAVE_CHECK',  '学生批假');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_BOOKING_WRITE',  '借教室-申请');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_BOOKING_CHECK',  '借教室-审核');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_BOOKING_APPROVE','借教室-审批');
@@ -89,8 +90,8 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_COURSE_TEAC
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_TEACHER',       'PERM_ROLLCALL_QUERY');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_SCHEDULE_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_COURSE_EVALUATE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_STUDENT_ABSENCE_WRITE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_STUDENT_ABSENCE_CHECKER', 'PERM_STUDENT_ABSENCE_CHECK');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_STUDENT_LEAVE_WRITE');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_STUDENT_COUNSELLOR',      'PERM_STUDENT_LEAVE_CHECK');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_TEACHER',       'PERM_PLACE_BOOKING_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_PLACE_BOOKING_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKING_CHECKER',   'PERM_PLACE_BOOKING_CHECK');
@@ -99,12 +100,13 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_S
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_REGISTER_ADMIN',          'PERM_CARD_REISSUE_CHECK');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_USER',                    'PERM_WORK_ITEMS');
 
-INSERT INTO tm.workflow (id,name) VALUES ('scheme.create','教学计划编制');
-INSERT INTO tm.workflow (id,name) VALUES ('scheme.revise','教学计划变更');
-INSERT INTO tm.workflow (id,name) VALUES ('vision.create','培养方案编制');
-INSERT INTO tm.workflow (id,name) VALUES ('vision.revise','培养方案变更');
-INSERT INTO tm.workflow (id,name) VALUES ('card.reissue', '补办学生证申请');
-INSERT INTO tm.workflow (id,name) VALUES ('place.booking', '借用教室申请');
+INSERT INTO tm.workflow (id,name) VALUES ('scheme.create',  '教学计划编制');
+INSERT INTO tm.workflow (id,name) VALUES ('scheme.revise',  '教学计划变更');
+INSERT INTO tm.workflow (id,name) VALUES ('vision.create',  '培养方案编制');
+INSERT INTO tm.workflow (id,name) VALUES ('vision.revise',  '培养方案变更');
+INSERT INTO tm.workflow (id,name) VALUES ('card.reissue',   '补办学生证申请');
+INSERT INTO tm.workflow (id,name) VALUES ('place.booking',  '借用教室申请');
+INSERT INTO tm.workflow (id,name) VALUES ('student.leave',  '学生请假');
 
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('scheme.create','scheme.create.approve','审批','/web/plan/schemes/${id}/reviews/${workitem}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('scheme.create','scheme.create.check',  '审核','/web/plan/schemes/${id}/reviews/${workitem}');
@@ -129,11 +131,15 @@ INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('vision.revis
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('card.reissue', 'card.reissue.check',   '审核','/web/card/cardReissues/${id}/reviews/${workitem}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('card.reissue', 'card.reissue.reject',  '退回','/web/card/users/${userId}/cardReissues#/${id}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('card.reissue', 'card.reissue.view',    '查看','/web/card/users/${userId}/cardReissues#/${id}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.approve','审批','/web/place/bookingForms/${id}/reviews/${workitem}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.check',  '审核','/web/place/bookingForms/${id}/reviews/${workitem}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.reject', '退回','/web/place/users/${userId}/bookingForms#/${id}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.review', '加签','/web/place/bookingForms/${id}/reviews/${workitem}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.view',   '查看','/web/place/users/${userId}/bookingForms#/${id}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.approve','审批','/web/place/bookings/${id}/reviews/${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.check',  '审核','/web/place/bookings/${id}/reviews/${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.reject', '退回','/web/place/users/${userId}/bookings#/${id}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.review', '加签','/web/place/bookings/${id}/reviews/${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.view',   '查看','/web/place/users/${userId}/bookings#/${id}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('student.leave','student.leave.check',  '审核','/web/here/leaves/${id}/reviews/${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('student.leave','student.leave.reject', '退回','/web/here/students/${userId}/leaves#/${id}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('student.leave','student.leave.view',   '查看','/web/here/students/${userId}/leaves#/${id}');
+
 
 INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (1,   1, '1-2节',           1,  2,  '{1}'::int[]);
 INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (3,   2, '3-4节',           3,  2,  '{3}'::int[]);

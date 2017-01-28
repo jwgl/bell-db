@@ -613,12 +613,20 @@ order by id;
  * 班级
  */
 create or replace view ea.sv_admin_class as
+with normal as (
+    select nj, bjdm, bjmc, sszydm, ssxydm,
+           decode(bzrxm, '%%', null, bzrxm) as bzrxm,
+           decode(bzrxm2, '%%', null, bzrxm2) as bzrxm2
+    from zfxfzb.bjdmb
+)
 select
     to_number(nj || sszydm || substr(bjdm, -2, 2)) id,
     bjmc as name,
     to_number(nj || sszydm) as major_id,
-    ssxydm as department_id
-from zfxfzb.bjdmb
+    ssxydm as department_id,
+    bzrxm as supervisor_id,
+    nvl(bzrxm2, bzrxm) as counsellor_id -- 未设置辅导员，以班主任为辅导员
+from normal
 order by id;
 
 /**
