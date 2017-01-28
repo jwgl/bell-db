@@ -240,12 +240,14 @@ department_id          = EXCLUDED.department_id,
 resume                 = EXCLUDED.resume;
 
 -- 行政班
-insert into ea.admin_class(id, name, major_id, department_id)
-select id, name, major_id, department_id from ea.sv_admin_class
+insert into ea.admin_class(id, name, major_id, department_id, supervisor_id, counsellor_id)
+select id, name, major_id, department_id, supervisor_id, counsellor_id from ea.sv_admin_class
 on conflict(id) do update set
 name          = EXCLUDED.name,
 major_id      = EXCLUDED.major_id,
-department_id = EXCLUDED.department_id;
+department_id = EXCLUDED.department_id,
+supervisor_id = EXCLUDED.supervisor_id,
+counsellor_id = EXCLUDED.counsellor_id;
 
 -- 录取信息
 insert into ea.admission(id, student_id, subject_id, grade, name, used_name, sex, birthday, political_status,
