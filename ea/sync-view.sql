@@ -772,26 +772,35 @@ end;
  * 教学班（注意：先创建ea.term，更新学期数据至最新）
  */
 create or replace view ea.sv_course_class as
-select distinct
-    d.course_class_id as id,
-    d.course_class_code as code,
-    nvl(case when regexp_like(zxs, '^\d+\.\d?')  then to_number(regexp_substr(zxs, '^\d+\.\d?')) else 0 end, b.period_theory) as period_theory,
-    nvl(case when regexp_like(zxs, '-\d+\.\d?$') then to_number(regexp_substr(zxs, '\d+\.\d?$')) else 0 end, b.period_experiment) as period_experiment,
-    nvl(case when regexp_like(zxs, '^\+\d+$')    then to_number(regexp_substr(zxs, '\d+'))       else 0 end, b.period_weeks) as period_weeks,
-    decode(program_id, null, g.id, null) as property_id, -- 对于没有计划的任务记录课程性质
-    decode(khfs, '考试', 1, '考查', 2, '论文', 3, /*空*/ 9) as assess_type,
-    decode(ksfs, '集中', 1, '分散', 2, /*缺省集中*/ 1) as test_type,
-    qsz as start_week,
-    jsz as end_week,
-    to_number(substr(xn, 1, 4) || xq) as term_id,
-    b.id as course_id,
-    e.id as department_id,
-    a.jszgh as teacher_id
-from ea.sva_task_base a
-join ea.sv_course b on a.kcdm = b.id
-join ea.course_class_map d on a.xkkh = d.course_class_code
-join ea.sv_department e on a.kkxy = e.name
-left join ea.sv_property g on a.kcxz = g.name
+with normal as (
+  select d.course_class_id as id,
+      d.course_class_code as code,
+      a.jxbmc as name, -- 有不同的名称
+      nvl(case when regexp_like(zxs, '^\d+\.\d?')  then to_number(regexp_substr(zxs, '^\d+\.\d?')) else 0 end, b.period_theory) as period_theory,
+      nvl(case when regexp_like(zxs, '-\d+\.\d?$') then to_number(regexp_substr(zxs, '\d+\.\d?$')) else 0 end, b.period_experiment) as period_experiment,
+      nvl(case when regexp_like(zxs, '^\+\d+$')    then to_number(regexp_substr(zxs, '\d+'))       else 0 end, b.period_weeks) as period_weeks,
+      decode(program_id, null, g.id, null) as property_id, -- 对于没有计划的任务记录课程性质
+      decode(khfs, '考试', 1, '考查', 2, '论文', 3, /*空*/ 9) as assess_type,
+      decode(ksfs, '集中', 1, '分散', 2, /*缺省集中*/ 1) as test_type,
+      qsz as start_week,
+      jsz as end_week,
+      to_number(substr(xn, 1, 4) || xq) as term_id,
+      b.id as course_id,
+      e.id as department_id,
+      a.jszgh as teacher_id
+  from ea.sva_task_base a
+  join ea.sv_course b on a.kcdm = b.id
+  join ea.course_class_map d on a.xkkh = d.course_class_code
+  join ea.sv_department e on a.kkxy = e.name
+  left join ea.sv_property g on a.kcxz = g.name
+)
+select id, code, max(name) as name, period_theory, period_experiment, period_weeks,
+  property_id, assess_type, test_type, start_week, end_week, term_id, course_id,
+  department_id, teacher_id
+from normal
+group by id, code, period_theory, period_experiment, period_weeks,
+  property_id, assess_type, test_type, start_week, end_week, term_id, course_id,
+  department_id, teacher_id
 order by code;
 
 /**
@@ -1199,6 +1208,7 @@ select
     t.task_code,
     xh as student_id,
     to_date(xksj, 'yyyy-mm-dd HH24:MI:SS') as date_created,
-    0 as register_type
+    to_number(nvl(xklb, 0)) as register_type,
+    to_number(nvl(cxbj, 0)) as repeat_type
 from zfxfzb.xsxkb x
 join ea.task_map t on t.task_code = x.xkkh;
