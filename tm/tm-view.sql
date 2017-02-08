@@ -53,7 +53,7 @@ where exists(
 union all
 select t.id as user_id, 'ROLE_PLACE_BOOKING_CHECKER' as role_id
 from ea.teacher t
-join booking_checker bc on bc.checker_id = t.id
+join booking_auth ba on ba.checker_id = t.id
 union all
 select t.id as user_id, 'ROLE_CLASS_SUPERVISOR' as role_id
 from ea.teacher t

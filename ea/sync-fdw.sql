@@ -355,6 +355,7 @@ DROP FOREIGN TABLE IF EXISTS ea.sv_course_class;
 CREATE FOREIGN TABLE ea.sv_course_class (
     id uuid,
     code varchar(31),
+    name varchar(50),
     period_theory numeric(3, 1),
     period_experiment numeric(3, 1),
     period_weeks integer,
@@ -419,5 +420,6 @@ CREATE FOREIGN TABLE ea.sv_task_student (
     task_code varchar(31),
     student_id char(10),
     date_created timestamp,
-    register_type integer
+    register_type integer,
+    repeat_type integer
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK_STUDENT', readonly 'true');

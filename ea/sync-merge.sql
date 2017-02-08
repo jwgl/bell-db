@@ -320,15 +320,16 @@ admission_id          = EXCLUDED.admission_id;
 insert into ea.sv_course_class_map values(null, null, null);
 
 -- 教学班
-insert into ea.course_class(id, code, period_theory, period_experiment, period_weeks,
+insert into ea.course_class(id, code, name, period_theory, period_experiment, period_weeks,
     property_id, assess_type, test_type, start_week, end_week,
     term_id, course_id, department_id, teacher_id)
-select id, code, period_theory, period_experiment, period_weeks,
+select id, code, name, period_theory, period_experiment, period_weeks,
     property_id, assess_type, test_type, start_week, end_week,
     term_id, course_id, department_id, teacher_id
 from ea.sv_course_class
 on conflict(id) do update set
 code              = EXCLUDED.code,
+name              = EXCLUDED.name,
 period_theory     = EXCLUDED.period_theory,
 period_experiment = EXCLUDED.period_experiment,
 period_weeks      = EXCLUDED.period_weeks,
@@ -402,20 +403,16 @@ start_section  = EXCLUDED.start_section,
 total_section  = EXCLUDED.total_section;
 
 -- 学生选课
-insert into ea.task_student(task_id, student_id, date_created, register_type)
-select task_id, student_id, date_created, register_type
+insert into ea.task_student(task_id, student_id, date_created, register_type, repeat_type)
+select task_id, student_id, date_created, register_type, repeat_type
 from ea.sv_task_student
 where task_code like '(2016-2017-1)%'
 on conflict(task_id, student_id) do update set
 date_created     = EXCLUDED.date_created,
-register_type    = EXCLUDED.register_type;
+register_type    = EXCLUDED.register_type,
+repeat_type      = EXCLUDED.repeat_type;
 
 -- 删除数据
-delete from ea.course_class_program
-where course_class_id not in (
-    select id from ea.sv_course_class
-);
-
 delete from ea.task_student
 where (task_id, student_id) not in (
     select task_id, student_id
@@ -440,6 +437,11 @@ where id not in (
 delete from ea.task
 where id not in (
     select id from ea.sv_task
+);
+
+delete from ea.course_class_program
+where course_class_id not in (
+    select id from ea.sv_course_class
 );
 
 delete from ea.course_class
