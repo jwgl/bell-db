@@ -74,24 +74,56 @@ order by place_id, user_type;
  * 教学场地使用视图
  */
 create or replace view tm.dv_place_usage as
-    select distinct to_number(substr(xn, 1, 4) || xq) as term_id,
-       jsbh as place_id,
-       nvl(qsz, 1) as start_week,
-       case when k.xkkh is not null then (nvl(jsz, 30)-1) else nvl(jsz, 30) end as end_week,
-       case dsz when '单' then 1 when '双' then 2 else 0 end as odd_even,
-       to_number(xqj) as day_of_week,
-       sjd as start_section,
-       skcd as total_section,
-       lb as type,
-       sydw as department,
-       bz as description
+select distinct to_number(substr(xn, 1, 4) || xq) as term_id,
+    jsbh as place_id,
+    nvl(qsz, 1) as start_week,
+    case when k.xkkh is not null then (nvl(jsz, 30)-1) else nvl(jsz, 30) end as end_week,
+    case dsz when '单' then 1 when '双' then 2 else 0 end as odd_even,
+    to_number(xqj) as day_of_week,
+    sjd as start_section,
+    skcd as total_section,
+    lb as type,
+    sydw as department,
+    bz as description
 from zfxfzb.jxcdview_old_tms t
 left join (select * from zfxfzb.ttksqb
-     where bdlb='考试' and shbj='1') k on t.xkkh=k.xkkh
-     and t.xqj=k.yxqj and to_char(t.sjd)=k.ysjd and to_char(t.jsz)=k.yjsz
+    where bdlb='考试' and shbj='1') k on t.xkkh=k.xkkh
+    and t.xqj=k.yxqj and to_char(t.sjd)=k.ysjd and to_char(t.jsz)=k.yjsz
 where jsbh is not null;
 
 /**
+ * 教学场地借用视图，用于插入数据
+ */
+create or replace view tm.iv_booking_form as
+select
+  jyjtsj as id,
+  xuh as form_id,
+  xn as school_year,
+  xq as term,
+  jsbh as place_id,
+  jsmc as place_name,
+  ksz as start_week,
+  jsz as end_week,
+  dsz as odd_even,
+  xqj as day_of_week,
+  sjd as start_section,
+  skcd as total_section,
+  zwsjd as section_name,
+  jydw as department_name,
+  jyjs as user_id,
+  sjgr as user_name,
+  grdh as user_phone,
+  jyly as reason,
+  jysj as booking_date,
+  dh as checker_phone,
+  shr as approver_id,
+  ly as source,
+  bz as status
+from zfxfzb.jxcdyyb
+where ly='Tm' and jyjtsj is not null
+WITH CHECK OPTION;
+
+/*
  * 教学计划-课程视图，用于插入数据
  */
 create or replace view tm.iv_program_course as
@@ -117,7 +149,7 @@ from tm.program_course;
 
 /**
  * 教学计划-课程触发器，插入数据
- * TODO：处理国企辅修教学计划
+ * TODO：处理辅修教学计划
  */
 create or replace trigger tm.iv_program_course_trigger
   instead of insert
