@@ -110,3 +110,47 @@ begin
   );
 end;
 $$ LANGUAGE plpgsql;
+
+/**
+ * 查询冲突的教室借用项
+ *
+ * @param p_form_id 借用表单ID
+ *
+ * @returns 冲突的教室借用项ID
+ */
+CREATE OR REPLACE FUNCTION tm.sp_find_booking_conflict(
+  p_form_id bigint
+) RETURNS TABLE (
+  item_id bigint
+) AS $$
+begin
+  return query
+  with series as ( -- 生成序列，用于判断周次是否相交
+    select i from generate_series(1, 30) as s(i)
+  ), form_item as ( -- 备选教室借用项
+    select form.term_id, item.id item_id, item.place_id,
+           item.start_week, item.end_week, item.odd_even, item.day_of_week,
+           bs.start as start_section, bs.total as total_section
+    from booking_form form
+    join booking_item item on form.id = item.form_id
+    join booking_section bs on item.section_id = bs.id
+    where form.id = p_form_id
+  )
+  select fi.item_id
+  from form_item fi
+  where exists (
+    select place_id
+    from tm.ev_place_usage pu
+    where pu.term_id = fi.term_id
+      and pu.place_id = fi.place_id
+      and pu.day_of_week = fi.day_of_week
+      and int4range(pu.start_section, pu.start_section + pu.total_section)
+       && int4range(fi.start_section, fi.start_section + fi.total_section)
+      and exists (
+        select * from series where i between pu.start_week and pu.end_week and (pu.odd_even = 0 or pu.odd_even = 1 and i % 2 = 1 or pu.odd_even = 2 and i % 2 = 0)
+        intersect
+        select * from series where i between fi.start_week and fi.end_week and (fi.odd_even = 0 or fi.odd_even = 1 and i % 2 = 1 or fi.odd_even = 2 and i % 2 = 0)
+      )
+  );
+end;
+$$ LANGUAGE plpgsql;

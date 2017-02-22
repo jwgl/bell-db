@@ -36,6 +36,7 @@ INSERT INTO tm.role (id,name) VALUES ('ROLE_PROGRAM_ADMIN',          '计划管�
 INSERT INTO tm.role (id,name) VALUES ('ROLE_REGISTER_ADMIN',         '学籍管理员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_STUDENT',                '学生');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_IN_SCHOOL_STUDENT',      '在校学生');
+INSERT INTO tm.role (id,name) VALUES ('ROLE_POSTPONED_STUDENT',      '延期学习学生');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_COURSE_REGISTER_STUDENT','可选课学生');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_FREE_LISTEN_ADMIN',      '免听管理员');
 
@@ -103,6 +104,7 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_S
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_STUDENT_COUNSELLOR',      'PERM_STUDENT_LEAVE_APPROVE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_COURSE_TEACHER',          'PERM_FREE_LISTEN_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_FREE_LISTEN_WRITE');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_POSTPONED_STUDENT',       'PERM_FREE_LISTEN_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_COURSE_TEACHER',          'PERM_FREE_LISTEN_CHECK');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_FREE_LISTEN_ADMIN',       'PERM_FREE_LISTEN_APPROVE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_TEACHER',       'PERM_PLACE_BOOKING_WRITE');
@@ -152,11 +154,11 @@ INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.bookin
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('student.leave','student.leave.approve','审批','/web/here/approvers/${userId}/leaves#/${id}/workitems/${workitem}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('student.leave','student.leave.reject', '退回','/web/here/students/${userId}/leaves#/${id}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('student.leave','student.leave.finish', '销假','/web/here/students/${userId}/leaves#/${id}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('student.leave','student.leave.view',   '查看','/web/here/students/${userId}/leaves#/${id}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('schedule.free','schedule.free.approve','审批','/web/here/approvers/${userId}/freeListens#/${id}/workitems/${workitem}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('schedule.free','schedule.free.check',  '审核','/web/here/teachers/${userId}/freeListens#/${id}/workitems/${workitem}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('schedule.free','schedule.free.reject', '退回','/web/here/students/${userId}/freeListens#/${id}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('schedule.free','schedule.free.view',   '查看','/web/here/students/${userId}/freeListens#/${id}');
-
 
 INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (1,   1, '1-2节',           1,  2,  '{1}'::int[]);
 INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (3,   2, '3-4节',           3,  2,  '{3}'::int[]);

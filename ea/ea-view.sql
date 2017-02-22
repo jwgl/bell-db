@@ -47,3 +47,17 @@ join course_class cc on cc.id = task.course_class_id
 join course c on c.id = cc.course_id
 join teacher te on te.id = a.teacher_id
 left join course_item ci on ci.id = task.course_item_id;
+
+create or replace view ea.av_student_schedule as
+select student.id as student_id, student.name as student_name, a.id as task_schedule_id, cc.term_id, c.id as course_id, c.name as course_name, ci.name as course_item,
+    te.id as teacher_id, te.name as teacher_name, a.start_week, a.end_week,
+    day_of_week, start_section, total_section, odd_even, place_id, task.id as task_id, task.code as task_code, course_class_id,
+    ts.repeat_type
+from task
+join course_class cc on cc.id = task.course_class_id
+join course c on c.id = cc.course_id
+join task_schedule a on a.task_id = task.id
+join task_student ts on ts.task_id = task.id
+join student on student.id = ts.student_id
+join teacher te on te.id = a.teacher_id
+left join course_item ci on ci.id = task.course_item_id;

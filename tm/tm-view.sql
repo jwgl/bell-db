@@ -68,6 +68,19 @@ create or replace view tm.dv_student_role as
 select s.id as user_id, 'ROLE_IN_SCHOOL_STUDENT' as role_id
 from ea.student s
 where s.at_school = true
+union all
+select s.id as user_id, 'ROLE_POSTPONED_STUDENT' as role_id
+from ea.student s
+where s.at_school = false
+and exists (
+    select *
+    from ea.course_class
+    join ea.task on task.course_class_id = course_class.id
+    join ea.task_student on task_student.task_id = task.id
+    join ea.term on term.id = course_class.term_id
+    where task_student.student_id = s.id
+    and ea.course_class.term_id =  (select id from ea.term where active = true)
+)
 ;
 
 create or replace view tm.dv_external_role as
