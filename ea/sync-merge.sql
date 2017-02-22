@@ -406,7 +406,7 @@ total_section  = EXCLUDED.total_section;
 insert into ea.task_student(task_id, student_id, date_created, register_type, repeat_type)
 select task_id, student_id, date_created, register_type, repeat_type
 from ea.sv_task_student
-where task_code like '(2016-2017-1)%'
+where task_code like '(2016-2017-2)%'
 on conflict(task_id, student_id) do update set
 date_created     = EXCLUDED.date_created,
 register_type    = EXCLUDED.register_type,
@@ -417,16 +417,16 @@ delete from ea.task_student
 where (task_id, student_id) not in (
     select task_id, student_id
     from ea.sv_task_student
-    where task_code like '(2016-2017-1)%'
 ) and task_id in (
-    select task_id
+    select task.id
     from ea.task
-    where code like '(2016-2017-1)%'
+    join ea.course_class on course_class.id = task.course_class_id
+    where course_class.term_id=20162
 );
 
 delete from ea.task_teacher
-where task_id not in (
-    select id from ea.sv_task
+where (task_id, teacher_id) not in (
+    select task_id, teacher_id from ea.sv_task_teacher
 );
 
 delete from ea.task_schedule

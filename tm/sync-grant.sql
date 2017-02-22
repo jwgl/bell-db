@@ -16,4 +16,5 @@ grant select on zfxfzb.jxcdxxb                 to tm; -- 教学场地信息表
 grant select on zfxfzb.jxcdview_old_tms        to tm; -- 教学场地使用视图
 
 grant insert on zfxfzb.jxjhkcxxb               to tm; -- 教学计划课程信息表
+grant insert on zfxfzb.ttksqb                  to tm; -- 教学计划课程信息表
 grant select, insert, delete on zfxfzb.jxcdyyb to tm; -- 教学场地预约表
