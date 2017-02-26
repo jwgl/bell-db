@@ -31,83 +31,67 @@ declare
   p_start_section integer;
   p_total_section integer;
   p_includes integer[];
+  p_term_start_week integer;
+  p_term_max_week integer;
 begin
   select start, total, includes
   into p_start_section, p_total_section, p_includes
   from tm.booking_section bs
   where bs.id = p_section_id;
 
+  select start_week, max_week
+  into p_term_start_week, p_term_max_week
+  from ea.term
+  where term.id = p_term_id;
+
   return query
-  select p1.id, p1.name, p1.seat, (
+  with series as ( -- 生成序列，用于判断周次是否相交
+    select i from generate_series(p_term_start_week, p_term_max_week) as s(i)
+  ), booking_weeks as (
+    select i from series
+    where i between p_start_week and p_end_week
+      and (p_odd_even = 0 or p_odd_even = 1 and i % 2 = 1 or p_odd_even = 2 and i % 2 = 0)
+  )
+  select place.id, place.name, place.seat, (
     select count(*)
     from booking_form bf
     join booking_item bi on bf.id = bi.form_id
     join booking_section bs on bs.id = bi.section_id
     where bf.term_id = p_term_id
-    and bf.status in ('SUBMITTED', 'CHECKED')
-    and bi.day_of_week = p_day_of_week
-    and bs.includes && p_includes
-    and exists (
-        select * from generate_series(
-          case odd_even
-            when 0 then p_start_week
-            when 1 then p_start_week / 2 * 2 + 1
-            when 2 then (p_start_week - 1) / 2 * 2 + 2
-          end,
-          p_end_week,
-          case p_odd_even when 0 then 1 else 2 end
-        )
-        intersect
-        select * from generate_series(
-          case odd_even
-            when 0 then start_week
-            when 1 then start_week / 2 * 2 + 1
-            when 2 then (start_week - 1) / 2 * 2 + 2
-          end,
-          end_week,
-          case odd_even when 0 then 1 else 2 end
-        )
+      and bf.status in ('SUBMITTED', 'CHECKED')
+      and bi.day_of_week = p_day_of_week
+      and bs.includes && p_includes
+      and exists (
+          select i from booking_weeks
+          intersect
+          select i from series
+          where i between start_week and end_week
+            and (odd_even = 0 or odd_even = 1 and i % 2 = 1 or odd_even = 2 and i % 2 = 0)
       )
   ) as count
-  from ea.place p1
-  where p1.id in (
-    select p2.id
-    from ea.place p2
-    join tm.place_user_type t on p2.id = t.place_id
-    where t.user_type = p_user_type
-    and p2.type = p_place_type
-    and (enabled = true or enabled = false and exists (
-      select * from ea.place_booking_term where place_id = p2.id
+  from ea.place
+  join tm.place_user_type on place.id = place_user_type.place_id
+  where place_user_type.user_type = p_user_type
+    and place.type = p_place_type
+    and (place.enabled = true or exists (
+      select * from ea.place_booking_term where place_id = place.id and term_id = p_term_id
     ))
-    except
-    select place_id
-    from tm.ev_place_usage pu
-    where term_id = p_term_id
-      and day_of_week = p_day_of_week
-      and int4range(p_start_section, p_start_section + p_total_section)
-       && int4range(start_section, start_section + total_section)
-      and exists (
-        select * from generate_series(
-          case odd_even
-            when 0 then p_start_week
-            when 1 then p_start_week / 2 * 2 + 1
-            when 2 then (p_start_week - 1) / 2 * 2 + 2
-          end,
-          p_end_week,
-          case p_odd_even when 0 then 1 else 2 end
+    and place.id not in (
+      select place_id
+      from tm.ev_place_usage pu
+      where term_id = p_term_id
+        and day_of_week = p_day_of_week
+        and int4range(p_start_section, p_start_section + p_total_section)
+         && int4range(start_section, start_section + total_section)
+        and exists (
+            select * from booking_weeks
+            intersect
+            select * from series
+            where i between start_week and end_week
+              and (odd_even = 0 or odd_even = 1 and i % 2 = 1 or odd_even = 2 and i % 2 = 0)
         )
-        intersect
-        select * from generate_series(
-          case odd_even
-            when 0 then start_week
-            when 1 then start_week / 2 * 2 + 1
-            when 2 then (start_week - 1) / 2 * 2 + 2
-          end,
-          end_week,
-          case odd_even when 0 then 1 else 2 end
-        )
-      )
-  );
+  )
+  order by place.name;
 end;
 $$ LANGUAGE plpgsql;
 
@@ -147,9 +131,11 @@ begin
       and int4range(pu.start_section, pu.start_section + pu.total_section)
        && int4range(fi.start_section, fi.start_section + fi.total_section)
       and exists (
-        select * from series where i between pu.start_week and pu.end_week and (pu.odd_even = 0 or pu.odd_even = 1 and i % 2 = 1 or pu.odd_even = 2 and i % 2 = 0)
+        select * from series where i between pu.start_week and pu.end_week
+        and (pu.odd_even = 0 or pu.odd_even = 1 and i % 2 = 1 or pu.odd_even = 2 and i % 2 = 0)
         intersect
-        select * from series where i between fi.start_week and fi.end_week and (fi.odd_even = 0 or fi.odd_even = 1 and i % 2 = 1 or fi.odd_even = 2 and i % 2 = 0)
+        select * from series where i between fi.start_week and fi.end_week
+        and (fi.odd_even = 0 or fi.odd_even = 1 and i % 2 = 1 or fi.odd_even = 2 and i % 2 = 0)
       )
   );
 end;
