@@ -147,16 +147,16 @@ INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('vision.revis
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('card.reissue', 'card.reissue.check',   '审核','/web/card/reviewers/${userId}/reissues#/${id}/workitems/${workitem}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('card.reissue', 'card.reissue.reject',  '退回','/web/card/users/${userId}/reissues#/${id}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('card.reissue', 'card.reissue.view',    '查看','/web/card/users/${userId}/reissues#/${id}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.approve','审批','/web/place/approvers/${userId}/bookings#/${id}/workitems/${workitem}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.check',  '审核','/web/place/checkers/${userId}/bookings#/${id}/workitems/${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.approve','审批','/web/place/approvers/${userId}/bookings#/${todo}/${id}/workitems/${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.check',  '审核','/web/place/checkers/${userId}/bookings#/${todo}/${id}/workitems/${workitem}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.reject', '退回','/web/place/users/${userId}/bookings#/${id}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.view',   '查看','/web/place/users/${userId}/bookings#/${id}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('student.leave','student.leave.approve','审批','/web/here/approvers/${userId}/leaves#/${id}/workitems/${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('student.leave','student.leave.approve','审批','/web/here/approvers/${userId}/leaves#/${todo}/${id}/workitems/${workitem}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('student.leave','student.leave.reject', '退回','/web/here/students/${userId}/leaves#/${id}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('student.leave','student.leave.finish', '销假','/web/here/students/${userId}/leaves#/${id}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('student.leave','student.leave.view',   '查看','/web/here/students/${userId}/leaves#/${id}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('schedule.free','schedule.free.approve','审批','/web/here/approvers/${userId}/freeListens#/${id}/workitems/${workitem}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('schedule.free','schedule.free.check',  '审核','/web/here/teachers/${userId}/freeListens#/${id}/workitems/${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('schedule.free','schedule.free.approve','审批','/web/here/approvers/${userId}/freeListens#/${todo}/${id}/workitems/${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('schedule.free','schedule.free.check',  '审核','/web/here/teachers/${userId}/freeListens#/${todo}/${id}/workitems/${workitem}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('schedule.free','schedule.free.reject', '退回','/web/here/students/${userId}/freeListens#/${id}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('schedule.free','schedule.free.view',   '查看','/web/here/students/${userId}/freeListens#/${id}');
 
