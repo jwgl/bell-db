@@ -52,16 +52,16 @@ begin
     where i between p_start_week and p_end_week
       and (p_odd_even = 0 or p_odd_even = 1 and i % 2 = 1 or p_odd_even = 2 and i % 2 = 0)
   )
-  select place.id, place.name, place.seat, (
+  select p1.id, p1.name, p1.seat, (
     select count(*)
     from booking_form bf
     join booking_item bi on bf.id = bi.form_id
     join booking_section bs on bs.id = bi.section_id
     where bf.term_id = p_term_id
-      and bf.status in ('SUBMITTED', 'CHECKED')
-      and bi.day_of_week = p_day_of_week
-      and bs.includes && p_includes
-      and exists (
+    and bf.status in ('SUBMITTED', 'CHECKED')
+    and bi.day_of_week = p_day_of_week
+    and bs.includes && p_includes
+    and exists (
           select i from booking_weeks
           intersect
           select i from series
@@ -69,29 +69,31 @@ begin
             and (odd_even = 0 or odd_even = 1 and i % 2 = 1 or odd_even = 2 and i % 2 = 0)
       )
   ) as count
-  from ea.place
-  join tm.place_user_type on place.id = place_user_type.place_id
-  where place_user_type.user_type = p_user_type
-    and place.type = p_place_type
-    and (place.enabled = true or exists (
-      select * from ea.place_booking_term where place_id = place.id and term_id = p_term_id
+  from ea.place p1
+  where p1.id in (
+    select p2.id
+    from ea.place p2
+    join tm.place_user_type t on p2.id = t.place_id
+    where t.user_type = p_user_type
+    and p2.type = p_place_type
+    and (enabled = true or enabled = false and exists (
+      select * from ea.place_booking_term where place_id = p2.id
     ))
-    and place.id not in (
-      select place_id
-      from tm.ev_place_usage pu
-      where term_id = p_term_id
-        and day_of_week = p_day_of_week
-        and int4range(p_start_section, p_start_section + p_total_section)
-         && int4range(start_section, start_section + total_section)
-        and exists (
+    except
+    select place_id
+    from tm.ev_place_usage pu
+    where term_id = p_term_id
+      and day_of_week = p_day_of_week
+      and int4range(p_start_section, p_start_section + p_total_section)
+       && int4range(start_section, start_section + total_section)
+      and exists (
             select * from booking_weeks
             intersect
             select * from series
             where i between start_week and end_week
               and (odd_even = 0 or odd_even = 1 and i % 2 = 1 or odd_even = 2 and i % 2 = 0)
-        )
-  )
-  order by place.name;
+      )
+  );
 end;
 $$ LANGUAGE plpgsql;
 

@@ -8,7 +8,7 @@ select id, name, login_name, password, email, long_phone, enabled, user_type, de
 on conflict(id) do update set
 name          = EXCLUDED.name,
 login_name    = EXCLUDED.login_name,
-password      = coalesce(system_user.password, EXCLUDED.password),
+password      = EXCLUDED.password,
 email         = coalesce(system_user.email, EXCLUDED.email),
 long_phone    = coalesce(system_user.long_phone, EXCLUDED.long_phone),
 enabled       = EXCLUDED.enabled,
