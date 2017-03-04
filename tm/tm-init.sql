@@ -32,6 +32,7 @@ INSERT INTO tm.role (id,name) VALUES ('ROLE_CLASS_SUPERVISOR',       '班主任'
 INSERT INTO tm.role (id,name) VALUES ('ROLE_STUDENT_COUNSELLOR',     '辅导员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_PLACE_BOOKING_CHECKER',  '借教室审核人');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_PLACE_BOOKING_ADMIN',    '借教室管理员');
+INSERT INTO tm.role (id,name) VALUES ('ROLE_BOOKING_ADV_USER',       '借教室高级用户');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_PROGRAM_ADMIN',          '计划管理员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_REGISTER_ADMIN',         '学籍管理员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_STUDENT',                '学生');
@@ -39,7 +40,8 @@ INSERT INTO tm.role (id,name) VALUES ('ROLE_IN_SCHOOL_STUDENT',      '在校学�
 INSERT INTO tm.role (id,name) VALUES ('ROLE_POSTPONED_STUDENT',      '延期学习学生');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_COURSE_REGISTER_STUDENT','可选课学生');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_FREE_LISTEN_ADMIN',      '免听管理员');
-
+INSERT INTO tm.role (id,name) VALUES ('ROLE_ROLLCALL_ADMIN',         '考勤管理员');
+INSERT INTO tm.role (id,name) VALUES ('ROLE_ROLLCALL_DEPT_ADMIN',    '考勤管理员-学院');
 
 INSERT INTO tm.permission (id,name) VALUES ('PERM_WORK_ITEMS',           '待办事项');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_SYSTEM_SETUP',         '系统设置');
@@ -58,8 +60,9 @@ INSERT INTO tm.permission (id,name) VALUES ('PERM_VISION_ADMIN',         '培养
 INSERT INTO tm.permission (id,name) VALUES ('PERM_VISION_DEPT_ADMIN',    '培养方案-学院管理');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_SUBJECT_SETUP',        '设置-校内专业');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_PROGRAM_SETUP',        '设置-教学计划');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_ATTENDANCE_LIST',      '考勤-统计列表');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_ATTENDANCE_ITEM',      '考勤-统计个人');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_ROLLCALL_WRITE',       '考勤-点名');
-INSERT INTO tm.permission (id,name) VALUES ('PERM_ROLLCALL_QUERY',       '考勤-统计');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_SCHEDULE_READ',        '课表-查看');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_COURSE_REGISTER',      '学生选课');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_COURSE_EVALUATE',      '学生评教');
@@ -95,11 +98,16 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PROGRAM_ADM
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_SUBJECT_SECRETARY',       'PERM_VISION_DEPT_ADMIN');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PROGRAM_ADMIN',           'PERM_SUBJECT_SETUP');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PROGRAM_ADMIN',           'PERM_PROGRAM_SETUP');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ROLLCALL_DEPT_ADMIN',     'PERM_ATTENDANCE_LIST');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_STUDENT_COUNSELLOR',      'PERM_ATTENDANCE_LIST');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_CLASS_SUPERVISOR',        'PERM_ATTENDANCE_LIST');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_ATTENDANCE_ITEM');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_COURSE_TEACHER',          'PERM_ROLLCALL_WRITE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_TEACHER',       'PERM_ROLLCALL_QUERY');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_SCHEDULE_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_COURSE_EVALUATE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_COURSE_TEACHER',          'PERM_STUDENT_LEAVE_READ');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_STUDENT_COUNSELLOR',      'PERM_STUDENT_LEAVE_READ');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_CLASS_SUPERVISOR',        'PERM_STUDENT_LEAVE_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_STUDENT_LEAVE_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_STUDENT_COUNSELLOR',      'PERM_STUDENT_LEAVE_APPROVE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_COURSE_TEACHER',          'PERM_FREE_LISTEN_READ');
@@ -109,6 +117,7 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_COURSE_TEAC
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_FREE_LISTEN_ADMIN',       'PERM_FREE_LISTEN_APPROVE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_TEACHER',       'PERM_PLACE_BOOKING_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_PLACE_BOOKING_WRITE');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_BOOKING_ADV_USER',        'PERM_PLACE_BOOKING_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKING_CHECKER',   'PERM_PLACE_BOOKING_CHECK');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKING_ADMIN',     'PERM_PLACE_BOOKING_APPROVE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_CARD_REISSUE_WRITE');
