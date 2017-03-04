@@ -9,6 +9,7 @@
  * @param p_start_section 开始节
  * @param p_end_section 结束节
  * @param p_user_type 用户类型
+ * @param p_adv_user 是否高级用户
  * 
  * @returns 返回满足条件的教学场地
  */
@@ -20,7 +21,8 @@ CREATE OR REPLACE FUNCTION tm.sp_find_available_place (
   p_day_of_week integer,
   p_section_id integer,
   p_place_type varchar(20),
-  p_user_type integer
+  p_user_type integer,
+  p_adv_user boolean
 ) RETURNS TABLE(
    id varchar(6),
    name varchar(50),
@@ -74,7 +76,7 @@ begin
     select p2.id
     from ea.place p2
     join tm.place_user_type t on p2.id = t.place_id
-    where t.user_type = p_user_type
+    where (t.user_type = p_user_type or p_adv_user = true)
     and p2.type = p_place_type
     and (enabled = true or enabled = false and exists (
       select * from ea.place_booking_term where place_id = p2.id

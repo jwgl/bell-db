@@ -125,3 +125,83 @@ select * from ev_place_usage;
 -- 直接获取的同步视图，计划-课程
 create or replace view tm.dv_program_course as
 select * from ea.sv_program_course;
+
+-- 学生出勤情况视图
+create or replace view tm.dv_student_attendance as
+with free_listen as (
+  select form.id as form_id, course_class.term_id, form.student_id, item.task_schedule_id
+  from tm.free_listen_form form
+  join tm.free_listen_item item on item.form_id = form.id
+  join ea.task_schedule on item.task_schedule_id = task_schedule.id
+  join ea.task on task_schedule.task_id = task.id
+  join ea.course_class on task.course_class_id = course_class.id
+  join ea.student on form.student_id = student.id
+  where form.status = 'APPROVED'
+), student_leave as (
+  select form.id as form_id, form.term_id, form.approver_id, student.id as student_id, item.week, task_schedule.id as task_schedule_id
+  from tm.student_leave_form form
+  join tm.student_leave_item item on form.id = item.form_id
+  join ea.student student on form.student_id = student.id
+  join ea.task_student on student.id = task_student.student_id
+  join ea.task on task_student.task_id = task.id
+  join ea.course_class on task.course_class_id = course_class.id
+   and form.term_id = course_class.term_id
+  join ea.task_schedule on task_schedule.task_id = task.id
+   and (
+     item.task_schedule_id = task_schedule.id or
+     item.day_of_week = task_schedule.day_of_week or
+     item.day_of_week is null and item.task_schedule_id is null
+   )
+   and item.week between task_schedule.start_week and task_schedule.end_week
+   and (
+     task_schedule.odd_even = 0 or
+     task_schedule.odd_even = 1 and item.week % 2 = 1 or
+     task_schedule.odd_even = 2 and item.week % 2 = 0
+   )
+  where form.status in ('APPROVED', 'FINISHED')
+), rollcall as (
+  select course_class.term_id, rollcall.teacher_id, rollcall.student_id, rollcall.week, task_schedule.id as task_schedule_id, rollcall.type
+  from tm.rollcall
+  join ea.task_schedule on rollcall.task_schedule_id = task_schedule.id
+  join ea.task on task_schedule.task_id = task.id
+  join ea.course_class on task.course_class_id = course_class.id
+  join ea.student on rollcall.student_id = student.id
+  where rollcall.type in (1, 2, 3, 5)
+)
+select rollcall.term_id,
+       rollcall.student_id,
+       rollcall.week,
+       rollcall.task_schedule_id,
+       rollcall.type,
+       student_leave.form_id as student_leave_form_id,
+       free_listen.form_id as free_listen_form_id,
+       (student_leave.form_id is null and free_listen.form_id is null) as valid,
+       rollcall.teacher_id       
+from rollcall
+left join student_leave on (
+  rollcall.term_id          = student_leave.term_id and
+  rollcall.student_id       = student_leave.student_id and
+  rollcall.week             = student_leave.week and
+  rollcall.task_schedule_id = student_leave.task_schedule_id
+)
+left join free_listen on (
+  rollcall.term_id          = free_listen.term_id and
+  rollcall.student_id       = free_listen.student_id and
+  rollcall.task_schedule_id = free_listen.task_schedule_id
+)
+union all
+select student_leave.term_id,
+       student_leave.student_id,
+       student_leave.week,
+       student_leave.task_schedule_id,
+       4, -- type
+       student_leave.form_id, -- student-leave id
+       free_listen.form_id, -- free-listen id
+       (free_listen.form_id is null) as valid, -- valid
+       student_leave.approver_id --teacher_id
+from student_leave
+left join free_listen on (
+  student_leave.term_id          = free_listen.term_id and
+  student_leave.student_id       = free_listen.student_id and
+  student_leave.task_schedule_id = free_listen.task_schedule_id
+);
