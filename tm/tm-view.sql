@@ -179,7 +179,6 @@ left join free_listen on (
   rollcall.student_id       = free_listen.student_id and
   rollcall.task_schedule_id = free_listen.task_schedule_id
 )
-where rollcall.type in (1, 2, 3, 5)
 union all
 select student_leave.term_id,
        student_leave.student_id,
