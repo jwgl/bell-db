@@ -57,7 +57,7 @@ INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_BOOKING_WRITE',  '借教
 INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_BOOKING_CHECK',  '借教室-审核');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_BOOKING_APPROVE','借教室-审批');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_CARD_REISSUE_WRITE',   '补办学生证-编辑');
-INSERT INTO tm.permission (id,name) VALUES ('PERM_CARD_REISSUE_CHECK',   '补办学生证-审核');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_CARD_REISSUE_APPROVE', '补办学生证-审批');
 
 
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_SYSTEM_ADMIN',            'PERM_SYSTEM_SETUP');
@@ -101,7 +101,7 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_BOOKING_ADV
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKING_CHECKER',   'PERM_PLACE_BOOKING_CHECK');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKING_ADMIN',     'PERM_PLACE_BOOKING_APPROVE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_CARD_REISSUE_WRITE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_REGISTER_ADMIN',          'PERM_CARD_REISSUE_CHECK');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_REGISTER_ADMIN',          'PERM_CARD_REISSUE_APPROVE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_USER',                    'PERM_WORK_ITEMS');
 
 INSERT INTO tm.workflow (id,name) VALUES ('scheme.create',  '教学计划编制');
@@ -133,9 +133,9 @@ INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('vision.revis
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('vision.revise','vision.revise.review', '加签','/web/plan/reviewers/${userId}/visions/${id}/workitems/${workitem}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('vision.revise','vision.revise.reject', '退回','/web/plan/users/${userId}/visions#/${id}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('vision.revise','vision.revise.view',   '查看','/web/plan/users/${userId}/visions#/${id}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('card.reissue', 'card.reissue.check',   '审核','/web/card/reviewers/${userId}/reissues#/${id}/workitems/${workitem}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('card.reissue', 'card.reissue.reject',  '退回','/web/card/users/${userId}/reissues#/${id}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('card.reissue', 'card.reissue.view',    '查看','/web/card/users/${userId}/reissues#/${id}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('card.reissue', 'card.reissue.approve', '审批','/web/card/approvers/${userId}/reissues#/${todo}/${id}/workitems/${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('card.reissue', 'card.reissue.reject',  '退回','/web/card/students/${userId}/reissues#/${id}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('card.reissue', 'card.reissue.view',    '查看','/web/card/students/${userId}/reissues#/${id}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.approve','审批','/web/place/approvers/${userId}/bookings#/${todo}/${id}/workitems/${workitem}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.check',  '审核','/web/place/checkers/${userId}/bookings#/${todo}/${id}/workitems/${workitem}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('place.booking','place.booking.reject', '退回','/web/place/users/${userId}/bookings#/${id}');
