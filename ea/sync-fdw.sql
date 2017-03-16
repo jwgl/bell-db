@@ -5,8 +5,8 @@
 > psql -Upostgres bell
 
 -- 创建用户
-CREATE USER ea WITH PASSWORD 'ea';
-CREATE USER tm WITH PASSWORD 'tm';
+CREATE USER ea WITH PASSWORD 'bell_ea_password';
+CREATE USER tm WITH PASSWORD 'bell_tm_password';
 
 -- 创建架构
 CREATE SCHEMA ea AUTHORIZATION ea;
@@ -16,17 +16,18 @@ CREATE SCHEMA tm AUTHORIZATION tm;
 CREATE EXTENSION oracle_fdw;
 
 -- 创建外部服务器
-CREATE SERVER zf FOREIGN DATA WRAPPER oracle_fdw OPTIONS (dbserver '//localhost/jw');
+CREATE SERVER zf FOREIGN DATA WRAPPER oracle_fdw OPTIONS (dbserver '//localhost/zf');
 
 -- 授权用户可以使用
 GRANT USAGE ON FOREIGN SERVER zf TO ea;
 GRANT USAGE ON FOREIGN SERVER zf TO tm;
 
 -- 创建用户映射
-CREATE USER MAPPING FOR ea SERVER zf OPTIONS (user 'ea',password 'ea');
-CREATE USER MAPPING FOR tm SERVER zf OPTIONS (user 'tm',password 'tm');
+CREATE USER MAPPING FOR ea SERVER zf OPTIONS (user 'ea',password 'zf_ea_password');
+CREATE USER MAPPING FOR tm SERVER zf OPTIONS (user 'tm',password 'zf_tm_password');
 
 -- 创建外部表
+\c bell ea
 
 --- 学期
 DROP FOREIGN TABLE IF EXISTS ea.sv_term;
