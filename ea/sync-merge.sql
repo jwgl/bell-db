@@ -14,14 +14,15 @@ end_week   = EXCLUDED.end_week,
 max_week   = EXCLUDED.max_week;
 
 -- 学院
-insert into ea.department(id, name, english_name, short_name, is_teaching, has_students)
-select id, name, english_name, short_name, is_teaching, has_students from ea.sv_department
+insert into ea.department(id, name, english_name, short_name, is_teaching, has_students, enabled)
+select id, name, english_name, short_name, is_teaching, has_students, enabled from ea.sv_department
 on conflict(id) do update set
 name         = EXCLUDED.name,
 english_name = EXCLUDED.english_name,
 short_name   = EXCLUDED.short_name,
 is_teaching  = EXCLUDED.is_teaching,
-has_students = EXCLUDED.has_students;
+has_students = EXCLUDED.has_students,
+enabled      = EXCLUDED.enabled;
 
 -- 教学场地
 insert into ea.place(id, name, english_name, building, type, seat, test_seat, enabled, can_test, is_external, note)
