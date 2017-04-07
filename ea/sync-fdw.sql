@@ -337,6 +337,7 @@ CREATE FOREIGN TABLE ea.sv_student (
 ---教学班ID映射，使用insert触发
 DROP FOREIGN TABLE IF EXISTS ea.sv_course_class_map;
 CREATE FOREIGN TABLE ea.sv_course_class_map (
+    term_id numeric(5),
     course_class_id uuid,
     course_class_code varchar(31),
     date_created timestamp
@@ -345,6 +346,7 @@ CREATE FOREIGN TABLE ea.sv_course_class_map (
 ---教学任务ID映射实体表，使用insert触发
 DROP FOREIGN TABLE IF EXISTS ea.sv_task_map;
 CREATE FOREIGN TABLE ea.sv_task_map (
+    term_id numeric(5),
     task_id uuid,
     task_code varchar(31),
     course_item_id varchar(10),
@@ -354,6 +356,7 @@ CREATE FOREIGN TABLE ea.sv_task_map (
 --- 教学班
 DROP FOREIGN TABLE IF EXISTS ea.sv_course_class;
 CREATE FOREIGN TABLE ea.sv_course_class (
+    term_id numeric(5),
     id uuid,
     code varchar(31),
     name varchar(50),
@@ -365,7 +368,6 @@ CREATE FOREIGN TABLE ea.sv_course_class (
     test_type integer,
     start_week integer,
     end_week integer,
-    term_id numeric(5),
     course_id char(8),
     department_id char(2),
     teacher_id char(5)
@@ -374,6 +376,7 @@ CREATE FOREIGN TABLE ea.sv_course_class (
 --- 教学班-计划
 DROP FOREIGN TABLE IF EXISTS ea.sv_course_class_program;
 CREATE FOREIGN TABLE ea.sv_course_class_program (
+    term_id numeric(5),
     course_class_id uuid,
     program_id integer
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_COURSE_CLASS_PROGRAM', readonly 'true');
@@ -381,6 +384,7 @@ CREATE FOREIGN TABLE ea.sv_course_class_program (
 --- 教学任务
 DROP FOREIGN TABLE IF EXISTS ea.sv_task;
 CREATE FOREIGN TABLE ea.sv_task (
+    term_id numeric(5),
     id uuid,
     code varchar(31),
     is_primary boolean,
@@ -393,17 +397,17 @@ CREATE FOREIGN TABLE ea.sv_task (
 --- 教学任务-教师
 DROP FOREIGN TABLE IF EXISTS ea.sv_task_teacher;
 CREATE FOREIGN TABLE ea.sv_task_teacher (
+    term_id numeric(5),
     task_id uuid,
-    task_code varchar(31),
     teacher_id char(5)
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK_TEACHER', readonly 'true');
 
 --- 教学安排
 DROP FOREIGN TABLE IF EXISTS ea.sv_task_schedule;
 CREATE FOREIGN TABLE ea.sv_task_schedule (
+    term_id numeric(5),
     id uuid,
     task_id uuid,
-    task_code varchar(31),
     teacher_id char(5),
     place_id char(6),
     start_week integer,
@@ -417,8 +421,8 @@ CREATE FOREIGN TABLE ea.sv_task_schedule (
 -- 学生选课
 DROP FOREIGN TABLE IF EXISTS ea.sv_task_student;
 CREATE FOREIGN TABLE ea.sv_task_student (
+    term_id numeric(5),
     task_id uuid,
-    task_code varchar(31),
     student_id char(10),
     date_created timestamp,
     register_type integer,
