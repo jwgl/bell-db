@@ -21,7 +21,7 @@ with teacher as (
             when regexp_like(lxdh, '1\d{10}') then regexp_substr(lxdh, '1\d{10}', 1, 1)
         end as long_phone,
         case
-            when yhm <> jsmm then 1
+            when yhm <> jsmm and not regexp_like(jsmm, 'a[b-d]{3}[0-9]{4}') then 1
             else 0 -- 用户名密码相同则禁用
         end as enabled,
         1 as user_type,
@@ -31,9 +31,6 @@ with teacher as (
     left join zfxfzb.xydmb on bm = xymc
     where (ty is null or ty = 'F') -- 停用
     and (sfzg is null or sfzg = '是') -- 是否在职
-    and (yhm in (select yhm from zfxfzb.czrzb where czsj > '2012') -- 近两年登录过系统
-      or yhm in (select jszgh from zfxfzb.jxrwbview where xn > '2012') -- 近两年有教学任务
-    )
     order by id
 ), student as (
     select

@@ -321,14 +321,15 @@ admission_id          = EXCLUDED.admission_id;
 insert into ea.sv_course_class_map values(null, null, null);
 
 -- 教学班
-insert into ea.course_class(id, code, name, period_theory, period_experiment, period_weeks,
+insert into ea.course_class(term_id, id, code, name, period_theory, period_experiment, period_weeks,
     property_id, assess_type, test_type, start_week, end_week,
-    term_id, course_id, department_id, teacher_id)
-select id, code, name, period_theory, period_experiment, period_weeks,
+    course_id, department_id, teacher_id)
+select term_id, id, code, name, period_theory, period_experiment, period_weeks,
     property_id, assess_type, test_type, start_week, end_week,
-    term_id, course_id, department_id, teacher_id
+    course_id, department_id, teacher_id
 from ea.sv_course_class
 on conflict(id) do update set
+term_id           = EXCLUDED.term_id,
 code              = EXCLUDED.code,
 name              = EXCLUDED.name,
 period_theory     = EXCLUDED.period_theory,
@@ -339,7 +340,6 @@ assess_type       = EXCLUDED.assess_type,
 test_type         = EXCLUDED.test_type,
 start_week        = EXCLUDED.start_week,
 end_week          = EXCLUDED.end_week,
-term_id           = EXCLUDED.term_id,
 course_id         = EXCLUDED.course_id,
 department_id     = EXCLUDED.department_id,
 teacher_id        = EXCLUDED.teacher_id;
@@ -350,7 +350,7 @@ select course_class_id, program_id from ea.sv_course_class_program
 on conflict(course_class_id, program_id) do nothing;
 
 -- 生成task_id与task_code对应关系，通过视图触发器实现
-insert into ea.sv_task_map values(null, null, null, null);
+insert into ea.sv_task_map values(null);
 
 -- 教学任务
 insert into ea.task(id, code, is_primary, start_week, end_week, course_item_id, course_class_id)
@@ -407,7 +407,7 @@ total_section  = EXCLUDED.total_section;
 insert into ea.task_student(task_id, student_id, date_created, register_type, repeat_type)
 select task_id, student_id, date_created, register_type, repeat_type
 from ea.sv_task_student
-where task_code like '(2016-2017-2)%'
+where term_id = 20162
 on conflict(task_id, student_id) do update set
 date_created     = EXCLUDED.date_created,
 register_type    = EXCLUDED.register_type,
@@ -418,46 +418,76 @@ delete from ea.task_student
 where (task_id, student_id) not in (
     select task_id, student_id
     from ea.sv_task_student
+    where term_id = 20162
 ) and task_id in (
     select task.id
     from ea.task
     join ea.course_class on course_class.id = task.course_class_id
-    where course_class.term_id=20162
+    where course_class.term_id = 20162
 );
 
 delete from ea.task_teacher
 where (task_id, teacher_id) not in (
-    select task_id, teacher_id from ea.sv_task_teacher
+    select task_id, teacher_id
+    from ea.sv_task_teacher
+    where term_id = 20162
+) and task_id in (
+    select task.id
+    from ea.task
+    join ea.course_class on course_class.id = task.course_class_id
+    where course_class.term_id = 20162
 );
 
 delete from ea.task_schedule
 where id not in (
-    select id from ea.sv_task_schedule
+    select id
+    from ea.sv_task_schedule
+    where term_id = 20162
+) and task_id in (
+    select task.id
+    from ea.task
+    join ea.course_class on course_class.id = task.course_class_id
+    where course_class.term_id = 20162
 );
 
 delete from ea.task
 where id not in (
     select id from ea.sv_task
+    where term_id = 20162
+) and course_class_id in (
+    select id
+    from ea.course_class
+    where term_id = 20162
 );
 
 delete from ea.course_class_program
-where course_class_id not in (
-    select id from ea.sv_course_class
+where (course_class_id, program_id) not in (
+    select course_class_id, program_id
+    from ea.sv_course_class_program
+    where term_id = 20162
+) and course_class_id in (
+    select id
+    from ea.course_class
+    where term_id = 20162
 );
 
 delete from ea.course_class
 where id not in (
-    select id from ea.sv_course_class
-);
+    select id
+    from ea.sv_course_class
+    where term_id = 20162
+) and term_id = 20162;
 
 delete from ea.program_course
 where (program_id, coalesce(direction_id, 0), course_id) not in (
-    select program_id, coalesce(direction_id, 0), course_id from ea.sv_program_course
+    select program_id, coalesce(direction_id, 0), course_id
+    from ea.sv_program_course
 );
 
 delete from ea.program_property
 where (program_id, property_id) not in (
-    select program_id, property_id from ea.sv_program_property
+    select program_id, property_id
+    from ea.sv_program_property
 );
 
 delete from ea.direction

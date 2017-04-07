@@ -4,7 +4,9 @@
 
 -- 用户表
 insert into tm.system_user(id, name, login_name, password, email, long_phone, enabled, user_type, department_id)
-select id, name, login_name, password, email, long_phone, enabled, user_type, department_id from tm.sv_system_user
+select u1.id, u1.name, u1.login_name, u1.password, u1.email, u1.long_phone, u1.enabled, u1.user_type, u1.department_id
+from tm.sv_system_user u1
+left join tm.system_user u2 on u1.id = u2.id
 on conflict(id) do update set
 name          = EXCLUDED.name,
 login_name    = EXCLUDED.login_name,
