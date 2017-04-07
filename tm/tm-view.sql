@@ -169,6 +169,7 @@ select course_class.term_id,
 from tm.rollcall
 join ea.task_schedule on rollcall.task_schedule_id = task_schedule.id
 join ea.task on task_schedule.task_id = task.id
+join ea.task_student on task.id = task_student.task_id and rollcall.student_id = task_student.student_id
 join ea.course_class on task.course_class_id = course_class.id
 left join student_leave on (
   rollcall.student_id       = student_leave.student_id and
