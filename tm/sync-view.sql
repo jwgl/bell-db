@@ -48,7 +48,6 @@ with teacher as (
     from zfxfzb.xsjbxxb
     left join zfxfzb.xydmb on xy_xsxy = xymc
     where xjzt =  '有' -- 有学籍
-    and exists (select * from zfxfzb.cjb where cjb.xh = xsjbxxb.xh) -- 有成绩
     and dqszj > (select max(dqszj) - 8 from zfxfzb.xsjbxxb)
     order by xh
 )
