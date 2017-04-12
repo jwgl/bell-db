@@ -69,7 +69,8 @@ begin
           select i from series
           where i between start_week and end_week
             and (odd_even = 0 or odd_even = 1 and i % 2 = 1 or odd_even = 2 and i % 2 = 0)
-      )
+    )
+    and bi.place_id = p1.id
   ) as count
   from ea.place p1
   where p1.id in (
