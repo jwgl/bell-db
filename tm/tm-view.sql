@@ -124,7 +124,24 @@ select * from ev_place_usage;
 
 -- 直接获取的同步视图，计划-课程
 create or replace view tm.dv_program_course as
-select * from ea.sv_program_course;
+select program_id,
+course_id,
+period_theory,
+period_experiment,
+period_weeks,
+is_compulsory,
+is_practical,
+property_id,
+assess_type,
+test_type,
+start_week,
+end_week,
+suggested_term,
+allowed_term,
+schedule_type,
+department_id,
+direction_id
+from ea.sv_program_course;
 
 -- 学生出勤情况视图
 create or replace view tm.dv_student_attendance as
