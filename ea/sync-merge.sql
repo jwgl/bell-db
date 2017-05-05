@@ -438,6 +438,24 @@ where (task_id, teacher_id) not in (
     where course_class.term_id = 20162
 );
 
+delete from tm.student_leave_item
+where task_schedule_id not in (
+    select id
+    from ea.sv_task_schedule
+);
+
+delete from tm.free_listen_item
+where task_schedule_id not in (
+    select id
+    from ea.sv_task_schedule
+);
+
+delete from tm.rollcall
+where task_schedule_id not in (
+    select id
+    from ea.sv_task_schedule
+);
+
 delete from ea.task_schedule
 where id not in (
     select id

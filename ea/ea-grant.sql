@@ -17,7 +17,6 @@ grant references on ea.place          to tm;
 grant references on ea.term           to tm;
 grant references on ea.task_schedule  to tm;
 
-
 grant select on ea.term               to tm;
 grant select on ea.admin_class        to tm;
 grant select on ea.teacher            to tm;
