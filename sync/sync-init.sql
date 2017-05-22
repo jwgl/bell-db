@@ -1,0 +1,3 @@
+CREATE USER sync WITH PASSWORD 'bell_sync_password';
+
+CREATE SCHEMA sync AUTHORIZATION sync;

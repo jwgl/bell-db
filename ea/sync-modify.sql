@@ -1,5 +1,5 @@
 /**
- * zfxfzb.tjkbapqkb
+ * database zf/zfxfzb
  */
 
 -- 修改推荐课表安排表
