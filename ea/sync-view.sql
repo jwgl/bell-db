@@ -419,7 +419,7 @@ select kcdm as id,
     decode(kclb, '必修课', 1, '选修课', 0, '实践环节', 1, 1) as is_compulsory,
     case when regexp_like(zxs, '^\+\d+$') then 1 else 0 end as is_practical,
     decode(xlcc,'本科', 1, '本科毕业生', 1, '硕士研究生', 2, /*其它或空*/ 9) as education_level,
-    decode(khfs, '考试', 1, '考查', 2, '论文', 3, /*空*/ 9) as assess_type,
+    decode(khfs, '考试', 1, '考查', 2, '毕业论文', 3, /*空*/ 9) as assess_type,
     nvl2(pk_kcdm, 1, 0) as schedule_type,
     kcjj as introduction,
     decode(tkbj, '1', 0, 1) enabled,
@@ -490,7 +490,7 @@ with all_program as (
         decode(kclb, '必修课', 1, '选修课', 0, '实践环节', 1, 1) as is_compulsory,
         case when regexp_like(zxs, '^\+\d+$') then 1 else 0 end as is_practical,
         to_number(kcxzdm) as property_id,
-        decode(khfs, '考试', 1, '考查', 2, '论文', 3, /*空*/ 9) as assess_type,
+        decode(khfs, '考试', 1, '考查', 2, '毕业论文', 3, /*空*/ 9) as assess_type,
         decode(ksfs, '集中', 1, '分散', 2, /*缺省集中*/ 1) as test_type,
         to_number(regexp_substr(qsjsz, '^\d+')) as start_week,
         to_number(regexp_substr(qsjsz, '\d+$')) as end_week,
@@ -518,7 +518,7 @@ with all_program as (
         decode(kclb, '必修课', 1, '选修课', 0, '实践环节', 1, 1) as is_compulsory,
         case when regexp_like(zxs, '^\+\d+$') then 1 else 0 end as is_practical,
         to_number(kcxzdm) as property_id,
-        decode(khfs, '考试', 1, '考查', 2, '论文', 3, /*空*/ 9) as assess_type,
+        decode(khfs, '考试', 1, '考查', 2, '毕业论文', 3, /*空*/ 9) as assess_type,
         decode(ksfs, '集中', 1, '分散', 2, /*缺省集中*/ 1) as test_type,
         to_number(regexp_substr(qsjsz, '^\d+')) as start_week,
         to_number(regexp_substr(qsjsz, '\d+$')) as end_week,
@@ -855,7 +855,7 @@ with normal as (
       nvl(case when regexp_like(zxs, '-\d+\.\d?$') then to_number(regexp_substr(zxs, '\d+\.\d?$')) else 0 end, b.period_experiment) as period_experiment,
       nvl(case when regexp_like(zxs, '^\+\d+$')    then to_number(regexp_substr(zxs, '\d+'))       else 0 end, b.period_weeks) as period_weeks,
       decode(program_id, null, g.id, null) as property_id, -- 对于没有计划的任务记录课程性质
-      decode(khfs, '考试', 1, '考查', 2, '论文', 3, /*空*/ 9) as assess_type,
+      decode(khfs, '考试', 1, '考查', 2, '毕业论文', 3, /*空*/ 9) as assess_type,
       decode(ksfs, '集中', 1, '分散', 2, /*缺省集中*/ 1) as test_type,
       qsz as start_week,
       jsz as end_week,
@@ -1104,8 +1104,8 @@ join zfxfzb.jsxxb c on c.zgh = a.jszgh;
 /**
  * 辅助视图 - 教学安排
  */
-create or replace view ea.sva_task_schedule as
-with task_normal_all as (
+create or replace view ea.sva_task_schedule_base as
+ with task_normal_all as (
     select distinct jxjhh, xkkh, bjmc, zyfx, jszgh
     from zfxfzb.jxrwb
     where nvl(xkzt, 0) <> 4
@@ -1256,6 +1256,42 @@ from zfxfzb.tykjxrwb a
 join zfxfzb.jxcdxxb b on b.jsmc = a.skdd
 join ea.sv_course_item c on c.task_course_id = a.kcdm
 where nvl(a.xkzt, 0) <> 4;
+
+
+create or replace view ea.sva_task_schedule as
+  with base as
+ (select  substr(xkkh, 2, 9) xn,to_number(substr(xkkh, 12, 1)) xq,substr(xkkh,15,8) kcdm,
+         xkkh,
+         qsz,
+         jsz,
+         xqj,
+         qssjd,
+         jsbh,
+         jszgh,
+          dsz,
+         skcd,guid,COURSE_ITEM_ID,TAB
+    from SVA_TASK_SCHEDULE_base a)
+    --排除已调整的课程union调整后的课程
+select distinct a.xn,a.xq,a.kcdm,
+       a."XKKH",
+       a."QSZ",
+       a."JSZ",
+       a."XQJ",
+       a."QSSJD",
+       a."JSBH",
+       a."JSZGH",
+       a."DSZ",
+       a."SKCD",a.guid,a.COURSE_ITEM_ID,a.tab,null parent_guid,a.guid root_guid
+  from base a
+  left join zfxfzb.ttkjlb b
+    on a.xkkh = b.xkkh
+   and a.guid = b.guid  and b.flag=1
+ where b.guid is null
+union
+select distinct a.xn,a.xq,a.kcdm,a.xkkh, a.qsz, a.jsz, a.xqj, a.qssjd, a.jsbh, a.jszgh,a.dsz, a.skcd,a.guid
+,a.COURSE_ITEM_ID,a.tab,a.parent_guid,a.root_guid
+  from zfxfzb.ttkjlb a 
+  where a.flag=1;
 
 /**
  * 教学安排（未合并）
