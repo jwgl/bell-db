@@ -158,7 +158,7 @@ create or replace function tm.sp_get_student_attendance_stats_by_admin_class (
 ) returns table (
   id text,
   name text,
-  adminClass text,
+  admin_class text,
   absent bigint,
   late numeric(8,1),
   early bigint,
@@ -621,6 +621,7 @@ create or replace function tm.sp_get_student_attendance_stats_by_task_schedule_s
   p_task_schedule_id uuid,
   p_student_id text
 ) returns table (
+  id text,
   absent bigint,
   late bigint,
   early bigint,
@@ -646,7 +647,7 @@ begin
     join attendance_schedule on task_schedule_id = attendance_schedule.id
     where student_id = p_student_id
   ), student_leave as (
-    select week, task_schedule_id, 4 as type
+    select student_id, week, task_schedule_id, 4 as type
     from tm.dva_valid_student_leave
     join attendance_schedule on task_schedule_id = attendance_schedule.id
     where student_id = p_student_id
@@ -676,7 +677,8 @@ begin
       select task_schedule_id, type from student_leave
     ) as x
   )
-  select attendance.absent,
+  select p_student_id,
+         attendance.absent,
          attendance.late +
          attendance.late_early as late,
          attendance.early +
@@ -779,6 +781,7 @@ create or replace function tm.sp_get_rollcall_details_by_course_class_student (
   p_course_class_id uuid,
   p_student_id text
 ) returns table (
+  id bigint,
   week integer,
   day_of_week integer,
   start_section integer,
@@ -810,7 +813,11 @@ begin
     join attendance_schedule on task_schedule_id = attendance_schedule.id
     where student_id = p_student_id
   ), rollcall as (
-    select dva_valid_rollcall.week, dva_valid_rollcall.task_schedule_id, type, teacher_id,
+    select dva_valid_rollcall.rollcall_id,
+           dva_valid_rollcall.week,
+           dva_valid_rollcall.task_schedule_id,
+           dva_valid_rollcall.type,
+           dva_valid_rollcall.teacher_id,
            student_leave.form_id as student_leave_form_id,
            free_listen.form_id as free_listen_form_id
     from tm.dva_valid_rollcall
@@ -820,7 +827,8 @@ begin
     left join free_listen on dva_valid_rollcall.task_schedule_id = free_listen.task_schedule_id
     where student_id = p_student_id
   )
-  select rollcall.week,
+  select rollcall.rollcall_id,
+         rollcall.week,
          task_schedule.day_of_week,
          task_schedule.start_section,
          task_schedule.total_section,
@@ -828,8 +836,8 @@ begin
          course.name::text as course,
          course_item.name::text as course_item,
          teacher.name::text as teacher,
-         student_leave_form_id,
-         free_listen_form_id
+         rollcall.student_leave_form_id,
+         rollcall.free_listen_form_id
   from rollcall
   join ea.task_schedule on rollcall.task_schedule_id = task_schedule.id
   join ea.task on task_schedule.task_id = task.id
@@ -837,7 +845,7 @@ begin
   join ea.course on course_class.course_id = course.id
   join ea.teacher on rollcall.teacher_id = teacher.id
   left join ea.course_item on task.course_item_id = course_item.id
-  order by 1, 2, 3;
+  order by week, day_of_week, start_section;
 end;
 $$ LANGUAGE plpgsql;
 
@@ -851,6 +859,7 @@ create or replace function tm.sp_get_student_leave_details_by_course_class_stude
   p_course_class_id uuid,
   p_student_id text
 ) returns table (
+  id bigint,
   week integer,
   day_of_week integer,
   start_section integer,
@@ -877,15 +886,20 @@ begin
     join attendance_schedule on task_schedule_id = attendance_schedule.id
     where student_id = p_student_id
   ), student_leave as (
-    select week, v.task_schedule_id, teacher_id, type,
-           v.form_id as student_leave_form_id,
+    select dva_valid_student_leave.item_id,
+           dva_valid_student_leave.week,
+           dva_valid_student_leave.task_schedule_id,
+           dva_valid_student_leave.teacher_id,
+           dva_valid_student_leave.type,
+           dva_valid_student_leave.form_id as student_leave_form_id,
            free_listen.form_id as free_listen_form_id
-    from tm.dva_valid_student_leave v
-    join attendance_schedule on v.task_schedule_id = attendance_schedule.id
-    left join free_listen on v.task_schedule_id = free_listen.task_schedule_id
+    from tm.dva_valid_student_leave
+    join attendance_schedule on dva_valid_student_leave.task_schedule_id = attendance_schedule.id
+    left join free_listen on dva_valid_student_leave.task_schedule_id = free_listen.task_schedule_id
     where student_id = p_student_id
   )
-  select student_leave.week,
+  select student_leave.item_id,
+         student_leave.week,
          task_schedule.day_of_week,
          task_schedule.start_section,
          task_schedule.total_section,
@@ -902,7 +916,7 @@ begin
   join ea.course on course_class.course_id = course.id
   join ea.teacher on student_leave.teacher_id = teacher.id
   left join ea.course_item on task.course_item_id = course_item.id
-  order by 1, 2, 3;
+  order by week, day_of_week, start_section;
 end;
 $$ LANGUAGE plpgsql;
 
@@ -916,6 +930,7 @@ create or replace function tm.sp_get_rollcall_details_by_student (
   p_term_id integer,
   p_student_id text
 ) returns table (
+  id bigint,
   week integer,
   day_of_week integer,
   start_section integer,
@@ -947,7 +962,11 @@ begin
     join attendance_schedule on task_schedule_id = attendance_schedule.id
     where student_id = p_student_id
   ), rollcall as (
-    select dva_valid_rollcall.week, dva_valid_rollcall.task_schedule_id, type, teacher_id,
+    select dva_valid_rollcall.rollcall_id,
+           dva_valid_rollcall.week,
+           dva_valid_rollcall.task_schedule_id,
+           dva_valid_rollcall.type,
+           dva_valid_rollcall.teacher_id,
            student_leave.form_id as student_leave_form_id,
            free_listen.form_id as free_listen_form_id
     from tm.dva_valid_rollcall
@@ -957,7 +976,8 @@ begin
     left join free_listen on dva_valid_rollcall.task_schedule_id = free_listen.task_schedule_id
     where student_id = p_student_id
   )
-  select rollcall.week,
+  select rollcall.rollcall_id,
+         rollcall.week,
          task_schedule.day_of_week,
          task_schedule.start_section,
          task_schedule.total_section,
@@ -965,8 +985,8 @@ begin
          course.name::text as course,
          course_item.name::text as course_item,
          teacher.name::text as teacher,
-         student_leave_form_id,
-         free_listen_form_id
+         rollcall.student_leave_form_id,
+         rollcall.free_listen_form_id
   from rollcall
   join ea.task_schedule on rollcall.task_schedule_id = task_schedule.id
   join ea.task on task_schedule.task_id = task.id
@@ -974,7 +994,7 @@ begin
   join ea.course on course_class.course_id = course.id
   join ea.teacher on rollcall.teacher_id = teacher.id
   left join ea.course_item on task.course_item_id = course_item.id
-  order by 1, 2, 3;
+  order by week, day_of_week, start_section;
 end;
 $$ LANGUAGE plpgsql;
 
@@ -988,6 +1008,7 @@ create or replace function tm.sp_get_student_leave_details_by_student (
   p_term_id integer,
   p_student_id text
 ) returns table (
+  id bigint,
   week integer,
   day_of_week integer,
   start_section integer,
@@ -1014,15 +1035,20 @@ begin
     join attendance_schedule on task_schedule_id = attendance_schedule.id
     where student_id = p_student_id
   ), student_leave as (
-    select week, v.task_schedule_id, teacher_id, type,
-           v.form_id as student_leave_form_id,
+    select dva_valid_student_leave.item_id,
+           dva_valid_student_leave.week,
+           dva_valid_student_leave.task_schedule_id,
+           dva_valid_student_leave.teacher_id,
+           dva_valid_student_leave.type,
+           dva_valid_student_leave.form_id as student_leave_form_id,
            free_listen.form_id as free_listen_form_id
-    from tm.dva_valid_student_leave v
-    join attendance_schedule on v.task_schedule_id = attendance_schedule.id
-    left join free_listen on v.task_schedule_id = free_listen.task_schedule_id
+    from tm.dva_valid_student_leave
+    join attendance_schedule on dva_valid_student_leave.task_schedule_id = attendance_schedule.id
+    left join free_listen on dva_valid_student_leave.task_schedule_id = free_listen.task_schedule_id
     where student_id = p_student_id
   )
-  select student_leave.week,
+  select student_leave.item_id,
+         student_leave.week,
          task_schedule.day_of_week,
          task_schedule.start_section,
          task_schedule.total_section,
@@ -1039,6 +1065,6 @@ begin
   join ea.course on course_class.course_id = course.id
   join ea.teacher on student_leave.teacher_id = teacher.id
   left join ea.course_item on task.course_item_id = course_item.id
-  order by 1, 2, 3;
+  order by week, day_of_week, start_section;
 end;
 $$ LANGUAGE plpgsql;

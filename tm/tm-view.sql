@@ -218,7 +218,8 @@ left join free_listen on (
 
 -- 有效免听视图，用于函数统计
 create or replace view tm.dva_valid_free_listen as
-select form.id as form_id,
+select item.id as item_id,
+       form.id as form_id,
        course_class.term_id,
        form.student_id,
        item.task_schedule_id
@@ -231,7 +232,8 @@ where form.status = 'APPROVED';
 
 -- 有效请假视图，用于函数统计
 create or replace view tm.dva_valid_student_leave as
-select form.id as form_id,
+select item.id as item_id,
+       form.id as form_id,
        form.term_id,
        form.student_id,
        item.week,
@@ -260,7 +262,8 @@ where form.status in ('APPROVED', 'FINISHED');
 
 -- 有效点名视图，用于函数统计
 create or replace view tm.dva_valid_rollcall as
-select course_class.term_id,
+select rollcall.id as rollcall_id,
+       course_class.term_id,
        rollcall.student_id,
        rollcall.week,
        rollcall.task_schedule_id,
