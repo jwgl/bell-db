@@ -419,7 +419,7 @@ select kcdm as id,
     decode(kclb, '必修课', 1, '选修课', 0, '实践环节', 1, 1) as is_compulsory,
     case when regexp_like(zxs, '^\+\d+$') then 1 else 0 end as is_practical,
     decode(xlcc,'本科', 1, '本科毕业生', 1, '硕士研究生', 2, /*其它或空*/ 9) as education_level,
-    decode(khfs, '考试', 1, '考查', 2, '论文', 3, /*空*/ 9) as assess_type,
+    decode(khfs, '考试', 1, '考查', 2, '毕业论文', 3, /*空*/ 9) as assess_type,
     nvl2(pk_kcdm, 1, 0) as schedule_type,
     kcjj as introduction,
     decode(tkbj, '1', 0, 1) enabled,
@@ -490,7 +490,7 @@ with all_program as (
         decode(kclb, '必修课', 1, '选修课', 0, '实践环节', 1, 1) as is_compulsory,
         case when regexp_like(zxs, '^\+\d+$') then 1 else 0 end as is_practical,
         to_number(kcxzdm) as property_id,
-        decode(khfs, '考试', 1, '考查', 2, '论文', 3, /*空*/ 9) as assess_type,
+        decode(khfs, '考试', 1, '考查', 2, '毕业论文', 3, /*空*/ 9) as assess_type,
         decode(ksfs, '集中', 1, '分散', 2, /*缺省集中*/ 1) as test_type,
         to_number(regexp_substr(qsjsz, '^\d+')) as start_week,
         to_number(regexp_substr(qsjsz, '\d+$')) as end_week,
@@ -518,7 +518,7 @@ with all_program as (
         decode(kclb, '必修课', 1, '选修课', 0, '实践环节', 1, 1) as is_compulsory,
         case when regexp_like(zxs, '^\+\d+$') then 1 else 0 end as is_practical,
         to_number(kcxzdm) as property_id,
-        decode(khfs, '考试', 1, '考查', 2, '论文', 3, /*空*/ 9) as assess_type,
+        decode(khfs, '考试', 1, '考查', 2, '毕业论文', 3, /*空*/ 9) as assess_type,
         decode(ksfs, '集中', 1, '分散', 2, /*缺省集中*/ 1) as test_type,
         to_number(regexp_substr(qsjsz, '^\d+')) as start_week,
         to_number(regexp_substr(qsjsz, '\d+$')) as end_week,
@@ -723,16 +723,95 @@ left join ea.sv_major on dqszj || zydm = sv_major.id
 left join ea.sv_direction on zyfx = sv_direction.name and (dqszj || zydm || '0') = sv_direction.program_id
 order by id;
 
+<<<<<<< HEAD
+/*
+ * 辅助视图 - 主教学任务（jxrwbview简化版）
+ */
+create or replace view ea.sva_task_base as
+select * from (
+	select -- 按专业培养方案产生的教学计划（主修）
+		jxjhh, zydm, zymc, zyfx, 
+		xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx, 
+		jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+		bjmc, jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
+		jxjhh || '0' as program_id,
+		'jxrwb-1' tab
+	from zfxfzb.jxrwb
+	where jxjhh in (select jxjhh from zfxfzb.jxjhkcxxb)
+	union all
+	select -- 按实际执行产生的教学计划（外语）
+		jxjhh, zydm, zymc, zyfx, 
+		xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx, 
+		jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+		bjmc, jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
+		null as program_id,
+		'jxrwb-2' tab
+	from zfxfzb.jxrwb
+	where jxjhh not in (select jxjhh from zfxfzb.jxjhkcxxb)
+	union all
+	select -- 按实际执行产生的教学计划（公选，政治）
+		substr(xn, 1, 4) || xq jxjhh, null zydm, null zymc, null zyfx, 
+		xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx, 
+		jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+		null bjmc, null jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
+		null as program_id,
+		'xxkjxrwb' tab
+	from zfxfzb.xxkjxrwb
+	union all
+	select -- 按专业培养方案产生的教学计划（辅修）
+		jxjhh, zydm, zymc, null zyfx, 
+		xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx, 
+		jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+		null bjmc, null jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
+		jxjhh || case 
+			when substr(jxjhh, 1, 4) < 2012 then '9' 
+			when substr(jxjhh, 1, 4) > 2012 then '1' 
+			else decode(fxbs, 1, '9', '1')
+		end as program_id,
+		'fxkjxrwb' tab
+	from zfxfzb.fxkjxrwb
+	where jxjhh in (select jxjhh from zfxfzb.fxjxjhkcxxb) -- 存在错误数据（教学任务问题37）
+	union all
+	select -- 按实际执行产生的教学计划（特殊课）
+		case when mxnj is null then substr(xn, 1, 4) else mxnj end || xq jxjhh, null zydm, null zymc, null zyfx, 
+		xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx, 
+		jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+		null bjmc, null jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
+		null as program_id, 
+		'cfbjxrwb' tab
+	from zfxfzb.cfbjxrwb
+	union all
+	select -- 按实际执行产生的教学计划（体育课） 
+		substr(xn, 1, 4) || xq jxjhh, null zydm, null zymc, null zyfx,  
+		xn, xq, c.kcdm, c.kcmc, a.xf, a.kcxz, a.kclb, kkxy, kkx, 
+		jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+		null bjmc, null jxbmc, a.zxs, xkzt, mxdx, xzdx, a.ksfs, a.khfs,
+		null program_id,
+		'tykjxrwb' tab
+	from zfxfzb.tykjxrwb a
+	join zfxfzb.tykkcdmb b on a.kcdm = b.kcdm
+	join zfxfzb.tykcdmb c on c.kcdm = b.sskcdm -- 还原体育1、体育2
+) where nvl(xkzt, 0) <> 4 and jszgh in (select zgh from zfxfzb.jsxxb);
+
+
+=======
 /**
  * 教学班ID映射
  */
 create or replace view ea.sv_course_class_map as
 select term_id, course_class_id, course_class_code, date_created
 from ea.course_class_map;
+>>>>>>> jwgl/master
 
 /**
  * 用于同步时触发生成course_class_map数据，使用insert语句触发
  */
+<<<<<<< HEAD
+create or replace view ea.sva_course_class_id as 
+-- 以前学期
+select course_class_id, original_id from ea.course_class_id
+order by course_class_id;
+=======
 create or replace trigger ea.sv_course_class_map_trigger
   instead of insert
   on ea.sv_course_class_map
@@ -761,6 +840,7 @@ begin
   );
 end;
 /
+>>>>>>> jwgl/master
 
 /**
  * 教学班（注意：先创建ea.term，更新学期数据至最新）
@@ -775,7 +855,7 @@ with normal as (
       nvl(case when regexp_like(zxs, '-\d+\.\d?$') then to_number(regexp_substr(zxs, '\d+\.\d?$')) else 0 end, b.period_experiment) as period_experiment,
       nvl(case when regexp_like(zxs, '^\+\d+$')    then to_number(regexp_substr(zxs, '\d+'))       else 0 end, b.period_weeks) as period_weeks,
       decode(program_id, null, g.id, null) as property_id, -- 对于没有计划的任务记录课程性质
-      decode(khfs, '考试', 1, '考查', 2, '论文', 3, /*空*/ 9) as assess_type,
+      decode(khfs, '考试', 1, '考查', 2, '毕业论文', 3, /*空*/ 9) as assess_type,
       decode(ksfs, '集中', 1, '分散', 2, /*缺省集中*/ 1) as test_type,
       qsz as start_week,
       jsz as end_week,
@@ -1024,8 +1104,8 @@ join zfxfzb.jsxxb c on c.zgh = a.jszgh;
 /**
  * 辅助视图 - 教学安排
  */
-create or replace view ea.sva_task_schedule as
-with task_normal_all as (
+create or replace view ea.sva_task_schedule_base as
+ with task_normal_all as (
     select distinct jxjhh, xkkh, bjmc, zyfx, jszgh
     from zfxfzb.jxrwb
     where nvl(xkzt, 0) <> 4
@@ -1176,6 +1256,42 @@ from zfxfzb.tykjxrwb a
 join zfxfzb.jxcdxxb b on b.jsmc = a.skdd
 join ea.sv_course_item c on c.task_course_id = a.kcdm
 where nvl(a.xkzt, 0) <> 4;
+
+
+create or replace view ea.sva_task_schedule as
+  with base as
+ (select  substr(xkkh, 2, 9) xn,to_number(substr(xkkh, 12, 1)) xq,substr(xkkh,15,8) kcdm,
+         xkkh,
+         qsz,
+         jsz,
+         xqj,
+         qssjd,
+         jsbh,
+         jszgh,
+          dsz,
+         skcd,guid,COURSE_ITEM_ID,TAB
+    from SVA_TASK_SCHEDULE_base a)
+    --排除已调整的课程union调整后的课程
+select distinct a.xn,a.xq,a.kcdm,
+       a."XKKH",
+       a."QSZ",
+       a."JSZ",
+       a."XQJ",
+       a."QSSJD",
+       a."JSBH",
+       a."JSZGH",
+       a."DSZ",
+       a."SKCD",a.guid,a.COURSE_ITEM_ID,a.tab,null parent_guid,a.guid root_guid
+  from base a
+  left join zfxfzb.ttkjlb b
+    on a.xkkh = b.xkkh
+   and a.guid = b.guid  and b.flag=1
+ where b.guid is null
+union
+select distinct a.xn,a.xq,a.kcdm,a.xkkh, a.qsz, a.jsz, a.xqj, a.qssjd, a.jsbh, a.jszgh,a.dsz, a.skcd,a.guid
+,a.COURSE_ITEM_ID,a.tab,a.parent_guid,a.root_guid
+  from zfxfzb.ttkjlb a 
+  where a.flag=1;
 
 /**
  * 教学安排（未合并）

@@ -353,6 +353,14 @@ CREATE FOREIGN TABLE ea.sv_task_map (
     date_created timestamp
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK_MAP');
 
+
+---教学班ID
+DROP FOREIGN TABLE IF EXISTS ea.COURSE_CLASS_ID;
+CREATE FOREIGN TABLE ea.COURSE_CLASS_ID (
+    course_class_id numeric(13),
+    original_id varchar(31)
+) SERVER zf OPTIONS (schema 'EA', table 'COURSE_CLASS_ID');
+
 --- 教学班
 DROP FOREIGN TABLE IF EXISTS ea.sv_course_class;
 CREATE FOREIGN TABLE ea.sv_course_class (
