@@ -1184,14 +1184,14 @@ create or replace view ea.sv_task_schedule as
 with task_schedule as (
     select a.guid, a.xkkh, a.course_item_id,
            a.qsz, a.jsz, a.xqj, a.qssjd, a.jsbh, a.jszgh, a.dsz, a.skcd,
-           null as parent_guid, null as root_guid
+           null as root_guid
     from ea.sva_task_schedule a
-    left join zfxfzb.ttkjlb b on a.xkkh = b.xkkh and a.guid = b.guid and flag = 1
+    left join zfxfzb.ttkjlb b on a.xkkh = b.xkkh and a.guid = b.guid and b.flag = 1
     where b.guid is null
-    union
+    union all
     select guid, xkkh, course_item_id,
            qsz, jsz, xqj, qssjd, jsbh, jszgh, dsz, skcd,
-           parent_guid, root_guid
+           root_guid
     from zfxfzb.ttkjlb
     where flag = 1
 )
@@ -1206,8 +1206,7 @@ select b.term_id,
     xqj as day_of_week,
     qssjd as start_section,
     skcd as total_section,
-    parent_guid as parent_id,
-    root_guid as root_id
+    HEXTORAW(root_guid) as root_id
 from task_schedule a
 join ea.task_map b on b.task_code = a.xkkh and b.course_item_id = nvl(a.course_item_id, '0000000000');
 

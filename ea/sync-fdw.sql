@@ -415,7 +415,8 @@ CREATE FOREIGN TABLE ea.sv_task_schedule (
     odd_even integer,
     day_of_week integer,
     start_section integer,
-    total_section integer
+    total_section integer,
+    root_id uuid
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK_SCHEDULE', readonly 'true');
 
 -- 学生选课
