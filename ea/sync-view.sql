@@ -1022,9 +1022,9 @@ join ea.task_map b on b.task_code = a.xkkh and b.course_item_id = nvl(a.course_i
 join zfxfzb.jsxxb c on c.zgh = a.jszgh;
 
 /**
- * 辅助视图 - 教学安排
+ * 辅助视图 - 教学安排(不含调课)
  */
-create or replace view ea.sva_task_schedule_base as
+create or replace view ea.sva_task_schedule as
 with task_normal_all as (
     select distinct jxjhh, xkkh, bjmc, zyfx, jszgh
     from zfxfzb.jxrwb
@@ -1177,46 +1177,24 @@ join zfxfzb.jxcdxxb b on b.jsmc = a.skdd
 join ea.sv_course_item c on c.task_course_id = a.kcdm
 where nvl(a.xkzt, 0) <> 4;
 
-create or replace view ea.sva_task_schedule as  
-with base as
- (select  substr(xkkh, 2, 9) xn,to_number(substr(xkkh, 12, 1)) xq,substr(xkkh,15,8) kcdm,
-         xkkh,
-         qsz,
-         jsz,
-         xqj,
-         qssjd,
-         jsbh,
-         jszgh,
-          dsz,
-         skcd,guid,COURSE_ITEM_ID,TAB
-    from SVA_TASK_SCHEDULE_base a)
-    --排除已调整的课程union调整后的课程
-select distinct a.xn,a.xq,a.kcdm,
-       a."XKKH",
-       a."QSZ",
-       a."JSZ",
-       a."XQJ",
-       a."QSSJD",
-       a."JSBH",
-       a."JSZGH",
-       a."DSZ",
-       a."SKCD",a.guid,a.COURSE_ITEM_ID,a.tab,null parent_guid,a.guid root_guid
-  from base a
-  left join zfxfzb.ttkjlb b
-    on a.xkkh = b.xkkh
-   and a.guid = b.guid  and b.flag=1
- where b.guid is null
-union
-select distinct a.xn,a.xq,a.kcdm,a.xkkh, a.qsz, a.jsz, a.xqj, a.qssjd, a.jsbh, a.jszgh,a.dsz, a.skcd,a.guid
-,a.COURSE_ITEM_ID,a.tab,a.parent_guid,a.root_guid
-  from zfxfzb.ttkjlb a 
-  where a.flag=1; 
-
-
 /**
  * 教学安排（未合并）
  */
 create or replace view ea.sv_task_schedule as
+with task_schedule as (
+    select a.guid, a.xkkh, a.course_item_id,
+           a.qsz, a.jsz, a.xqj, a.qssjd, a.jsbh, a.jszgh, a.dsz, a.skcd,
+           null as parent_guid, null as root_guid
+    from ea.sva_task_schedule a
+    left join zfxfzb.ttkjlb b on a.xkkh = b.xkkh and a.guid = b.guid and flag = 1
+    where b.guid is null
+    union
+    select guid, xkkh, course_item_id,
+           qsz, jsz, xqj, qssjd, jsbh, jszgh, dsz, skcd,
+           parent_guid, root_guid
+    from zfxfzb.ttkjlb
+    where flag = 1
+)
 select b.term_id,
     HEXTORAW(guid) as id,
     b.task_id,
@@ -1227,8 +1205,10 @@ select b.term_id,
     dsz as odd_even,
     xqj as day_of_week,
     qssjd as start_section,
-    skcd as total_section
-from ea.sva_task_schedule a
+    skcd as total_section,
+    parent_guid as parent_id,
+    root_guid as root_id
+from task_schedule a
 join ea.task_map b on b.task_code = a.xkkh and b.course_item_id = nvl(a.course_item_id, '0000000000');
 
 /**
