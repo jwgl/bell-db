@@ -64,6 +64,7 @@ from ea.teacher t
 where exists(select * from admin_class_at_school where counsellor_id = t.id)
 ;
 
+-- 学生角色
 create or replace view tm.dv_student_role as
 select s.id as user_id, 'ROLE_IN_SCHOOL_STUDENT' as role_id
 from ea.student s
@@ -83,9 +84,11 @@ and exists (
 )
 ;
 
+-- 外部用户角色
 create or replace view tm.dv_external_role as
     select '' as userId, '' as role_id where 1 = 2
 ;
+
 -- 计划-课程
 create or replace view tm.dv_scheme_course as
 select c.id, c.name, c.credit,
@@ -146,7 +149,7 @@ from ea.sv_program_course;
 -- 学生出勤情况视图
 create or replace view tm.dv_student_attendance as
 with free_listen as (
-  select form.id as form_id, course_class.term_id, form.student_id, item.task_schedule_id
+  select form.id as form_id, form.student_id, item.task_schedule_id
   from tm.free_listen_form form
   join tm.free_listen_item item on item.form_id = form.id
   join ea.task_schedule on item.task_schedule_id = task_schedule.id
@@ -167,11 +170,11 @@ with free_listen as (
      item.day_of_week is null and item.task_schedule_id is null
    )
    and item.week between task_schedule.start_week and task_schedule.end_week
-   and (
-     task_schedule.odd_even = 0 or
-     task_schedule.odd_even = 1 and item.week % 2 = 1 or
-     task_schedule.odd_even = 2 and item.week % 2 = 0
-   )
+   and case task_schedule.odd_even
+     when 0 then true
+     when 1 then item.week % 2 = 1
+     when 2 then item.week % 2 = 0
+   end
   where form.status in ('APPROVED', 'FINISHED')
 )
 select course_class.term_id,
@@ -182,7 +185,7 @@ select course_class.term_id,
        student_leave.form_id as student_leave_form_id,
        free_listen.form_id as free_listen_form_id,
        student_leave.form_id is null and free_listen.form_id is null as valid,
-       rollcall.teacher_id       
+       rollcall.teacher_id
 from tm.rollcall
 join ea.task_schedule on rollcall.task_schedule_id = task_schedule.id
 join ea.task on task_schedule.task_id = task.id
@@ -212,3 +215,64 @@ left join free_listen on (
   student_leave.student_id       = free_listen.student_id and
   student_leave.task_schedule_id = free_listen.task_schedule_id
 );
+
+-- 有效免听视图，用于函数统计
+create or replace view tm.dva_valid_free_listen as
+select item.id as item_id,
+       form.id as form_id,
+       course_class.term_id,
+       form.student_id,
+       item.task_schedule_id
+from tm.free_listen_form form
+join tm.free_listen_item item on item.form_id = form.id
+join ea.task_schedule on item.task_schedule_id = task_schedule.id
+join ea.task on task_schedule.task_id = task.id
+join ea.course_class on task.course_class_id = course_class.id
+where form.status = 'APPROVED';
+
+-- 有效请假视图，用于函数统计
+create or replace view tm.dva_valid_student_leave as
+select item.id as item_id,
+       form.id as form_id,
+       form.term_id,
+       form.student_id,
+       item.week,
+       task_schedule.id as task_schedule_id,
+       task_schedule.total_section,
+       form.type,
+       form.approver_id as teacher_id
+from tm.student_leave_form form
+join tm.student_leave_item item on form.id = item.form_id
+join ea.task_student on form.student_id = task_student.student_id
+join ea.task on task_student.task_id = task.id
+join ea.course_class on task.course_class_id = course_class.id and form.term_id = course_class.term_id
+join ea.task_schedule on task_schedule.task_id = task.id
+ and (
+   item.task_schedule_id = task_schedule.id or
+   item.day_of_week = task_schedule.day_of_week or
+   item.day_of_week is null and item.task_schedule_id is null
+ )
+ and item.week between task_schedule.start_week and task_schedule.end_week
+ and case task_schedule.odd_even
+   when 0 then true
+   when 1 then item.week % 2 = 1
+   when 2 then item.week % 2 = 0
+ end
+where form.status in ('APPROVED', 'FINISHED');
+
+-- 有效点名视图，用于函数统计
+create or replace view tm.dva_valid_rollcall as
+select rollcall.id as rollcall_id,
+       course_class.term_id,
+       rollcall.student_id,
+       rollcall.week,
+       rollcall.task_schedule_id,
+       task_schedule.total_section,
+       rollcall.type,
+       rollcall.teacher_id
+from tm.rollcall
+join ea.task_schedule on rollcall.task_schedule_id = task_schedule.id
+join ea.task on task_schedule.task_id = task.id
+join ea.task_student on task.id = task_student.task_id and rollcall.student_id = task_student.student_id
+join ea.course_class on task.course_class_id = course_class.id
+where rollcall.type <> 6;

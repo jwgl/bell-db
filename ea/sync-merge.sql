@@ -371,9 +371,10 @@ on conflict(task_id, teacher_id) do nothing;
 -- 教学安排
 -- Oracle 11g端合并性能低，合并逻辑移到PostgreSQL端
 insert into ea.task_schedule(id, task_id, teacher_id, place_id, start_week, end_week,
-    odd_even, day_of_week, start_section, total_section)
+    odd_even, day_of_week, start_section, total_section, root_id)
 with formal as (
-    select case when b.total_section is null then a.id else b.id end as id, -- 统一ID为长度不等于1的安排
+    select case when b.id is null then a.id else b.id end as id, -- 统一ID为长度不等于1的安排
+        case when b.id is null then a.root_id else b.root_id end as root_id, -- 统一ROOT_ID为长度不等于1的安排
         a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week,
         a.odd_even, a.day_of_week, a.start_section, a.total_section
     from sv_task_schedule a
@@ -389,9 +390,9 @@ with formal as (
       or b.start_section + b.total_section = a.start_section and a.start_section not in (5, 10))
 )
 select id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week,
-    min(start_section), sum(total_section) as total_section
+    min(start_section), sum(total_section) as total_section, root_id
 from formal
-group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week
+group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, root_id
 on conflict(id) do update set
 task_id        = EXCLUDED.task_id,
 teacher_id     = EXCLUDED.teacher_id,
@@ -401,17 +402,19 @@ end_week       = EXCLUDED.end_week,
 odd_even       = EXCLUDED.odd_even,
 day_of_week    = EXCLUDED.day_of_week,
 start_section  = EXCLUDED.start_section,
-total_section  = EXCLUDED.total_section;
+total_section  = EXCLUDED.total_section,
+root_id        = EXCLUDED.root_id;
 
 -- 学生选课
-insert into ea.task_student(task_id, student_id, date_created, register_type, repeat_type)
-select task_id, student_id, date_created, register_type, repeat_type
+insert into ea.task_student(task_id, student_id, date_created, register_type, repeat_type, exam_flag)
+select task_id, student_id, date_created, register_type, repeat_type, exam_flag
 from ea.sv_task_student
 where term_id = 20162
 on conflict(task_id, student_id) do update set
 date_created     = EXCLUDED.date_created,
 register_type    = EXCLUDED.register_type,
-repeat_type      = EXCLUDED.repeat_type;
+repeat_type      = EXCLUDED.repeat_type,
+exam_flag        = EXCLUDED.exam_flag;
 
 -- 删除数据
 delete from ea.task_student
