@@ -1177,6 +1177,8 @@ join zfxfzb.jxcdxxb b on b.jsmc = a.skdd
 join ea.sv_course_item c on c.task_course_id = a.kcdm
 where nvl(a.xkzt, 0) <> 4;
 
+
+
 /**
  * 教学安排（未合并）
  */
@@ -1186,7 +1188,7 @@ with task_schedule as (
            a.qsz, a.jsz, a.xqj, a.qssjd, a.jsbh, a.jszgh, a.dsz, a.skcd,
            null as root_guid
     from ea.sva_task_schedule a
-    left join zfxfzb.ttkjlb b on a.xkkh = b.xkkh and a.guid = b.guid and b.flag = 1
+    left join zfxfzb.ttkjlb b on a.xkkh = b.xkkh and a.guid = b.guid and b.flag >= 1
     where b.guid is null
     union all
     select guid, xkkh, course_item_id,
