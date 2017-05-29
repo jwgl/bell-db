@@ -22,8 +22,8 @@ INSERT INTO tm.role (id,name) VALUES ('ROLE_COURSE_REGISTER_STUDENT','可选课�
 INSERT INTO tm.role (id,name) VALUES ('ROLE_FREE_LISTEN_ADMIN',      '免听管理员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_ROLLCALL_ADMIN',         '考勤管理员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_ROLLCALL_DEPT_ADMIN',    '考勤管理员-学院');
-INSERT INTO tm.role (id,name) VALUES ('ROLE_SUPERVISOR',             '现任督导');
-INSERT INTO tm.role (id,name) VALUES ('ROLE_SUPERVISOR_ADMIN',       '督导管理员');
+INSERT INTO tm.role (id,name) VALUES ('ROLE_OBSERVER',               '现任督导员');
+INSERT INTO tm.role (id,name) VALUES ('ROLE_OBSERVATION_ADMIN',      '督导管理员');
 
 INSERT INTO tm.permission (id,name) VALUES ('PERM_WORK_ITEMS',              '待办事项');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_SYSTEM_SETUP',            '系统设置');
@@ -60,11 +60,11 @@ INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_BOOKING_CHECK',     '借
 INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_BOOKING_APPROVE',   '借教室-审批');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_CARD_REISSUE_WRITE',      '补办学生证-编辑');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_CARD_REISSUE_APPROVE',    '补办学生证-审批');
-INSERT INTO tm.permission (id,name) VALUES ('PERM_SUPERVISOR_WRITE',        '督导写');
-INSERT INTO tm.permission (id,name) VALUES ('PERM_ADMIN_SUPERVISOR_WRITE',  '督导管理员写');
-INSERT INTO tm.permission (id,name) VALUES ('PERM_SUPERVISOR_PUBLIC',       '督导听课记录查看');
-INSERT INTO tm.permission (id,name) VALUES ('PERM_CO_SUPERVISOR_APPROVE',   '学院督导听课发布');
-INSERT INTO tm.permission (id,name) VALUES ('PERM_CO_SUPERVISOR_ADMIN',     '学院督导管理');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_WRITE',       '督导听课-编辑');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_READ',        '督导听课-查看');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_DEPT_APPROVE','督导听课-院督导听课发布');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVER_ADMIN',          '督导管理');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVER_DEPT_ADMIN',     '督导管理-院督导员管理');
 
 
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_SYSTEM_ADMIN',            'PERM_SYSTEM_SETUP');
@@ -112,14 +112,13 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKI
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_CARD_REISSUE_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_REGISTER_ADMIN',          'PERM_CARD_REISSUE_APPROVE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_USER',                    'PERM_WORK_ITEMS');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_SUPERVISOR',              'PERM_SUPERVISOR_WRITE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_SUPERVISOR_ADMIN',        'PERM_ADMIN_SUPERVISOR_WRITE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_SUPERVISOR_ADMIN',        'PERM_SUPERVISOR_WRITE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_SUPERVISOR_ADMIN',        'PERM_SUPERVISOR_READ');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_SUPERVISOR_ADMIN',        'PERM_CO_SUPERVISOR_APPROVE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_TEACHER',       'PERM_SUPERVISOR_PUBLIC');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DEAN_OF_TEACHING',        'PERM_CO_SUPERVISOR_APPROVE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ACADEMIC_SECRETARY',      'PERM_CO_SUPERVISOR_ADMIN');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_OBSERVER',                'PERM_OBSERVATION_WRITE');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_OBSERVATION_ADMIN',       'PERM_OBSERVATION_WRITE');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_OBSERVATION_ADMIN',       'PERM_OBSERVER_ADMIN');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_OBSERVATION_ADMIN',       'PERM_OBSERVATION_DEPT_APPROVE');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_TEACHER',       'PERM_OBSERVATION_READ');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DEAN_OF_TEACHING',        'PERM_OBSERVATION_DEPT_APPROVE');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ACADEMIC_SECRETARY',      'PERM_OBSERVER_DEPT_ADMIN');
 
 INSERT INTO tm.workflow (id,name) VALUES ('scheme.create',  '教学计划编制');
 INSERT INTO tm.workflow (id,name) VALUES ('scheme.revise',  '教学计划变更');
