@@ -1177,6 +1177,8 @@ join zfxfzb.jxcdxxb b on b.jsmc = a.skdd
 join ea.sv_course_item c on c.task_course_id = a.kcdm
 where nvl(a.xkzt, 0) <> 4;
 
+
+
 /**
  * 教学安排（未合并）
  */
@@ -1186,7 +1188,7 @@ with task_schedule as (
            a.qsz, a.jsz, a.xqj, a.qssjd, a.jsbh, a.jszgh, a.dsz, a.skcd,
            null as root_guid
     from ea.sva_task_schedule a
-    left join zfxfzb.ttkjlb b on a.xkkh = b.xkkh and a.guid = b.guid and b.flag = 1
+    left join zfxfzb.ttkjlb b on a.xkkh = b.xkkh and a.guid = b.guid and b.flag >= 1
     where b.guid is null
     union all
     select guid, xkkh, course_item_id,
@@ -1214,11 +1216,20 @@ join ea.task_map b on b.task_code = a.xkkh and b.course_item_id = nvl(a.course_i
  * 学生选课
  */
 create or replace view ea.sv_task_student as
-select b.term_id,
-    b.task_id,
-    a.xh as student_id,
-    to_date(a.xksj, 'yyyy-mm-dd HH24:MI:SS') as date_created,
-    to_number(nvl(a.xklb, 0)) as register_type,
-    to_number(nvl(a.cxbj, 0)) as repeat_type
-from zfxfzb.xsxkb a
-join ea.task_map b on b.task_code = a.xkkh;
+select term_id,
+    task_id,
+    xh as student_id,
+    to_date(xksj, 'yyyy-mm-dd HH24:MI:SS') as date_created,
+    decode(xsf, 
+        '6', 0, -- 排课
+        '1', 1, -- 选课
+        '2', 2  -- 跨专业选课
+    ) as register_type,
+    nvl(cxbj, 0) as repeat_type,
+    decode(bz,
+        null,       0,
+        '取消资格', 1,
+        '缓考',     2
+    ) as exam_flag
+from zfxfzb.xsxkb
+join ea.task_map on task_code = xkkh;

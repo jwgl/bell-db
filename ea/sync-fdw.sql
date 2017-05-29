@@ -427,5 +427,6 @@ CREATE FOREIGN TABLE ea.sv_task_student (
     student_id char(10),
     date_created timestamp,
     register_type integer,
-    repeat_type integer
+    repeat_type integer,
+    exam_flag integer
 ) SERVER zf OPTIONS (schema 'EA', table 'SV_TASK_STUDENT', readonly 'true');

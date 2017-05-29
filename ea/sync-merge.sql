@@ -406,14 +406,15 @@ total_section  = EXCLUDED.total_section,
 root_id        = EXCLUDED.root_id;
 
 -- 学生选课
-insert into ea.task_student(task_id, student_id, date_created, register_type, repeat_type)
-select task_id, student_id, date_created, register_type, repeat_type
+insert into ea.task_student(task_id, student_id, date_created, register_type, repeat_type, exam_flag)
+select task_id, student_id, date_created, register_type, repeat_type, exam_flag
 from ea.sv_task_student
 where term_id = 20162
 on conflict(task_id, student_id) do update set
 date_created     = EXCLUDED.date_created,
 register_type    = EXCLUDED.register_type,
-repeat_type      = EXCLUDED.repeat_type;
+repeat_type      = EXCLUDED.repeat_type,
+exam_flag        = EXCLUDED.exam_flag;
 
 -- 删除数据
 delete from ea.task_student
