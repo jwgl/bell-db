@@ -149,10 +149,26 @@ from ea.sv_program_course;
 -- 学生出勤情况视图
 create or replace view tm.dv_student_attendance as
 with free_listen as (
-  select form.id as form_id, form.student_id, item.task_schedule_id
+  select item.id as item_id,
+         form.id as form_id,
+         course_class.term_id,
+         form.student_id,
+         task_schedule.id as task_schedule_id
   from tm.free_listen_form form
   join tm.free_listen_item item on item.form_id = form.id
-  join ea.task_schedule on item.task_schedule_id = task_schedule.id
+  join ea.task_schedule on item.task_schedule_id = task_schedule.id 
+  join ea.task on task_schedule.task_id = task.id
+  join ea.course_class on task.course_class_id = course_class.id
+  where form.status = 'APPROVED'
+  union
+  select item.id as item_id,
+         form.id as form_id,
+         course_class.term_id,
+         form.student_id,
+         task_schedule.id as task_schedule_id
+  from tm.free_listen_form form
+  join tm.free_listen_item item on item.form_id = form.id
+  join ea.task_schedule on item.task_schedule_id = task_schedule.root_id 
   join ea.task on task_schedule.task_id = task.id
   join ea.course_class on task.course_class_id = course_class.id
   where form.status = 'APPROVED'
@@ -222,10 +238,22 @@ select item.id as item_id,
        form.id as form_id,
        course_class.term_id,
        form.student_id,
-       item.task_schedule_id
+       task_schedule.id as task_schedule_id
 from tm.free_listen_form form
 join tm.free_listen_item item on item.form_id = form.id
-join ea.task_schedule on item.task_schedule_id = task_schedule.id
+join ea.task_schedule on item.task_schedule_id = task_schedule.id 
+join ea.task on task_schedule.task_id = task.id
+join ea.course_class on task.course_class_id = course_class.id
+where form.status = 'APPROVED'
+union
+select item.id as item_id,
+       form.id as form_id,
+       course_class.term_id,
+       form.student_id,
+       task_schedule.id as task_schedule_id
+from tm.free_listen_form form
+join tm.free_listen_item item on item.form_id = form.id
+join ea.task_schedule on item.task_schedule_id = task_schedule.root_id 
 join ea.task on task_schedule.task_id = task.id
 join ea.course_class on task.course_class_id = course_class.id
 where form.status = 'APPROVED';

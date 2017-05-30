@@ -16,6 +16,7 @@ grant references on ea.field          to tm;
 grant references on ea.place          to tm;
 grant references on ea.term           to tm;
 grant references on ea.task_schedule  to tm;
+grant references on ea.course_class   to tm;
 
 grant select on ea.term               to tm;
 grant select on ea.admin_class        to tm;
@@ -46,3 +47,5 @@ grant select on ea.place_department   to tm;
 grant select on ea.term_swap_date     to tm;
 
 grant select on ea.sv_program_course  to tm;
+
+grant update(exam_flag) on ea.task_student to tm;

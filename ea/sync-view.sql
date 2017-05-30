@@ -1177,8 +1177,6 @@ join zfxfzb.jxcdxxb b on b.jsmc = a.skdd
 join ea.sv_course_item c on c.task_course_id = a.kcdm
 where nvl(a.xkzt, 0) <> 4;
 
-
-
 /**
  * 教学安排（未合并）
  */
