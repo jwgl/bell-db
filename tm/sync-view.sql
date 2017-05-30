@@ -117,11 +117,32 @@ select
   bz as status
 from zfxfzb.jxcdyyb
 where ly='Tm' and jyjtsj is not null
-WITH CHECK OPTION;
+with check option;
 
 /*
  * 教学计划-课程视图，用于插入数据
  */
+drop table tm.program_course;
+create table tm.program_course (
+    program_id number,
+    course_id varchar2(8),
+    period_theory number,
+    period_experiment number,
+    period_weeks number,
+    is_compulsory number,
+    is_practical number,
+    property_id number,
+    assess_type number,
+    test_type number,
+    start_week number,
+    end_week number,
+    suggested_term number,
+    allowed_term number,
+    schedule_type number,
+    department_id varchar2(2),
+    direction_id number
+);
+
 create or replace view tm.iv_program_course as
 select
     program_id,
@@ -142,27 +163,6 @@ select
     department_id,
     direction_id
 from tm.program_course;
-
-DROP TABLE TM.PROGRAM_COURSE;
-CREATE TABLE TM.PROGRAM_COURSE (
-    PROGRAM_ID NUMBER,
-    COURSE_ID VARCHAR2(8),
-    PERIOD_THEORY NUMBER,
-    PERIOD_EXPERIMENT NUMBER,
-    PERIOD_WEEKS NUMBER,
-    IS_COMPULSORY NUMBER,
-    IS_PRACTICAL NUMBER,
-    PROPERTY_ID NUMBER,
-    ASSESS_TYPE NUMBER,
-    TEST_TYPE NUMBER,
-    START_WEEK NUMBER,
-    END_WEEK NUMBER,
-    SUGGESTED_TERM NUMBER,
-    ALLOWED_TERM NUMBER,
-    SCHEDULE_TYPE NUMBER,
-    DEPARTMENT_ID VARCHAR2(2),
-    DIRECTION_ID NUMBER
-);
 
 /**
  * 教学计划-课程触发器，插入数据
@@ -259,3 +259,13 @@ begin
     );
   end if;
 end;
+
+/**
+ * 学生选课视图，用于取消考试资格
+ */
+create or replace view tm.iv_task_student as
+select
+  xkkh as task_code,
+  xh as student_id,
+  bz as exam_flag
+from zfxfzb.xsxkb;
