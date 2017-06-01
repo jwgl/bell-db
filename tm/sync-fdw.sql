@@ -2,7 +2,7 @@
  * database bell/tm
  */
 
---- 用户
+-- 用户
 drop foreign table if exists tm.sv_system_user;
 create foreign table tm.sv_system_user (
     id varchar(10),
@@ -16,7 +16,7 @@ create foreign table tm.sv_system_user (
     department_id varchar(2)
 ) server zf options (schema 'TM', table 'SV_SYSTEM_USER');
 
---- 教学场地-允许借用用户类型
+-- 教学场地-允许借用用户类型
 drop foreign table if exists tm.sv_place_user_type;
 create foreign table tm.sv_place_user_type (
     place_id char(6),
@@ -89,7 +89,19 @@ create foreign table tm.et_booking_form (
     status char(1)
 ) server zf options (schema 'TM', table 'IV_BOOKING_FORM');
 
--- 学生选课，用于取消考试资格
+-- 学生选课，用于查询选课状态。
+-- 由于oracle 11限制，将test_scheduled和locked合并到et_task_student中
+-- 更新时会产生异常。
+drop foreign table if exists tm.dv_task_student;
+create foreign table tm.et_task_student (
+    task_code varchar(31) options (key 'true'),
+    student_id varchar(10) options (key 'true'),
+    exam_flag varchar(10),
+    test_scheduled boolean,
+    score_committed boolean
+) server zf options (schema 'TM', table 'DV_TASK_STUDENT');
+
+-- 学生选课，用于更新取消考试资格
 drop foreign table if exists tm.et_task_student;
 create foreign table tm.et_task_student (
     task_code varchar(31) options (key 'true'),
