@@ -261,7 +261,23 @@ begin
 end;
 
 /**
- * 学生选课视图，用于取消考试资格
+ * 学生选课视图，用于查询选课状态
+ */
+create or replace view tm.dv_task_student as
+select
+  xkkh as task_code,
+  xh as student_id,
+  bz as exam_flag,
+  case when exists (
+    select * from zfxfzb.xsxkb x1 where x1.xkkh = xsxkb.xkkh and zwh is not null
+  ) then 1 else 0 end as test_scheduled, -- 教学班考试已安排
+  case when exists (
+    select * from zfxfzb.cjb where cjb.xkkh = xsxkb.xkkh and cjb.xh = xsxkb.xh
+  ) then 1 else 0 end as score_committed -- 学生成绩已提交
+from zfxfzb.xsxkb;
+
+/**
+ * 学生选课视图，用于更新取消考试资格
  */
 create or replace view tm.iv_task_student as
 select
