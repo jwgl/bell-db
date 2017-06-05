@@ -2,9 +2,9 @@
  * database bell/tm
  */
 
---- 用户
-DROP FOREIGN TABLE IF EXISTS tm.sv_system_user;
-CREATE FOREIGN TABLE tm.sv_system_user (
+-- 用户
+drop foreign table if exists tm.sv_system_user;
+create foreign table tm.sv_system_user (
     id varchar(10),
     name varchar(50),
     login_name varchar(20),
@@ -14,18 +14,18 @@ CREATE FOREIGN TABLE tm.sv_system_user (
     enabled boolean,
     user_type integer,
     department_id varchar(2)
-) SERVER zf OPTIONS (schema 'TM', table 'SV_SYSTEM_USER');
+) server zf options (schema 'TM', table 'SV_SYSTEM_USER');
 
---- 教学场地-允许借用用户类型
-DROP FOREIGN TABLE IF EXISTS tm.sv_place_user_type;
-CREATE FOREIGN TABLE tm.sv_place_user_type (
+-- 教学场地-允许借用用户类型
+drop foreign table if exists tm.sv_place_user_type;
+create foreign table tm.sv_place_user_type (
     place_id char(6),
     user_type integer
-) SERVER zf OPTIONS (schema 'TM', table 'SV_PLACE_USER_TYPE', readonly 'true');
+) server zf options (schema 'TM', table 'SV_PLACE_USER_TYPE', readonly 'true');
 
 -- 教学场地-当前使用情况
-DROP FOREIGN TABLE IF EXISTS tm.ev_place_usage;
-CREATE FOREIGN TABLE tm.ev_place_usage (
+drop foreign table if exists tm.ev_place_usage;
+create foreign table tm.ev_place_usage (
     term_id integer,
     place_id varchar(10),
     start_week integer,
@@ -37,11 +37,11 @@ CREATE FOREIGN TABLE tm.ev_place_usage (
     type varchar(4),
     department  varchar(70),
     description varchar(240)
-) SERVER zf OPTIONS (schema 'TM', table 'DV_PLACE_USAGE', readonly 'true');
+) server zf options (schema 'TM', table 'DV_PLACE_USAGE', readonly 'true');
 
 -- 教学计划-课程，用于插入ZF
-DROP FOREIGN TABLE IF EXISTS tm.et_program_course;
-CREATE FOREIGN TABLE tm.et_program_course (
+drop foreign table if exists tm.et_program_course;
+create foreign table tm.et_program_course (
     program_id integer,
     course_id char(8),
     period_theory numeric(3, 1),
@@ -59,11 +59,12 @@ CREATE FOREIGN TABLE tm.et_program_course (
     schedule_type integer,
     department_id char(2),
     direction_id integer
-) SERVER zf OPTIONS (schema 'TM', table 'IV_PROGRAM_COURSE');
+) server zf options (schema 'TM', table 'IV_PROGRAM_COURSE');
 
-DROP FOREIGN TABLE IF EXISTS tm.et_booking_form;
-CREATE FOREIGN TABLE tm.et_booking_form (
-    id varchar(40) OPTIONS (key 'true'),
+-- 教学场地借用，用于插入ZF
+drop foreign table if exists tm.et_booking_form;
+create foreign table tm.et_booking_form (
+    id varchar(40) options (key 'true'),
     form_id integer,
     school_year char(9),
     term char(1),
@@ -86,4 +87,24 @@ CREATE FOREIGN TABLE tm.et_booking_form (
     approver_id char(6),
     source varchar(4),
     status char(1)
-) SERVER zf OPTIONS (schema 'TM', table 'IV_BOOKING_FORM');
+) server zf options (schema 'TM', table 'IV_BOOKING_FORM');
+
+-- 学生选课，用于查询选课状态。
+-- 由于oracle 11限制，将test_scheduled和locked合并到et_task_student中
+-- 更新时会产生异常。
+drop foreign table if exists tm.dv_task_student;
+create foreign table tm.et_task_student (
+    task_code varchar(31) options (key 'true'),
+    student_id varchar(10) options (key 'true'),
+    exam_flag varchar(10),
+    test_scheduled boolean,
+    score_committed boolean
+) server zf options (schema 'TM', table 'DV_TASK_STUDENT');
+
+-- 学生选课，用于更新取消考试资格
+drop foreign table if exists tm.et_task_student;
+create foreign table tm.et_task_student (
+    task_code varchar(31) options (key 'true'),
+    student_id varchar(10) options (key 'true'),
+    exam_flag varchar(10)
+) server zf options (schema 'TM', table 'IV_TASK_STUDENT');
