@@ -268,6 +268,7 @@ select
   xkkh as task_code,
   xh as student_id,
   bz as exam_flag,
+  bz_operator as operator
   case when exists (
     select * from zfxfzb.xsxkb x1 where x1.xkkh = xsxkb.xkkh and zwh is not null
   ) then 1 else 0 end as test_scheduled, -- 教学班考试已安排
@@ -283,5 +284,6 @@ create or replace view tm.iv_task_student as
 select
   xkkh as task_code,
   xh as student_id,
-  bz as exam_flag
+  bz as exam_flag,
+  bz_operator as operator
 from zfxfzb.xsxkb;

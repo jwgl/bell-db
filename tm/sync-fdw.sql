@@ -93,10 +93,11 @@ create foreign table tm.et_booking_form (
 -- 由于oracle 11限制，将test_scheduled和locked合并到et_task_student中
 -- 更新时会产生异常。
 drop foreign table if exists tm.dv_task_student;
-create foreign table tm.et_task_student (
+create foreign table tm.dv_task_student (
     task_code varchar(31) options (key 'true'),
     student_id varchar(10) options (key 'true'),
     exam_flag varchar(10),
+    operator varchar(5),
     test_scheduled boolean,
     score_committed boolean
 ) server zf options (schema 'TM', table 'DV_TASK_STUDENT');
@@ -106,5 +107,6 @@ drop foreign table if exists tm.et_task_student;
 create foreign table tm.et_task_student (
     task_code varchar(31) options (key 'true'),
     student_id varchar(10) options (key 'true'),
-    exam_flag varchar(10)
+    exam_flag varchar(10),
+    operator varchar(5)
 ) server zf options (schema 'TM', table 'IV_TASK_STUDENT');
