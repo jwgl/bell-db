@@ -60,12 +60,13 @@ INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_BOOKING_CHECK',     '借
 INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_BOOKING_APPROVE',   '借教室-审批');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_CARD_REISSUE_WRITE',      '补办学生证-编辑');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_CARD_REISSUE_APPROVE',    '补办学生证-审批');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_EXAM_DISQUAL_DEPT_ADMIN', '取消考试资格-管理');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_EXAM_DISQUAL_WRITE',      '取消考试资格-编辑');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_WRITE',       '督导听课-编辑');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_READ',        '督导听课-查看');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_DEPT_APPROVE','督导听课-院督导听课发布');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVER_ADMIN',          '督导管理');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVER_DEPT_ADMIN',     '督导管理-院督导员管理');
-
 
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_SYSTEM_ADMIN',            'PERM_SYSTEM_SETUP');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_USER',                    'PERM_PROFILE_SETUP');
@@ -112,6 +113,8 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKI
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_CARD_REISSUE_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_REGISTER_ADMIN',          'PERM_CARD_REISSUE_APPROVE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_USER',                    'PERM_WORK_ITEMS');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ACADEMIC_SECRETARY',      'PERM_EXAM_DISQUAL_DEPT_ADMIN');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_COURSE_TEACHER',          'PERM_EXAM_DISQUAL_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_OBSERVER',                'PERM_OBSERVATION_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_OBSERVATION_ADMIN',       'PERM_OBSERVATION_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_OBSERVATION_ADMIN',       'PERM_OBSERVER_ADMIN');
