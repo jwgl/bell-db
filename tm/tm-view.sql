@@ -407,7 +407,6 @@ select view.id,
     view.place_name,
     view.day_of_week,
     view.start_section,
-    view.start_section,
     view.total_section
 from tm.dv_observation_view view
 where view.status = 2
@@ -424,7 +423,6 @@ select legacy_form.id,
     legacy_form.coursename as course_name,
     legacy_form.classpostion as place,
     null as day_of_week,
-    null as start_section,
     null as start_section,
     null as total_section
 from tm.dv_observation_legacy_form legacy_form
