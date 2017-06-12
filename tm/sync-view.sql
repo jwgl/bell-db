@@ -248,7 +248,7 @@ begin
     )
     values(to_char(floor(:new.program_id / 10)),
         zydm, zymc, nj, :new.course_id, kcmc, xf, zxs, kcxz, kclb,
-        decode(:new.assess_type, 1, '考试', 2, '考查', 3, '论文', 9, null),
+        decode(:new.assess_type, 1, '考试', 2, '考查', 3, '毕业论文', 9, null),
         decode(:new.test_type, 1, '集中', 2, '分散', null) ,
         :new.start_week, :new.end_week, to_char(:new.start_week, 'fm09') || '-' || to_char(:new.end_week, 'fm09'),
         kkxy, zyfx,
