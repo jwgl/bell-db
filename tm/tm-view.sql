@@ -399,7 +399,7 @@ select view.id,
     view.supervisor_date,
     view.evaluate_level,
     view.observer_type,
-    view.termid as term_id,
+    view.term_id as term_id,
     view.department_name,
     view.teacher_id,
     view.teacher_name,
@@ -427,3 +427,59 @@ select legacy_form.id,
     null as total_section
 from tm.dv_observation_legacy_form legacy_form
 where legacy_form.state = 'yes';
+
+-- JOIN课表，抽取最全常用字段
+create or replace view tm.dv_observation_view as 
+select distinct form.id,
+    form.attendant_stds,
+    form.due_stds,
+    form.earlier,
+    form.evaluate_level,
+    form.evaluation_text,
+    form.late,
+    form.late_stds,
+    form.leave,
+    form.leave_stds,
+    form.lecture_week,
+    form.status,
+    form.suggest,
+    supervisor.id as supervisor_id,
+    form.supervisor_date,
+    form.teaching_methods,
+    form.total_section as form_total_section,
+    form.record_date,
+    form.reward_date,
+    supervisor.name as supervisor_name,
+    form.observer_type,
+    courseteacher.id as teacher_id,
+    courseteacher.academic_title,
+    courseclass.name as course_class_name,
+    schedule.start_week,
+    schedule.end_week,
+    schedule.odd_even,
+    schedule.day_of_week,
+    schedule.start_section,
+    schedule.total_section,
+    course_1.name as course_name,
+    place.name as place_name,
+    courseteacher.name as teacher_name,
+    department.name as department_name,
+    courseclass.term_id as term_id
+   from tm.observation_form form
+     join ea.teacher supervisor on form.observer_id = supervisor.id
+     join ea.task_schedule schedule on (form.teacher_id = schedule.teacher_id
+          and (form.lecture_week between schedule.start_week and schedule.end_week )
+          and (schedule.odd_even = 0
+               or schedule.odd_even = 1 and form.lecture_week % 2 =1
+               or schedule.odd_even = 2 and form.lecture_week % 2 =0)
+          and schedule.day_of_week = form.day_of_week
+          and form.start_section = schedule.start_section)
+     join ea.task task on schedule.task_id = task.id
+     join ea.course_class courseclass on task.course_class_id = courseclass.id
+     join ea.department department on courseclass.department_id = department.id
+     join ea.course course_1 on courseclass.course_id = course_1.id
+     join ea.teacher courseteacher on courseclass.teacher_id = courseteacher.id
+     left join ea.place on schedule.place_id = place.id
+  where form.term_id=courseclass.term_id
+  order by form.id;
+  
