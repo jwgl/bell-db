@@ -487,17 +487,18 @@ $$ LANGUAGE plpgsql;
  * 按时间段查询学生考勤统计，用于点名显示
  */
 create or replace function tm.sp_get_student_attendance_stats_by_timeslot (
-  p_term_id integer,      -- 学期
-  p_teacher_id text,      -- 教师ID
-  p_week integer,         -- 周次
-  p_day_of_week integer,  -- 星期几
-  p_start_section integer -- 开始节
+  p_term_id integer,       -- 学期
+  p_teacher_id text,       -- 教师ID
+  p_week integer,          -- 周次
+  p_day_of_week integer,   -- 星期几
+  p_start_section integer, -- 开始节
+  p_total_section integer  -- 上课长度
 ) returns table (
-  id text,                -- 学号
-  absent bigint,          -- 旷课次数
-  late bigint,            -- 迟到次数
-  early bigint,           -- 早退次数
-  leave bigint            -- 请假次数
+  id text,                 -- 学号
+  absent bigint,           -- 旷课次数
+  late bigint,             -- 迟到次数
+  early bigint,            -- 早退次数
+  leave bigint             -- 请假次数
 ) as $$
 begin
   return query
@@ -515,6 +516,7 @@ begin
           when 2 then p_week % 2 = 0 end
       and task_schedule.day_of_week = p_day_of_week
       and task_schedule.start_section = p_start_section
+      and task_schedule.total_section = p_total_section
   ), attendance_student as ( -- 时间段覆盖的学生
     select distinct task_student.student_id as id
     from timeslot_schedule

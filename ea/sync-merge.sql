@@ -433,12 +433,6 @@ delete from ea.task_teacher
 where (task_id, teacher_id) not in (
     select task_id, teacher_id
     from ea.sv_task_teacher
-    where term_id = 20162
-) and task_id in (
-    select task.id
-    from ea.task
-    join ea.course_class on course_class.id = task.course_class_id
-    where course_class.term_id = 20162
 );
 
 delete from tm.student_leave_item
@@ -461,43 +455,43 @@ where task_schedule_id not in (
 
 delete from ea.task_schedule
 where id not in (
+    with formal as (
+        select case when b.id is null then a.id else b.id end as id, -- 统一ID为长度不等于1的安排
+            case when b.id is null then a.root_id else b.root_id end as root_id, -- 统一ROOT_ID为长度不等于1的安排
+            a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week,
+            a.odd_even, a.day_of_week, a.start_section, a.total_section
+        from sv_task_schedule a
+        left join sv_task_schedule b on a.task_id = b.task_id
+        and a.teacher_id = b.teacher_id
+        and (a.place_id = b.place_id or a.place_id is null and b.place_id is null)
+        and a.start_week = b.start_week
+        and a.end_week = b.end_week
+        and a.odd_even = b.odd_even
+        and a.day_of_week = b.day_of_week
+        and a.total_section = 1
+        and (a.start_section + a.total_section = b.start_section and b.start_section not in (5, 10)
+          or b.start_section + b.total_section = a.start_section and a.start_section not in (5, 10))
+    )
     select id
-    from ea.sv_task_schedule
-    where term_id = 20162
-) and task_id in (
-    select task.id
-    from ea.task
-    join ea.course_class on course_class.id = task.course_class_id
-    where course_class.term_id = 20162
+    from formal
+    group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, root_id
 );
 
 delete from ea.task
 where id not in (
     select id from ea.sv_task
-    where term_id = 20162
-) and course_class_id in (
-    select id
-    from ea.course_class
-    where term_id = 20162
 );
 
 delete from ea.course_class_program
 where (course_class_id, program_id) not in (
     select course_class_id, program_id
     from ea.sv_course_class_program
-    where term_id = 20162
-) and course_class_id in (
-    select id
-    from ea.course_class
-    where term_id = 20162
 );
 
 delete from ea.course_class
 where id not in (
-    select id
-    from ea.sv_course_class
-    where term_id = 20162
-) and term_id = 20162;
+    select id from ea.sv_course_class
+);
 
 delete from ea.program_course
 where (program_id, coalesce(direction_id, 0), course_id) not in (

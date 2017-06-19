@@ -60,6 +60,7 @@ INSERT INTO tm.permission (id,name) VALUES ('PERM_CARD_REISSUE_WRITE',      '补
 INSERT INTO tm.permission (id,name) VALUES ('PERM_CARD_REISSUE_APPROVE',    '补办学生证-审批');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_EXAM_DISQUAL_DEPT_ADMIN', '取消考试资格-管理');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_EXAM_DISQUAL_WRITE',      '取消考试资格-编辑');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_STUDENT_SCHEDULES_READ',  '学生个人课表-查看');
 
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_SYSTEM_ADMIN',            'PERM_SYSTEM_SETUP');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_USER',                    'PERM_PROFILE_SETUP');
@@ -108,6 +109,8 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_REGISTER_AD
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_USER',                    'PERM_WORK_ITEMS');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ACADEMIC_SECRETARY',      'PERM_EXAM_DISQUAL_DEPT_ADMIN');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_COURSE_TEACHER',          'PERM_EXAM_DISQUAL_WRITE');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_STUDENT_SCHEDULES_READ');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_POSTPONED_STUDENT',       'PERM_STUDENT_SCHEDULES_READ');
 
 INSERT INTO tm.workflow (id,name) VALUES ('scheme.create',  '教学计划编制');
 INSERT INTO tm.workflow (id,name) VALUES ('scheme.revise',  '教学计划变更');
