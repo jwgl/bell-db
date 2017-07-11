@@ -160,7 +160,7 @@ with free_listen as (
          task_schedule.id as task_schedule_id
   from tm.free_listen_form form
   join tm.free_listen_item item on item.form_id = form.id
-  join ea.task_schedule on item.task_schedule_id = task_schedule.id 
+  join ea.task_schedule on item.task_schedule_id = task_schedule.id
   join ea.task on task_schedule.task_id = task.id
   join ea.course_class on task.course_class_id = course_class.id
   where form.status = 'APPROVED'
@@ -172,7 +172,7 @@ with free_listen as (
          task_schedule.id as task_schedule_id
   from tm.free_listen_form form
   join tm.free_listen_item item on item.form_id = form.id
-  join ea.task_schedule on item.task_schedule_id = task_schedule.root_id 
+  join ea.task_schedule on item.task_schedule_id = task_schedule.root_id
   join ea.task on task_schedule.task_id = task.id
   join ea.course_class on task.course_class_id = course_class.id
   where form.status = 'APPROVED'
@@ -247,7 +247,7 @@ select item.id as item_id,
        task_schedule.id as task_schedule_id
 from tm.free_listen_form form
 join tm.free_listen_item item on item.form_id = form.id
-join ea.task_schedule on item.task_schedule_id = task_schedule.id 
+join ea.task_schedule on item.task_schedule_id = task_schedule.id
 join ea.task on task_schedule.task_id = task.id
 join ea.course_class on task.course_class_id = course_class.id
 where form.status = 'APPROVED'
@@ -261,7 +261,7 @@ select item.id as item_id,
        task_schedule.id as task_schedule_id
 from tm.free_listen_form form
 join tm.free_listen_item item on item.form_id = form.id
-join ea.task_schedule on item.task_schedule_id = task_schedule.root_id 
+join ea.task_schedule on item.task_schedule_id = task_schedule.root_id
 join ea.task on task_schedule.task_id = task.id
 join ea.course_class on task.course_class_id = course_class.id
 where form.status = 'APPROVED';
@@ -379,7 +379,7 @@ with active_term as (
     where inspector.teachercode is not null and inspector.observer_type = 1 and (inspector.term_id + 20) > (( select active_term.id from active_term))
     union
     select distinct form.teacher_id
-    from tm.observation_form form    
+    from tm.observation_form form
     where form.observer_type =1 and (form.term_id + 20) > (( select active_term.id from active_term))
 )
 select distinct active.teacher_id,
@@ -390,7 +390,7 @@ select distinct active.teacher_id,
     inspect4.teacher_id as has_supervisor
 from active_teacher active
 left join new_teacher a on active.teacher_id = a.teacher_id
-left join inspect4 on active.teacher_id = inspect4.teacher_id; 
+left join inspect4 on active.teacher_id = inspect4.teacher_id;
 
 -- 督导听课视图，合并了新旧数据，只抽取重要的字段信息;
 create or replace view tm.dv_observation_public as
@@ -426,10 +426,10 @@ select legacy_form.id,
     null as start_section,
     null as total_section
 from tm.dv_observation_legacy_form legacy_form
-where legacy_form.state = 'yes';
+where legacy_form.state;
 
 -- JOIN课表，抽取最全常用字段
-create or replace view tm.dv_observation_view as 
+create or replace view tm.dv_observation_view as
 select distinct form.id,
     form.attendant_stds,
     form.due_stds,
@@ -482,4 +482,3 @@ select distinct form.id,
      left join ea.place on schedule.place_id = place.id
   where form.term_id=courseclass.term_id
   order by form.id;
-  
