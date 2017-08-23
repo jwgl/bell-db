@@ -686,7 +686,7 @@ select xh as id,
     end as date_graduated,
     decode(xjzt, '有', 1, 0) as is_enrolled,
     decode(sfzx, '是', 1, 0) as at_school,
-    decode(sfzc, '是', 1, 0) as is_registed,
+    decode(sfzc, '是', 1, 0) as is_registered,
     ccqj as train_range,
     to_number(xslbdm) as category,
     decode(zxwyyz,
@@ -697,7 +697,7 @@ select xh as id,
         '德语',     'de',
         '法语',     'fr',
         /*缺省*/    'en'
-    ) as forign_language,
+    ) as foreign_language,
     case
         when dqszj < 2013 then 0
         when dqszj is not null then
@@ -705,7 +705,7 @@ select xh as id,
                 (select max(substr(xn, 1, 4)) from zfxfzb.xxmc) - dqszj) * 2 +
                 (select max(xq) from zfxfzb.xxmc), 1))
         else 0
-    end as forign_language_level,
+    end as foreign_language_level,
     to_number(xjyddm) as change_type,
     xydm as department_id,
     sv_admin_class.id as admin_class_id,
