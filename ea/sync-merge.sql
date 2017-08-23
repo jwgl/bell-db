@@ -286,36 +286,36 @@ bank_number        = EXCLUDED.bank_number;
 
 -- 学生
 insert into ea.student(id, name, pinyin_name, sex, birthday, political_status, nationality, date_enrolled,
-    date_graduated, is_enrolled, at_school, is_registed, train_range,
-    category, forign_language, forign_language_level, change_type, department_id,
+    date_graduated, is_enrolled, at_school, is_registered, train_range,
+    category, foreign_language, foreign_language_level, change_type, department_id,
     admin_class_id, major_id, direction_id, admission_id)
 select id, name, pinyin_name, sex, birthday, political_status, nationality, date_enrolled,
-    date_graduated, is_enrolled, at_school, is_registed, train_range,
-    category, forign_language, forign_language_level, change_type, department_id,
+    date_graduated, is_enrolled, at_school, is_registered, train_range,
+    category, foreign_language, foreign_language_level, change_type, department_id,
     admin_class_id, major_id, direction_id, admission_id
 from ea.sv_student
 on conflict(id) do update set
-name                  = EXCLUDED.name,
-pinyin_name           = EXCLUDED.pinyin_name,
-sex                   = EXCLUDED.sex,
-birthday              = EXCLUDED.birthday,
-political_status      = EXCLUDED.political_status,
-nationality           = EXCLUDED.nationality,
-date_enrolled         = EXCLUDED.date_enrolled,
-date_graduated        = EXCLUDED.date_graduated,
-is_enrolled           = EXCLUDED.is_enrolled,
-at_school             = EXCLUDED.at_school,
-is_registed           = EXCLUDED.is_registed,
-train_range           = EXCLUDED.train_range,
-category              = EXCLUDED.category,
-forign_language       = EXCLUDED.forign_language,
-forign_language_level = EXCLUDED.forign_language_level,
-change_type           = EXCLUDED.change_type,
-department_id         = EXCLUDED.department_id,
-admin_class_id        = EXCLUDED.admin_class_id,
-major_id              = EXCLUDED.major_id,
-direction_id          = EXCLUDED.direction_id,
-admission_id          = EXCLUDED.admission_id;
+name                   = EXCLUDED.name,
+pinyin_name            = EXCLUDED.pinyin_name,
+sex                    = EXCLUDED.sex,
+birthday               = EXCLUDED.birthday,
+political_status       = EXCLUDED.political_status,
+nationality            = EXCLUDED.nationality,
+date_enrolled          = EXCLUDED.date_enrolled,
+date_graduated         = EXCLUDED.date_graduated,
+is_enrolled            = EXCLUDED.is_enrolled,
+at_school              = EXCLUDED.at_school,
+is_registered          = EXCLUDED.is_registered,
+train_range            = EXCLUDED.train_range,
+category               = EXCLUDED.category,
+foreign_language       = EXCLUDED.foreign_language,
+foreign_language_level = EXCLUDED.foreign_language_level,
+change_type            = EXCLUDED.change_type,
+department_id          = EXCLUDED.department_id,
+admin_class_id         = EXCLUDED.admin_class_id,
+major_id               = EXCLUDED.major_id,
+direction_id           = EXCLUDED.direction_id,
+admission_id           = EXCLUDED.admission_id;
 
 -- 生成course_class_id与course_class_code对应关系，通过视图触发器实现
 insert into ea.sv_course_class_map values(null, null, null);
