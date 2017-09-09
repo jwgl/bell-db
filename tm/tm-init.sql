@@ -58,6 +58,7 @@ INSERT INTO tm.permission (id,name) VALUES ('PERM_FREE_LISTEN_APPROVE',     '免
 INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_BOOKING_WRITE',     '借教室-申请');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_BOOKING_CHECK',     '借教室-审核');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_BOOKING_APPROVE',   '借教室-审批');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_USAGE_READ',        '教室使用情况');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_CARD_REISSUE_WRITE',      '补办学生证-编辑');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_CARD_REISSUE_APPROVE',    '补办学生证-审批');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_EXAM_DISQUAL_DEPT_ADMIN', '取消考试资格-管理');
@@ -111,6 +112,7 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_S
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_BOOKING_ADV_USER',        'PERM_PLACE_BOOKING_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKING_CHECKER',   'PERM_PLACE_BOOKING_CHECK');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKING_ADMIN',     'PERM_PLACE_BOOKING_APPROVE');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_USER',                    'PERM_PLACE_USAGE_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_CARD_REISSUE_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_REGISTER_ADMIN',          'PERM_CARD_REISSUE_APPROVE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_USER',                    'PERM_WORK_ITEMS');
