@@ -43,7 +43,7 @@ union all
 select t.id as user_id, 'ROLE_COURSE_TEACHER' as role_id
 from ea.teacher t
 where exists(
-    select *
+    select 1
     from ea.course_class
     join ea.task on task.course_class_id = course_class.id
     join ea.task_schedule on task_schedule.task_id = task.id
@@ -78,20 +78,18 @@ select s.id as user_id, 'ROLE_POSTPONED_STUDENT' as role_id
 from ea.student s
 where s.at_school = false
 and exists (
-    select *
+    select 1
     from ea.course_class
     join ea.task on task.course_class_id = course_class.id
     join ea.task_student on task_student.task_id = task.id
     join ea.term on term.id = course_class.term_id
     where task_student.student_id = s.id
     and ea.course_class.term_id =  (select id from ea.term where active = true)
-)
-;
+);
 
 -- 外部用户角色
 create or replace view tm.dv_external_role as
-    select '' as userId, '' as role_id where 1 = 2
-;
+select '' as userId, '' as role_id where 1 = 2;
 
 -- 计划-课程
 create or replace view tm.dv_scheme_course as
@@ -392,42 +390,6 @@ from active_teacher active
 left join new_teacher a on active.teacher_id = a.teacher_id
 left join inspect4 on active.teacher_id = inspect4.teacher_id;
 
--- 督导听课视图，合并了新旧数据，只抽取重要的字段信息;
-create or replace view tm.dv_observation_public as
-select view.id,
-    false as is_legacy,
-    view.supervisor_date,
-    view.evaluate_level,
-    view.observer_type,
-    view.term_id as term_id,
-    view.department_name,
-    view.teacher_id,
-    view.teacher_name,
-    view.course_name,
-    view.place_name,
-    view.day_of_week,
-    view.start_section,
-    view.total_section
-from tm.dv_observation_view view
-where view.status = 2
-union all
-select legacy_form.id,
-    true as is_legacy,
-    legacy_form.listentime as supervisor_date,
-    legacy_form.evaluategrade as evaluate_level,
-    legacy_form.observer_type,
-    legacy_form.term_id,
-    legacy_form.collegename as department_name,
-    legacy_form.teachercode as teacher_id,
-    legacy_form.teachername as teacher_name,
-    legacy_form.coursename as course_name,
-    legacy_form.classpostion as place,
-    null as day_of_week,
-    null as start_section,
-    null as total_section
-from tm.dv_observation_legacy_form legacy_form
-where legacy_form.state;
-
 -- JOIN课表，抽取最全常用字段
 create or replace view tm.dv_observation_view as
 select distinct form.id,
@@ -482,3 +444,39 @@ select distinct form.id,
      left join ea.place on schedule.place_id = place.id
   where form.term_id=courseclass.term_id
   order by form.id;
+
+-- 督导听课视图，合并了新旧数据，只抽取重要的字段信息;
+create or replace view tm.dv_observation_public as
+select view.id,
+    false as is_legacy,
+    view.supervisor_date,
+    view.evaluate_level,
+    view.observer_type,
+    view.term_id as term_id,
+    view.department_name,
+    view.teacher_id,
+    view.teacher_name,
+    view.course_name,
+    view.place_name,
+    view.day_of_week,
+    view.start_section,
+    view.total_section
+from tm.dv_observation_view view
+where view.status = 2
+union all
+select legacy_form.id,
+    true as is_legacy,
+    legacy_form.listentime as supervisor_date,
+    legacy_form.evaluategrade as evaluate_level,
+    legacy_form.observer_type,
+    legacy_form.term_id,
+    legacy_form.collegename as department_name,
+    legacy_form.teachercode as teacher_id,
+    legacy_form.teachername as teacher_name,
+    legacy_form.coursename as course_name,
+    legacy_form.classpostion as place,
+    null as day_of_week,
+    null as start_section,
+    null as total_section
+from tm.dv_observation_legacy_form legacy_form
+where legacy_form.state;
