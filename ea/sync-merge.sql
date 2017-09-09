@@ -409,7 +409,7 @@ root_id        = EXCLUDED.root_id;
 insert into ea.task_student(task_id, student_id, date_created, register_type, repeat_type, exam_flag)
 select task_id, student_id, date_created, register_type, repeat_type, exam_flag
 from ea.sv_task_student
-where term_id = 20162
+where term_id = 20171
 on conflict(task_id, student_id) do update set
 date_created     = EXCLUDED.date_created,
 register_type    = EXCLUDED.register_type,
@@ -421,12 +421,12 @@ delete from ea.task_student
 where (task_id, student_id) not in (
     select task_id, student_id
     from ea.sv_task_student
-    where term_id = 20162
+    where term_id = 20171
 ) and task_id in (
     select task.id
     from ea.task
     join ea.course_class on course_class.id = task.course_class_id
-    where course_class.term_id = 20162
+    where course_class.term_id = 20171
 );
 
 delete from ea.task_teacher
