@@ -31,6 +31,9 @@ grant select on zfxfzb.cfbjxrwb      to ea with grant option; -- 特殊课任务
 grant select on zfxfzb.tykjxrwb      to ea with grant option; -- 体育课任务
 grant select on zfxfzb.dgjsskxxb     to ea; -- 多教师任务
 grant select on zfxfzb.tjkbapqkb     to ea; -- 推荐课表安排表
+grant select on zfxfzb.bkdmb         to ea; -- 板块代码表
+grant select on zfxfzb.bkkcdmb       to ea; -- 板块课程代码表
+grant select on zfxfzb.bkjtsjapb     to ea; -- 板块具体时间安排表
 grant select on zfxfzb.bksjapb       to ea; -- 板块时间安排表
 grant select on zfxfzb.bkdjjsfpb     to ea; -- 板块等级教师分配
 grant select on zfxfzb.bkzyfpb       to ea; -- 板块专业分配表

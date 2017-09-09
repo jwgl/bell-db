@@ -401,7 +401,7 @@ where nvl(xkzt, 0) <> 4;
 create or replace view ea.sv_course as
 with scheduled as ( -- 已排课的代码
     select distinct kcdm as pk_kcdm
-    from ea.sva_task_base a
+    from ea.sva_task_base
     where (skdd is not null or sksj is not null) and xkzt <> 4
     union
     select distinct kcdm as pk_kcdm
@@ -411,23 +411,25 @@ with scheduled as ( -- 已排课的代码
 select kcdm as id,
     kczwmc as name,
     kcywmc as english_name,
-    to_number(xf) as credit,
-    case when regexp_like(zxs, '^\d+\.\d?')  then to_number(regexp_substr(zxs, '^\d+\.\d?')) else 0 end as period_theory,
-    case when regexp_like(zxs, '-\d+\.\d?$') then to_number(regexp_substr(zxs, '\d+\.\d?$')) else 0 end as period_experiment,
-    case when regexp_like(zxs, '^\+\d+$')    then to_number(regexp_substr(zxs, '\d+'))       else 0 end as period_weeks,
+    to_number(a.xf) as credit,
+    case when regexp_like(a.zxs, '^\d+\.\d?')  then to_number(regexp_substr(a.zxs, '^\d+\.\d?')) else 0 end as period_theory,
+    case when regexp_like(a.zxs, '-\d+\.\d?$') then to_number(regexp_substr(a.zxs, '\d+\.\d?$')) else 0 end as period_experiment,
+    case when regexp_like(a.zxs, '^\+\d+$')    then to_number(regexp_substr(a.zxs, '\d+'))       else 0 end as period_weeks,
     to_number(kcxzdm) as property_id,
     decode(kclb, '必修课', 1, '选修课', 0, '实践环节', 1, 1) as is_compulsory,
-    case when regexp_like(zxs, '^\+\d+$') then 1 else 0 end as is_practical,
+    case when regexp_like(a.zxs, '^\+\d+$') then 1 else 0 end as is_practical,
     decode(xlcc,'本科', 1, '本科毕业生', 1, '硕士研究生', 2, /*其它或空*/ 9) as education_level,
     decode(khfs, '考试', 1, '考查', 2, '毕业论文', 3, /*空*/ 9) as assess_type,
     nvl2(pk_kcdm, 1, 0) as schedule_type,
     kcjj as introduction,
+    d.dm as timeplate_code,
     decode(tkbj, '1', 0, 1) enabled,
     case when kkbmdm is null then substr(kcdm, 1, 2) else kkbmdm end as department_id
 from zfxfzb.kcdmb a
-left join zfxfzb.kcxzdmb b on kcxzmc = kcxz
-left join scheduled on kcdm = pk_kcdm
-where kcxz is not null
+left join zfxfzb.kcxzdmb b on b.kcxzmc = a.kcxz
+left join scheduled c on c.pk_kcdm = a.kcdm
+left join zfxfzb.bkkcdmb d on d.bkkcdm = a.kcdm
+where a.kcxz is not null
 order by id;
 
 /**
@@ -721,6 +723,91 @@ left join zfxfzb.zzmmdmb on zzmm = zzmmmc
 left join ea.sv_admin_class on xzb = name
 left join ea.sv_major on dqszj || zydm = sv_major.id
 left join ea.sv_direction on zyfx = sv_direction.name and (dqszj || zydm || '0') = sv_direction.program_id
+order by id;
+
+/**
+ * 排课板块（辅助视图）
+ */
+create or replace view ea.sva_timeplate_base as
+select to_number(substr(a.xn, 1, 4) || a.xq || b.dm || substr(to_char(a.nj), 3, 2) ||
+       case when length(a.bkdm) = 1 then '0' else '' end || a.bkdm) as bkbh,
+       a.xn, a.xq, b.bkkcdm, a.bkkcmc, a.nj, a.bkdm, a.bkmc
+from zfxfzb.bkdmb a
+join zfxfzb.bkkcdmb b on a.bkkcmc = b.bkkcmc;
+
+/**
+ * 排课板块
+ */
+create or replace view ea.sv_timeplate as
+select bkbh as id, to_number(substr(xn, 1, 4) || xq) as term_id,
+       bkkcdm as course_id, nj as grade, to_number(bkdm) as ordinal, bkmc as name
+from ea.sva_timeplate_base
+order by id;
+
+/**
+ * 排课板块时段
+ */
+create or replace view ea.sv_timeplate_slot as
+with normal as (
+    select xn, xq, nj, bkkcmc, bkdm, xqj,
+        case
+            when count(case when dsz='单' then dsz end)<>0 and count(case when dsz='双' then dsz end)=0  then 1
+            when count(case when dsz='单' then dsz end)=0  and count(case when dsz='双' then dsz end)<>0 then 2
+            else 0
+        end as dsz,
+        min(sjdxh) as qssjd,
+        max(sjdxh) - min(sjdxh) + 1 as skcd
+    from zfxfzb.bkjtsjapb
+    group by xn, xq, nj, bkkcmc, bkdm, xqj, qssjd
+)
+select b.bkbh as timeplate_id,
+    a.dsz as odd_even,
+    a.xqj as day_of_week,
+    a.qssjd as start_section,
+    a.skcd as total_section
+from normal a
+join ea.sva_timeplate_base b on a.xn = b.xn and a.xq = b.xq and a.bkkcmc = b.bkkcmc and a.nj = b.nj and a.bkdm = b.bkdm
+order by timeplate_id, odd_even, day_of_week, start_section, total_section;
+
+/**
+ * 排课板块-行政班
+ */
+create or replace view ea.sv_timeplate_admin_class as
+select b.bkbh as timeplate_id, a.bjdm as admin_class_id
+from zfxfzb.bkzyfpb a
+join ea.sva_timeplate_base b on a.xn = b.xn and a.xq = b.xq and a.bkkcmc = b.bkkcmc and a.nj = b.nj and a.bkdm = b.bkdm
+join zfxfzb.bjdmb c on a.bjdm = c.bjdm;
+
+/**
+ * 排课板块-任务
+ */
+create or replace view ea.sv_timeplate_task as
+select b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh as id,
+    b.bkbh as timeplate_id,
+    qsz as start_week,
+    jsz as end_week,
+    c.id as course_item_id
+from zfxfzb.bksjapb a
+join ea.sva_timeplate_base b on a.xn = b.xn and a.xq = b.xq and a.bkkcmc = b.bkkcmc and a.nj = b.nj and a.bkdm = b.bkdm
+left join ea.sv_course_item c on b.bkkcdm = c.course_id and a.bz = c.name
+order by id;
+
+/**
+ * 排课板块-安排
+ */
+create or replace view ea.sv_timeplate_schedule as
+select b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh ||
+       to_char(rank() over(partition by b.bkbh, a.xh order by qsz, jsz, dsz, xqj, qssjd, skcd), 'fm09') as id,
+    b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh as timeplate_task_id,
+    nvl(qsz, 1) as start_week,
+    nvl(jsz, 18) as end_week,
+    case dsz when '单' then 1 when '双' then 2 else 0 end as odd_even,
+    xqj as day_of_week,
+    qssjd as start_section,
+    skcd as total_section
+from zfxfzb.bksjapb a
+join ea.sva_timeplate_base b on a.xn = b.xn and a.xq = b.xq and a.bkkcmc = b.bkkcmc and a.nj = b.nj and a.bkdm = b.bkdm
+left join ea.sv_course_item c on b.bkkcdm = c.course_id and a.bz = c.name
 order by id;
 
 /**
