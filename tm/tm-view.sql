@@ -66,7 +66,10 @@ union all
 select distinct s.teacher_id as user_id, 'ROLE_OBSERVER' as role_id
 from tm.observer s
 join ea.term t on s.term_id = t.id
-where t.active is true;
+where t.active is true
+union all
+select distinct s.teacher_id as user_id, 'ROLE_TEACHER_OBSERVED' as role_id
+from tm.dv_observation_public;
 
 -- 学生角色
 create or replace view tm.dv_student_role as
