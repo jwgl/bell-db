@@ -24,6 +24,7 @@ INSERT INTO tm.role (id,name) VALUES ('ROLE_ROLLCALL_ADMIN',         '考勤管�
 INSERT INTO tm.role (id,name) VALUES ('ROLE_ROLLCALL_DEPT_ADMIN',    '考勤管理员-学院');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_OBSERVER',               '现任督导员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_OBSERVATION_ADMIN',      '督导管理员');
+INSERT INTO tm.role (id,name) VALUES ('ROLE_TEACHER_OBSERVED',       '被听课老师');
 
 INSERT INTO tm.permission (id,name) VALUES ('PERM_WORK_ITEMS',              '待办事项');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_SYSTEM_SETUP',            '系统设置');
@@ -122,7 +123,7 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_OBSERVER', 
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_OBSERVATION_ADMIN',       'PERM_OBSERVATION_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_OBSERVATION_ADMIN',       'PERM_OBSERVER_ADMIN');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_OBSERVATION_ADMIN',       'PERM_OBSERVATION_DEPT_APPROVE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_TEACHER',       'PERM_OBSERVATION_READ');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_TEACHER_OBSERVED',        'PERM_OBSERVATION_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DEAN_OF_TEACHING',        'PERM_OBSERVATION_DEPT_APPROVE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ACADEMIC_SECRETARY',      'PERM_OBSERVER_DEPT_ADMIN');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',       'PERM_STUDENT_SCHEDULES_READ');
