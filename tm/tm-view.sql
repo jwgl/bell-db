@@ -367,7 +367,8 @@ with active_term as (
     join ea.course course_1 on courseclass.course_id = course_1.id
     join ea.teacher courseteacher on courseclass.teacher_id = courseteacher.id
     join ea.department department on courseteacher.department_id = department.id
-    where courseclass.term_id = ((select active_term.id from active_term))
+    join ea.place place on schedule.place_id = place.id
+    where courseclass.term_id = ((select active_term.id from active_term)) and place.building <>'北理工'
     and schedule.end_week > (( select date_part('week', now()) - date_part('week', term.start_date) + 1 from ea.term where term.active is true))
 ), new_teacher as (
     select course_teacher.teacher_id
