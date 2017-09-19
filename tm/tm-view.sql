@@ -68,7 +68,7 @@ from tm.observer s
 join ea.term t on s.term_id = t.id
 where t.active is true
 union all
-select distinct s.teacher_id as user_id, 'ROLE_TEACHER_OBSERVED' as role_id
+select distinct teacher_id as user_id, 'ROLE_TEACHER_OBSERVED' as role_id
 from tm.dv_observation_public;
 
 -- 学生角色
@@ -365,9 +365,10 @@ with active_term as (
     join ea.task task on schedule.task_id = task.id
     join ea.course_class courseclass on task.course_class_id = courseclass.id
     join ea.course course_1 on courseclass.course_id = course_1.id
+    join ea.place place on schedule.place_id = place.id
     join ea.teacher courseteacher on courseclass.teacher_id = courseteacher.id
     join ea.department department on courseteacher.department_id = department.id
-    where courseclass.term_id = ((select active_term.id from active_term))
+    where courseclass.term_id = ((select active_term.id from active_term)) and place.building <> '北理工'
     and schedule.end_week > (( select date_part('week', now()) - date_part('week', term.start_date) + 1 from ea.term where term.active is true))
 ), new_teacher as (
     select course_teacher.teacher_id
@@ -453,7 +454,7 @@ create or replace view tm.dv_observation_public as
 select view.id,
     false as is_legacy,
     view.supervisor_date,
-    view.evaluate_level,
+    view.evaluate_level::text,
     view.observer_type,
     view.term_id as term_id,
     view.department_name,
