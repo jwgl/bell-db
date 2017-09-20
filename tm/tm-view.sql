@@ -484,3 +484,19 @@ select legacy_form.id,
     null as total_section
 from tm.dv_observation_legacy_form legacy_form
 where legacy_form.state;
+
+-- 课程性质视图
+create or replace view tm.dv_observation_course_property as
+select course_class.id, case
+	when property.name is not null then property.name
+	else (
+		select array_to_string(array_agg(distinct pr.name), ',', '*')
+		from ea.course_class cc
+		join ea.course_class_program ccp on ccp.course_class_id = cc.id
+		join ea.program p on p.id= ccp.program_id
+		join ea.program_course pc on pc.program_id = p.id and pc.course_id = cc.course_id
+		join ea.property pr on pr.id = pc.property_id
+		where cc.id = course_class.id
+	) end as property_name
+from ea.course_class
+left join ea.property on property.id = course_class.property_id;
