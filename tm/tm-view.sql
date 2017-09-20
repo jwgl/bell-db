@@ -68,7 +68,7 @@ from tm.observer s
 join ea.term t on s.term_id = t.id
 where t.active is true
 union all
-select distinct s.teacher_id as user_id, 'ROLE_TEACHER_OBSERVED' as role_id
+select distinct teacher_id as user_id, 'ROLE_TEACHER_OBSERVED' as role_id
 from tm.dv_observation_public;
 
 -- 学生角色
@@ -365,9 +365,10 @@ with active_term as (
     join ea.task task on schedule.task_id = task.id
     join ea.course_class courseclass on task.course_class_id = courseclass.id
     join ea.course course_1 on courseclass.course_id = course_1.id
+    join ea.place place on schedule.place_id = place.id
     join ea.teacher courseteacher on courseclass.teacher_id = courseteacher.id
     join ea.department department on courseteacher.department_id = department.id
-    where courseclass.term_id = ((select active_term.id from active_term))
+    where courseclass.term_id = ((select active_term.id from active_term)) and place.building <> '北理工'
     and schedule.end_week > (( select date_part('week', now()) - date_part('week', term.start_date) + 1 from ea.term where term.active is true))
 ), new_teacher as (
     select course_teacher.teacher_id
@@ -453,7 +454,7 @@ create or replace view tm.dv_observation_public as
 select view.id,
     false as is_legacy,
     view.supervisor_date,
-    view.evaluate_level,
+    view.evaluate_level::text,
     view.observer_type,
     view.term_id as term_id,
     view.department_name,
@@ -483,3 +484,19 @@ select legacy_form.id,
     null as total_section
 from tm.dv_observation_legacy_form legacy_form
 where legacy_form.state;
+
+-- 课程性质视图
+create or replace view tm.dv_observation_course_property as
+select course_class.id, case
+	when property.name is not null then property.name
+	else (
+		select array_to_string(array_agg(distinct pr.name), ',', '*')
+		from ea.course_class cc
+		join ea.course_class_program ccp on ccp.course_class_id = cc.id
+		join ea.program p on p.id= ccp.program_id
+		join ea.program_course pc on pc.program_id = p.id and pc.course_id = cc.course_id
+		join ea.property pr on pr.id = pc.property_id
+		where cc.id = course_class.id
+	) end as property_name
+from ea.course_class
+left join ea.property on property.id = course_class.property_id;
