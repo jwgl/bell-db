@@ -130,6 +130,37 @@ begin
 end;
 $$ LANGUAGE plpgsql;
 
+create or replace function tm.timeslot_intersect(
+  p_start_week_1 integer,
+  p_end_week_1 integer,
+  p_odd_even_1 integer,
+  p_day_of_week_1 integer,
+  p_start_section_1 integer,
+  p_total_section_1 integer,
+  p_start_week_2 integer,
+  p_end_week_2 integer,
+  p_odd_even_2 integer,
+  p_day_of_week_2 integer,
+  p_start_section_2 integer,
+  p_total_section_2 integer
+) returns boolean as $$
+begin
+  return p_day_of_week_1 = p_day_of_week_2
+     and int4range(p_start_section_1, p_start_section_1 + p_total_section_1)
+      && int4range(p_start_section_2, p_start_section_2 + p_total_section_2)
+     and exists(
+       with series as ( -- 生成序列，用于判断周次是否相交
+         select i from generate_series(1, 30) as s(i)
+       ) 
+       select * from series where i between p_start_week_1 and p_end_week_1
+       and (p_odd_even_1 = 0 or p_odd_even_1 = 1 and i % 2 = 1 or p_odd_even_1 = 2 and i % 2 = 0)
+       intersect
+       select * from series where i between p_start_week_2 and p_end_week_2
+       and (p_odd_even_2 = 0 or p_odd_even_2 = 1 and i % 2 = 1 or p_odd_even_2 = 2 and i % 2 = 0)
+     ); 
+end;
+$$ LANGUAGE plpgsql;
+
 /**
  * 查询指定行政班的学生考勤统计
  */

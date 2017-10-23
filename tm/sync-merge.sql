@@ -21,3 +21,11 @@ department_id = EXCLUDED.department_id;
 insert into tm.place_user_type(place_id, user_type)
 select place_id, user_type from tm.sv_place_user_type
 on conflict(place_id, user_type) do nothing;
+
+update tm.system_user
+set enabled = false
+where id not in (
+	select id from tm.sv_system_user
+	union
+	select '61500'
+);
