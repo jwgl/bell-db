@@ -40,16 +40,21 @@ select t.id as user_id, 'ROLE_SUBJECT_SECRETARY' as role_id
 from ea.teacher t
 where exists(select * from tm.subject_settings where secretary_id = t.id)
 union all
-select t.id as user_id, 'ROLE_COURSE_TEACHER' as role_id
-from ea.teacher t
-where exists(
-    select 1
-    from ea.course_class
-    join ea.task on task.course_class_id = course_class.id
-    join ea.task_schedule on task_schedule.task_id = task.id
-    where course_class.term_id = (select id from ea.term where active = true)
-    and task_schedule.teacher_id = t.id
-)
+select distinct course_class.teacher_id as user_id, case term.active
+    when true then 'ROLE_COURSE_CLASS_TEACHER'
+    else 'ROLE_ONCE_COURSE_CLASS_TEACHER'
+  end as role_id
+from ea.course_class
+join ea.term on course_class.term_id = term.id
+union all
+select distinct task_schedule.teacher_id as user_id, case term.active
+    when true then 'ROLE_TASK_SCHEDULE_TEACHER'
+    else 'ROLE_ONCE_TASK_SCHEDULE_TEACHER'
+  end as role_id
+from ea.course_class
+join ea.task on task.course_class_id = course_class.id
+join ea.task_schedule on task_schedule.task_id = task.id
+join ea.term on course_class.term_id = term.id
 union all
 select t.id as user_id, 'ROLE_PLACE_BOOKING_CHECKER' as role_id
 from ea.teacher t
@@ -66,10 +71,7 @@ union all
 select distinct s.teacher_id as user_id, 'ROLE_OBSERVER' as role_id
 from tm.observer s
 join ea.term t on s.term_id = t.id
-where t.active is true
-union all
-select distinct teacher_id as user_id, 'ROLE_TEACHER_OBSERVED' as role_id
-from tm.dv_observation_public;
+where t.active is true;
 
 -- 学生角色
 create or replace view tm.dv_student_role as
