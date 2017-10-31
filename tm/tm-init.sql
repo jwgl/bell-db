@@ -83,8 +83,8 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_STUDENT',  
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_TEACHER',                    'PERM_SCHEME_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_COURSE_CLASS_TEACHER',       'PERM_COURSE_CLASS_EXECUTE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_COURSE_CLASS_TEACHER',       'PERM_COURSE_CLASS_READ');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ONCE_CLASS_TEACHER',         'PERM_COURSE_CLASS_EXECUTE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ONCE_CLASS_TEACHER',         'PERM_COURSE_CLASS_READ');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ONCE_COURSE_CLASS_TEACHER',  'PERM_COURSE_CLASS_EXECUTE');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ONCE_COURSE_CLASS_TEACHER',  'PERM_COURSE_CLASS_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_TASK_SCHEDULE_TEACHER',      'PERM_TASK_SCHEDULE_EXECUTE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_TASK_SCHEDULE_TEACHER',      'PERM_TASK_SCHEDULE_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ONCE_TASK_SCHEDULE_TEACHER', 'PERM_TASK_SCHEDULE_EXECUTE');

@@ -46,6 +46,7 @@ select distinct course_class.teacher_id as user_id, case term.active
   end as role_id
 from ea.course_class
 join ea.term on course_class.term_id = term.id
+where term.id >= (select value::integer from system_config where key='rollcall.start_term')
 union all
 select distinct task_schedule.teacher_id as user_id, case term.active
     when true then 'ROLE_TASK_SCHEDULE_TEACHER'
@@ -55,6 +56,7 @@ from ea.course_class
 join ea.task on task.course_class_id = course_class.id
 join ea.task_schedule on task_schedule.task_id = task.id
 join ea.term on course_class.term_id = term.id
+where term.id >= (select value::integer from system_config where key='rollcall.start_term')
 union all
 select t.id as user_id, 'ROLE_PLACE_BOOKING_CHECKER' as role_id
 from ea.teacher t
