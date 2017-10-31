@@ -471,23 +471,6 @@ select view.id,
     view.total_section
 from tm.dv_observation_view view
 where view.status = 2
-union all
-select legacy_form.id,
-    true as is_legacy,
-    legacy_form.listentime as supervisor_date,
-    legacy_form.evaluategrade as evaluate_level,
-    legacy_form.observer_type,
-    legacy_form.term_id,
-    legacy_form.collegename as department_name,
-    legacy_form.teachercode as teacher_id,
-    legacy_form.teachername as teacher_name,
-    legacy_form.coursename as course_name,
-    legacy_form.classpostion as place,
-    null as day_of_week,
-    null as start_section,
-    null as total_section
-from tm.dv_observation_legacy_form legacy_form
-where legacy_form.state;
 
 -- 课程性质视图
 create or replace view tm.dv_observation_course_property as
