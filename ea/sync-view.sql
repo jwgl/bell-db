@@ -375,7 +375,6 @@ with task as (
     where kcdm <> '74000000'
     union all
     select -- 按实际执行产生的教学计划（体育课）
-        -- TODO: 体育课板块处理，tykjxrwb中bkkcmc全部为null
         substr(xn, 1, 4) || xq jxjhh, null zydm, null zymc, null zyfx,
         xn, xq, c.kcdm, c.kczwmc, a.xf, a.kcxz, a.kclb, a.kkxy, a.kkx,
         jszgh, a.jsxm, a.xkkh, a.skdd, a.sksj, a.rs, a.qsjsz,
