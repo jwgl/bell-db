@@ -736,6 +736,14 @@ from zfxfzb.bkdmb a
 join zfxfzb.bkkcdmb b on a.bkkcmc = b.bkkcmc;
 
 /**
+ * 板块课程
+ */
+create or replace view ea.sv_timeplate_course as
+select dm as id, bkkcdm as course_id
+from zfxfzb.bkkcdmb
+order by id;
+
+/**
  * 排课板块
  */
 create or replace view ea.sv_timeplate as
@@ -745,7 +753,7 @@ from ea.sva_timeplate_base
 order by id;
 
 /**
- * 排课板块时段
+ * 排课板块-时段
  */
 create or replace view ea.sv_timeplate_slot as
 with normal as (
@@ -773,19 +781,21 @@ order by timeplate_id, odd_even, day_of_week, start_section, total_section;
  * 排课板块-行政班
  */
 create or replace view ea.sv_timeplate_admin_class as
-select b.bkbh as timeplate_id, a.bjdm as admin_class_id
+select b.bkbh as timeplate_id,
+    to_number(c.nj || c.sszydm || substr(c.bjdm, -2, 2)) as admin_class_id
 from zfxfzb.bkzyfpb a
 join ea.sva_timeplate_base b on a.xn = b.xn and a.xq = b.xq and a.bkkcmc = b.bkkcmc and a.nj = b.nj and a.bkdm = b.bkdm
-join zfxfzb.bjdmb c on a.bjdm = c.bjdm;
+join zfxfzb.bjdmb c on (a.bjdm = c.bjdm or a.bjdm = '无' and c.sszydm = a.zydm and c.nj = a.nj)
+order by timeplate_id, admin_class_id;
 
 /**
  * 排课板块-任务
  */
 create or replace view ea.sv_timeplate_task as
-select b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh as id,
+select to_number(b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh) as id,
     b.bkbh as timeplate_id,
-    qsz as start_week,
-    jsz as end_week,
+    nvl(qsz, 1) as start_week,
+    nvl(jsz, 18) as end_week,
     c.id as course_item_id
 from zfxfzb.bksjapb a
 join ea.sva_timeplate_base b on a.xn = b.xn and a.xq = b.xq and a.bkkcmc = b.bkkcmc and a.nj = b.nj and a.bkdm = b.bkdm
@@ -796,9 +806,9 @@ order by id;
  * 排课板块-安排
  */
 create or replace view ea.sv_timeplate_schedule as
-select b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh ||
-       to_char(rank() over(partition by b.bkbh, a.xh order by qsz, jsz, dsz, xqj, qssjd, skcd), 'fm09') as id,
-    b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh as timeplate_task_id,
+select to_number(b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh ||
+    to_char(rank() over(partition by b.bkbh, a.xh order by qsz, jsz, dsz, xqj, qssjd, skcd), 'fm09')) as id,
+    to_number(b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh) as timeplate_task_id,
     nvl(qsz, 1) as start_week,
     nvl(jsz, 18) as end_week,
     case dsz when '单' then 1 when '双' then 2 else 0 end as odd_even,
@@ -854,7 +864,7 @@ end;
  */
 create or replace view ea.sv_course_class as
 with normal as (
-  select d.term_id,
+  select distinct d.term_id,
       d.course_class_id as id,
       d.course_class_code as code,
       a.jxbmc as name, -- 有不同的名称
@@ -874,16 +884,22 @@ with normal as (
   join ea.course_class_map d on a.xkkh = d.course_class_code
   join ea.sv_department e on a.kkxy = e.name
   left join ea.sv_property g on a.kcxz = g.name
+), timeplate_course_class as (
+  select distinct a.bkbh as timeplate_id, b.xkkh as code
+  from ea.sva_timeplate_base a
+  join zfxfzb.bkdjjsfpb b on a.xn = b.xn and a.xq = b.xq and a.nj = b.nj and a.bkkcmc = b.bkkcmc and a.bkdm = b.bkdm
+  where b.xkkh is not null
 )
-select term_id, id, code, max(name) as name, period_theory, period_experiment, period_weeks,
+select term_id, id, normal.code, listagg(name, ';') within group(order by name) as name,
+  period_theory, period_experiment, period_weeks,
   property_id, assess_type, test_type, start_week, end_week, course_id,
-  department_id, teacher_id
+  department_id, teacher_id, timeplate_id
 from normal
-group by term_id, id, code, period_theory, period_experiment, period_weeks,
+left join timeplate_course_class on normal.code = timeplate_course_class.code
+group by term_id, id, normal.code, period_theory, period_experiment, period_weeks,
   property_id, assess_type, test_type, start_week, end_week, course_id,
-  department_id, teacher_id
+  department_id, teacher_id, timeplate_id
 order by code;
-
 /**
  * 教学班-计划
  */
