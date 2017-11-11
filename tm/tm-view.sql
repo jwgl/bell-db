@@ -504,3 +504,62 @@ select course_class.id, case
 	) end as property_name
 from ea.course_class
 left join ea.property on property.id = course_class.property_id;
+
+-- 辅助视图：最新培养方案课程
+create or replace view tm.av_latest_scheme_course as
+with latest_scheme as (
+  select program_id, max(version_number) as version_number
+  from Scheme
+  where status = 'APPROVED'
+  group by program_id
+)
+select p.id as program_id,
+    s.name as subject,
+    d.name as direction,
+    property.name as property,
+    course.id::text as course_id,
+    course.name as course_name,
+    course.credit,
+    sc.practice_credit,
+    sc.revise_version
+from scheme_course sc
+join ea.course on sc.course_id = course.id
+join scheme on scheme.id = sc.scheme_id
+join ea.program p on p.id = scheme.program_id
+join ea.major m on m.id = p.major_id
+join ea.subject s on s.id = m.subject_id
+join latest_scheme on latest_scheme.program_id = scheme.program_id
+join ea.property on property.id = sc.property_id
+left join ea.direction d on d.id = sc.direction_id
+where m.grade in (2016, 2017)
+and scheme.version_number <= latest_scheme.version_number
+and (sc.revise_version is null or sc.revise_version > latest_scheme.version_number)
+union all
+select p.id as program_id,
+    s.name as subject,
+    d.name as direction,
+    property.name as property,
+    'T' || course.id :: text as course_id,
+    course.name as course_name,
+    course.credit,
+    sc.practice_credit,
+    sc.revise_version
+from scheme_temp_course sc
+join temp_course course on sc.temp_course_id = course.id
+join scheme on scheme.id = sc.scheme_id
+join ea.program p on p.id = scheme.program_id
+join ea.major m on m.id = p.major_id
+join ea.subject s on s.id = m.subject_id
+join latest_scheme on latest_scheme.program_id = scheme.program_id
+join ea.property on property.id = sc.property_id
+left join ea.direction d on d.id = sc.direction_id
+where m.grade in (2016, 2017)
+and scheme.version_number <= latest_scheme.version_number
+and (sc.revise_version is null or sc.revise_version > latest_scheme.version_number);
+
+-- 辅助视图：最新培养方案
+create or replace view av_latest_scheme as
+select program_id, subject, direction, property, sum(credit) as credit, sum(practice_credit) as practice_credit
+from av_latest_scheme_course
+group by program_id, subject, direction, property
+order by 1, 2, 3, 4;
