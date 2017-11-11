@@ -368,12 +368,6 @@ create foreign table ea.sv_timeplate_admin_class (
     admin_class_id bigint
 ) server zf options (schema 'EA', table 'SV_TIMEPLATE_ADMIN_CLASS');
 
-create or replace view ea.sv_timeplate_admin_class as
-select b.bkbh as timeplate_id, a.bjdm as admin_class_id
-from zfxfzb.bkzyfpb a
-join ea.sva_timeplate_base b on a.xn = b.xn and a.xq = b.xq and a.bkkcmc = b.bkkcmc and a.nj = b.nj and a.bkdm = b.bkdm
-join zfxfzb.bjdmb c on (a.bjdm = c.bjdm or a.bjdm = '无' and c.sszydm = a.zydm and c.nj = a.nj);
-
 -- 排课板块-任务
 drop foreign table if exists ea.sv_timeplate_task;
 create foreign table ea.sv_timeplate_task (
@@ -433,7 +427,8 @@ create foreign table ea.sv_course_class (
     end_week integer,
     course_id char(8),
     department_id char(2),
-    teacher_id char(5)
+    teacher_id char(5),
+    timeplate_id bigint
 ) server zf options (schema 'EA', table 'SV_COURSE_CLASS', readonly 'true');
 
 -- 教学班-计划

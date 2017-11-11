@@ -45,6 +45,7 @@ grant select on zfxfzb.cjb           to ea with grant option; -- 成绩
 grant select on zfxfzb.czrzb         to ea; -- 日志
 grant select on zfxfzb.ttkjlb        to ea with grant option; -- 调停课记录 
 grant select on zfxfzb.kbtable       to ea; -- 课表时间段
+
 /**
  * database zf/ea
  */

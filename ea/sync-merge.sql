@@ -378,10 +378,10 @@ insert into ea.sv_course_class_map values(null, null, null);
 -- 教学班
 insert into ea.course_class(term_id, id, code, name, period_theory, period_experiment, period_weeks,
     property_id, assess_type, test_type, start_week, end_week,
-    course_id, department_id, teacher_id)
+    course_id, department_id, teacher_id, timeplate_id)
 select term_id, id, code, name, period_theory, period_experiment, period_weeks,
     property_id, assess_type, test_type, start_week, end_week,
-    course_id, department_id, teacher_id
+    course_id, department_id, teacher_id, timeplate_id
 from ea.sv_course_class
 on conflict(id) do update set
 term_id           = EXCLUDED.term_id,
@@ -397,7 +397,8 @@ start_week        = EXCLUDED.start_week,
 end_week          = EXCLUDED.end_week,
 course_id         = EXCLUDED.course_id,
 department_id     = EXCLUDED.department_id,
-teacher_id        = EXCLUDED.teacher_id;
+teacher_id        = EXCLUDED.teacher_id,
+timeplate_id      = EXCLUDED.timeplate_id;
 
 -- 教学班-计划
 insert into ea.course_class_program(course_class_id, program_id)
