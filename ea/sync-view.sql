@@ -364,8 +364,7 @@ with task as (
     where jxjhh in (select jxjhh from zfxfzb.fxjxjhkcxxb) -- 存在错误数据（教学任务问题37）
     union all
     select -- 按实际执行产生的教学计划（特殊课）
-        case when mxnj is null then substr(xn, 1, 4) else mxnj end || xq jxjhh,
-        null zydm, null zymc, null zyfx,
+        case when mxnj is null then substr(xn, 1, 4) else mxnj end || xq jxjhh, null zydm, null zymc, null zyfx,
         xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
         jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
         null bjmc, null jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
