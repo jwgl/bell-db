@@ -321,7 +321,7 @@ order by program_id, property_id;
 create or replace view ea.sva_task_base as
 with task as (
     select -- 按专业培养方案产生的教学计划（主修）
-        jxjhh, zydm, zymc, zyfx, bkkcmc,
+        jxjhh, zydm, zymc, zyfx,
         xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
         jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
         bjmc, jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
@@ -331,7 +331,7 @@ with task as (
     where jxjhh in (select jxjhh from zfxfzb.jxjhkcxxb)
     union all
     select -- 按实际执行产生的教学计划（外语）
-        jxjhh, zydm, zymc, zyfx, bkkcmc,
+        jxjhh, zydm, zymc, zyfx,
         xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
         jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
         bjmc, jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
@@ -341,7 +341,7 @@ with task as (
     where jxjhh not in (select jxjhh from zfxfzb.jxjhkcxxb)
     union all
     select -- 按实际执行产生的教学计划（公选，政治）
-        substr(xn, 1, 4) || xq jxjhh, null zydm, null zymc, null zyfx, null bkkcmc,
+        substr(xn, 1, 4) || xq jxjhh, null zydm, null zymc, null zyfx,
         xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
         jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
         null bjmc, null jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
@@ -350,7 +350,7 @@ with task as (
     from zfxfzb.xxkjxrwb
     union all
     select -- 按专业培养方案产生的教学计划（辅修）
-        jxjhh, zydm, zymc, null zyfx, null bkkcmc,
+        jxjhh, zydm, zymc, null zyfx,
         xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
         jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
         null bjmc, null jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
@@ -365,7 +365,7 @@ with task as (
     union all
     select -- 按实际执行产生的教学计划（特殊课）
         case when mxnj is null then substr(xn, 1, 4) else mxnj end || xq jxjhh,
-        null zydm, null zymc, null zyfx, null bkkcmc,
+        null zydm, null zymc, null zyfx,
         xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
         jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
         null bjmc, null jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
@@ -376,7 +376,7 @@ with task as (
     union all
     select -- 按实际执行产生的教学计划（体育课）
         -- TODO: 体育课板块处理，tykjxrwb中bkkcmc全部为null
-        substr(xn, 1, 4) || xq jxjhh, null zydm, null zymc, null zyfx, bkkcmc,
+        substr(xn, 1, 4) || xq jxjhh, null zydm, null zymc, null zyfx,
         xn, xq, c.kcdm, c.kczwmc, a.xf, a.kcxz, a.kclb, a.kkxy, a.kkx,
         jszgh, a.jsxm, a.xkkh, a.skdd, a.sksj, a.rs, a.qsjsz,
         null bjmc, null jxbmc, a.zxs, xkzt, mxdx, xzdx, a.ksfs, a.khfs,
@@ -386,7 +386,7 @@ with task as (
     join zfxfzb.tykkcdmb b on a.kcdm = b.kcdm
     join zfxfzb.kcdmb c on c.kcdm = b.sskcdm -- 还原体育1、体育2
 )
-select jxjhh, zydm, zymc, zyfx, bkkcmc,
+select jxjhh, zydm, zymc, zyfx,
         xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
         jszgh, jsxm, xkkh, skdd, sksj, rs,
         nvl(to_number(regexp_substr(qsjsz, '^\d+')), term.start_week) as qsz,
