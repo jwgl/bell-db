@@ -700,14 +700,7 @@ select xh as id,
         '法语',     'fr',
         /*缺省*/    'en'
     ) as foreign_language,
-    case
-        when dqszj < 2013 then 0
-        when dqszj is not null then
-            to_number(substr(dj, ( -- 取选课学期
-                (select max(substr(xn, 1, 4)) from zfxfzb.xxmc) - dqszj) * 2 +
-                (select max(xq) from zfxfzb.xxmc), 1))
-        else 0
-    end as foreign_language_level,
+    0 as foreign_language_level, -- TODO: remove
     to_number(xjyddm) as change_type,
     xydm as department_id,
     sv_admin_class.id as admin_class_id,
@@ -724,6 +717,24 @@ left join ea.sv_admin_class on xzb = name
 left join ea.sv_major on dqszj || zydm = sv_major.id
 left join ea.sv_direction on zyfx = sv_direction.name and (dqszj || zydm || '0') = sv_direction.program_id
 order by id;
+
+/**
+ * 学生-等级
+ */
+create or replace view ea.sv_student_level as
+with student_level as (
+  select xh, case
+    when instr(substr(dj, 1, 4), '2') <> 0 then 2
+    when instr(substr(dj, 1, 4), '1') <> 0 then 1
+    when instr(substr(dj, 11, 14), '2') <> 0 then 2
+    when instr(substr(dj, 11, 44), '1') <> 0 then 1
+    end as dj
+  from zfxfzb.xsjbxxb
+)
+select xh as student_id, '英语' as type, dj as "level"
+from student_level
+where dj is not null
+order by xh;
 
 /**
  * 排课板块（辅助视图）

@@ -287,11 +287,11 @@ bank_number        = EXCLUDED.bank_number;
 -- 学生
 insert into ea.student(id, name, pinyin_name, sex, birthday, political_status, nationality, date_enrolled,
     date_graduated, is_enrolled, at_school, is_registered, train_range,
-    category, foreign_language, foreign_language_level, change_type, department_id,
+    category, foreign_language, change_type, department_id,
     admin_class_id, major_id, direction_id, admission_id)
 select id, name, pinyin_name, sex, birthday, political_status, nationality, date_enrolled,
     date_graduated, is_enrolled, at_school, is_registered, train_range,
-    category, foreign_language, foreign_language_level, change_type, department_id,
+    category, foreign_language, change_type, department_id,
     admin_class_id, major_id, direction_id, admission_id
 from ea.sv_student
 on conflict(id) do update set
@@ -309,13 +309,19 @@ is_registered          = EXCLUDED.is_registered,
 train_range            = EXCLUDED.train_range,
 category               = EXCLUDED.category,
 foreign_language       = EXCLUDED.foreign_language,
-foreign_language_level = EXCLUDED.foreign_language_level,
 change_type            = EXCLUDED.change_type,
 department_id          = EXCLUDED.department_id,
 admin_class_id         = EXCLUDED.admin_class_id,
 major_id               = EXCLUDED.major_id,
 direction_id           = EXCLUDED.direction_id,
 admission_id           = EXCLUDED.admission_id;
+
+-- 学生-等级
+insert into ea.student_level(student_id, type, level)
+select student_id, type, level
+from ea.sv_student_level
+on conflict(student_id, type) do update set
+level = EXCLUDED.level;
 
 -- 板块课程
 insert into ea.timeplate_course(id, course_id)
