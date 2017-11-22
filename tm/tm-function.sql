@@ -151,13 +151,13 @@ begin
      and exists(
        with series as ( -- 生成序列，用于判断周次是否相交
          select i from generate_series(1, 30) as s(i)
-       ) 
+       )
        select * from series where i between p_start_week_1 and p_end_week_1
        and (p_odd_even_1 = 0 or p_odd_even_1 = 1 and i % 2 = 1 or p_odd_even_1 = 2 and i % 2 = 0)
        intersect
        select * from series where i between p_start_week_2 and p_end_week_2
        and (p_odd_even_2 = 0 or p_odd_even_2 = 1 and i % 2 = 1 or p_odd_even_2 = 2 and i % 2 = 0)
-     ); 
+     );
 end;
 $$ LANGUAGE plpgsql;
 
@@ -171,15 +171,20 @@ create or replace function tm.sp_get_student_attendance_stats_by_admin_class (
   id text,                -- 学号
   name text,              -- 姓名
   admin_class text,       -- 行政班
-  absent bigint,          -- 旷课节数
+  absent numeric(8,1),    -- 旷课节数
   late numeric(8,1),      -- 迟到节数
-  early bigint,           -- 早退节数
+  early numeric(8,1),     -- 早退节数
   total numeric(8,1),     -- 折合节数
-  leave bigint            -- 请假节数
+  leave numeric(8,1)      -- 请假节数
 ) as $$
 begin
   return query
-  with free_listen as (
+  with type_ratio as (
+    select type, as_type, instance_ratio, sections_ratio
+    from attendance_settings
+    join attendance_type_ratio on attendance_settings.id = attendance_type_ratio.attendance_settings_id
+    where p_term_id between coalesce(start_term_id, 00000) and coalesce(end_term_id, 99999)
+  ), free_listen as (
     select student_id, task_schedule_id
     from tm.dva_valid_free_listen
     join ea.student on student_id = student.id and student.admin_class_id = p_admin_class_id
@@ -205,27 +210,23 @@ begin
       )
   ), attendance as (
     select student_id,
-      sum(case when type = 1 then total_section else 0 end) as absent,
-      sum(case when type = 2 then 0.5 else 0.0 end)         as late,
-      sum(case when type = 3 then total_section else 0 end) as early,
-      sum(case when type = 4 then total_section else 0 end) as leave,
-      sum(case when type = 5 then total_section else 0 end) as late_early
+      sum(case when as_type = 1 then instance_ratio + total_section * sections_ratio else 0.0 end) as absent,
+      sum(case when as_type = 2 then instance_ratio + total_section * sections_ratio else 0.0 end) as late,
+      sum(case when as_type = 3 then instance_ratio + total_section * sections_ratio else 0.0 end) as early,
+      sum(case when as_type = 4 then instance_ratio + total_section * sections_ratio else 0.0 end) as leave
     from (
       select student_id, total_section, type from rollcall
       union all
       select student_id, total_section, type from student_leave
     ) as x
+    join type_ratio on type_ratio.type = x.type
     group by student_id
   )
   select student.id::text, student.name::text, admin_class.name::text,
          attendance.absent,
          attendance.late,
-         attendance.early +
-         attendance.late_early as early,
-         attendance.absent +
-         attendance.late +
-         attendance.early +
-         attendance.late_early as total,
+         attendance.early,
+         attendance.absent + attendance.late + attendance.early as total,
          attendance.leave
   from attendance
   join ea.student on attendance.student_id = student.id
@@ -238,21 +239,27 @@ $$ LANGUAGE plpgsql;
  * 查询指定管理员（班主任/辅导员）的学生考勤统计
  */
 create or replace function tm.sp_get_student_attendance_stats_by_administrator (
-  p_term_id integer,  -- 学期
-  p_user_id text      -- 用户ID
+  p_term_id integer,    -- 学期
+  p_user_id text,       -- 用户ID
+  p_limit integer = 100 -- 查询数量
 ) returns table (
-  id text,            -- 学号
-  name text,          -- 姓名
-  admin_class text,   -- 行政班
-  absent bigint,      -- 旷课节数
-  late numeric(8,1),  -- 迟到节数
-  early bigint,       -- 早退节数
-  total numeric(8,1), -- 折合节数
-  leave bigint        -- 请假节数
+  id text,              -- 学号
+  name text,            -- 姓名
+  admin_class text,     -- 行政班
+  absent numeric(8,1),  -- 旷课节数
+  late numeric(8,1),    -- 迟到节数
+  early numeric(8,1),   -- 早退节数
+  total numeric(8,1),   -- 折合节数
+  leave numeric(8,1)    -- 请假节数
 ) as $$
 begin
   return query
-  with admin_class as (
+  with type_ratio as (
+    select type, as_type, instance_ratio, sections_ratio
+    from attendance_settings
+    join attendance_type_ratio on attendance_settings.id = attendance_type_ratio.attendance_settings_id
+    where p_term_id between coalesce(start_term_id, 00000) and coalesce(end_term_id, 99999)
+  ), admin_class as (
     select admin_class.id
     from ea.admin_class
     where admin_class.counsellor_id = p_user_id or admin_class.supervisor_id = p_user_id
@@ -285,16 +292,16 @@ begin
       )
   ), attendance as (
     select student_id,
-      sum(case when type = 1 then total_section else 0 end) as absent,
-      sum(case when type = 2 then 0.5 else 0.0 end)         as late,
-      sum(case when type = 3 then total_section else 0 end) as early,
-      sum(case when type = 4 then total_section else 0 end) as leave,
-      sum(case when type = 5 then total_section else 0 end) as late_early
+      sum(case when as_type = 1 then instance_ratio + total_section * sections_ratio else 0.0 end) as absent,
+      sum(case when as_type = 2 then instance_ratio + total_section * sections_ratio else 0.0 end) as late,
+      sum(case when as_type = 3 then instance_ratio + total_section * sections_ratio else 0.0 end) as early,
+      sum(case when as_type = 4 then instance_ratio + total_section * sections_ratio else 0.0 end) as leave
     from (
       select student_id, total_section, type from rollcall
       union all
       select student_id, total_section, type from student_leave
     ) as x
+    join type_ratio on type_ratio.type = x.type
     group by student_id
   )
   select student.id::text,
@@ -302,18 +309,14 @@ begin
          admin_class.name::text,
          attendance.absent,
          attendance.late,
-         attendance.early +
-         attendance.late_early as early,
-         attendance.absent +
-         attendance.late +
-         attendance.early +
-         attendance.late_early as total,
+         attendance.early,
+         attendance.absent + attendance.late + attendance.early as total,
          attendance.leave
   from attendance
   join ea.student on attendance.student_id = student.id
   join ea.admin_class on student.admin_class_id = admin_class.id
   order by total desc, leave desc
-  limit 100;
+  limit p_limit;
 end;
 $$ LANGUAGE plpgsql;
 
@@ -379,21 +382,27 @@ $$ LANGUAGE plpgsql;
  * 查询指定学院的学生考勤统计
  */
 create or replace function tm.sp_get_student_attendance_stats_by_department (
-  p_term_id integer,   -- 学期
-  p_department_id text -- 学院ID
+  p_term_id integer,    -- 学期
+  p_department_id text, -- 学院ID
+  p_limit integer = 100 -- 查询数量
 ) returns table (
-  id text,             -- 学号
-  name text,           -- 姓名
-  admin_class text,    -- 行政班
-  absent bigint,       -- 旷课节数
-  late numeric(8,1),   -- 迟到节数
-  early bigint,        -- 早退节数
-  total numeric(8,1),  -- 折合节数
-  leave bigint         -- 请假节数
+  id text,              -- 学号
+  name text,            -- 姓名
+  admin_class text,     -- 行政班
+  absent numeric(8,1),  -- 旷课节数
+  late numeric(8,1),    -- 迟到节数
+  early numeric(8,1),   -- 早退节数
+  total numeric(8,1),   -- 折合节数
+  leave numeric(8,1)    -- 请假节数
 ) as $$
 begin
   return query
-  with admin_class as (
+  with type_ratio as (
+    select type, as_type, instance_ratio, sections_ratio
+    from attendance_settings
+    join attendance_type_ratio on attendance_settings.id = attendance_type_ratio.attendance_settings_id
+    where p_term_id between coalesce(start_term_id, 00000) and coalesce(end_term_id, 99999)
+  ), admin_class as (
     select admin_class.id
     from ea.admin_class
     where admin_class.department_id = p_department_id
@@ -426,33 +435,29 @@ begin
       )
   ), attendance as (
     select student_id,
-      sum(case when type = 1 then total_section else 0 end) as absent,
-      sum(case when type = 2 then 0.5 else 0.0 end)         as late,
-      sum(case when type = 3 then total_section else 0 end) as early,
-      sum(case when type = 4 then total_section else 0 end) as leave,
-      sum(case when type = 5 then total_section else 0 end) as late_early
+      sum(case when as_type = 1 then instance_ratio + total_section * sections_ratio else 0.0 end) as absent,
+      sum(case when as_type = 2 then instance_ratio + total_section * sections_ratio else 0.0 end) as late,
+      sum(case when as_type = 3 then instance_ratio + total_section * sections_ratio else 0.0 end) as early,
+      sum(case when as_type = 4 then instance_ratio + total_section * sections_ratio else 0.0 end) as leave
     from (
       select student_id, total_section, type from rollcall
       union all
       select student_id, total_section, type from student_leave
     ) as x
+    join type_ratio on type_ratio.type = x.type
     group by student_id
   )
   select student.id::text, student.name::text, admin_class.name::text,
          attendance.absent,
          attendance.late,
-         attendance.early +
-         attendance.late_early as early,
-         attendance.absent +
-         attendance.late +
-         attendance.early +
-         attendance.late_early as total,
+         attendance.early,
+         attendance.absent + attendance.late + attendance.early as total,
          attendance.leave
   from attendance
   join ea.student on attendance.student_id = student.id
   join ea.admin_class on student.admin_class_id = admin_class.id
   order by total desc, leave desc
-  limit 100;
+  limit p_limit;
 end;
 $$ LANGUAGE plpgsql;
 
@@ -691,15 +696,27 @@ create or replace function tm.sp_get_student_attendance_stats_by_course_class (
   p_course_class_id uuid -- 教学班ID
 ) returns table (
   id text,               -- 学号
-  absent bigint,         -- 旷课节数
+  absent numeric(8,1),   -- 旷课节数
   late numeric(8,1),     -- 迟到节数
-  early bigint,          -- 早退节数
+  early numeric(8,1),    -- 早退节数
   total numeric(8,1),    -- 折合节数
-  leave bigint           -- 请假节数
+  leave numeric(8,1)     -- 请假节数
 ) as $$
+declare
+  v_term_id integer;
 begin
+  select term_id
+    into v_term_id
+  from ea.course_class
+  where course_class.id = p_course_class_id;
+
   return query
-  with attendance_student as ( -- 教学班覆盖的学生
+  with type_ratio as (
+    select type, as_type, instance_ratio, sections_ratio
+    from attendance_settings
+    join attendance_type_ratio on attendance_settings.id = attendance_type_ratio.attendance_settings_id
+    where v_term_id between coalesce(start_term_id, 00000) and coalesce(end_term_id, 99999)
+  ), attendance_student as ( -- 教学班覆盖的学生
     select distinct task_student.student_id as id
     from ea.course_class
     join ea.task on course_class.id = task.course_class_id
@@ -737,27 +754,23 @@ begin
       )
   ), attendance as (
     select student_id,
-      sum(case when type = 1 then total_section else 0 end) as absent,
-      sum(case when type = 2 then 0.5 else 0.0 end)         as late,
-      sum(case when type = 3 then total_section else 0 end) as early,
-      sum(case when type = 4 then total_section else 0 end) as leave,
-      sum(case when type = 5 then total_section else 0 end) as late_early
+      sum(case when as_type = 1 then instance_ratio + total_section * sections_ratio else 0.0 end) as absent,
+      sum(case when as_type = 2 then instance_ratio + total_section * sections_ratio else 0.0 end) as late,
+      sum(case when as_type = 3 then instance_ratio + total_section * sections_ratio else 0.0 end) as early,
+      sum(case when as_type = 4 then instance_ratio + total_section * sections_ratio else 0.0 end) as leave
     from (
       select student_id, total_section, type from rollcall
       union all
       select student_id, total_section, type from student_leave
     ) as x
+    join type_ratio on type_ratio.type = x.type
     group by student_id
   )
   select student_id::text,
          attendance.absent,
          attendance.late,
-         attendance.early +
-         attendance.late_early as early,
-         attendance.absent +
-         attendance.late +
-         attendance.early +
-         attendance.late_early as total,
+         attendance.early,
+         attendance.absent + attendance.late + attendance.early as total,
          attendance.leave
   from attendance
   order by 1;
@@ -1055,9 +1068,7 @@ $$ LANGUAGE plpgsql;
  */
 create or replace function tm.sp_get_exam_disqual_by_student_department (
   p_term_id integer,             -- 学期
-  p_department_id text,          -- 学生所在学院ID
-  p_rollcall_ratio integer,      -- 旷课比例
-  p_leave_ratio integer          -- 请假比例
+  p_department_id text           -- 学生所在学院ID
 ) returns table (
   id text,                       -- 学号
   name text,                     -- 学生姓名
@@ -1068,12 +1079,27 @@ create or replace function tm.sp_get_exam_disqual_by_student_department (
   department text,               -- 开课单位
   course_class_section bigint,   -- 课程总节数
   absent_section numeric(8, 1),  -- 旷课节数
-  leave_section bigint,          -- 请假节数
+  absent_exceeded boolean,       -- 旷课超限
+  leave_section numeric(8, 1),   -- 请假节数
+  attend_exceeded boolean,       -- 缺勤超限
   disqualified boolean           -- 是否已取消
 ) as $$
+declare
+  v_attendance_settings_id integer;
+  v_absent_disqual_ratio numeric(6, 6);
+  v_attend_disqual_ratio numeric(6, 6);
 begin
+  select attendance_settings.id, absent_disqual_ratio, attend_disqual_ratio
+    into v_attendance_settings_id, v_absent_disqual_ratio, v_attend_disqual_ratio
+  from attendance_settings
+  where p_term_id between coalesce(start_term_id, 00000) and coalesce(end_term_id, 99999);
+
   return query
-  with admin_class as (
+  with type_ratio as (
+    select type, as_type, instance_ratio, sections_ratio
+    from attendance_type_ratio
+    where attendance_settings_id = v_attendance_settings_id
+  ), admin_class as (
     select admin_class.id
     from ea.admin_class
     where admin_class.department_id = p_department_id
@@ -1106,20 +1132,14 @@ begin
       )
   ), course_class_student_stats as ( -- 按学生和教学班统计旷课和迟到
     select student_id, course_class_id,
-      sum(case type
-          when 1 then x.total_section
-          when 2 then 0.5
-          when 3 then x.total_section
-          when 5 then x.total_section
-          else 0 end) as absent,
-      sum(case type
-          when 4 then x.total_section
-          else 0 end) as leave
+      sum(case when as_type in (1, 2, 3) then instance_ratio + total_section * sections_ratio else 0.0 end) as absent,
+      sum(case when as_type in (4)       then instance_ratio + total_section * sections_ratio else 0.0 end) as leave
     from (
       select student_id, course_class_id, total_section, type from rollcall
       union all
       select student_id, course_class_id, total_section, type from student_leave
     ) as x
+    join type_ratio on type_ratio.type = x.type
     group by student_id, course_class_id
   ), course_class_section_stats as ( -- 按教学班统计总节数
     select course_class.id as course_class_id,
@@ -1141,8 +1161,10 @@ begin
          teacher.name::text as teacher,
          department.name::text as department,
          course_class_section_stats.total as course_class_section,
-         course_class_student_stats.absent::numeric(8, 1) as absent_section,
+         course_class_student_stats.absent as absent_section,
+         course_class_student_stats.absent >= course_class_section_stats.total * v_absent_disqual_ratio as absent_exceeded,
          course_class_student_stats.leave as leave_section,
+         (course_class_student_stats.absent + course_class_student_stats.leave) >= course_class_section_stats.total * v_attend_disqual_ratio as attend_exceeded,
          exists (
            select *
            from ea.task
@@ -1158,8 +1180,6 @@ begin
   join ea.teacher on course_class.teacher_id = teacher.id
   join ea.student on course_class_student_stats.student_id = student.id
   join ea.admin_class on student.admin_class_id = admin_class.id
-  where course_class_student_stats.absent * 9 >= course_class_section_stats.total
-     or course_class_student_stats.leave * 6 >= course_class_section_stats.total
   order by id, course_class_code;
 end;
 $$ LANGUAGE plpgsql;
@@ -1170,9 +1190,7 @@ $$ LANGUAGE plpgsql;
  */
 create or replace function tm.sp_get_exam_disqual_stats_by_course_class_department (
   p_term_id integer,        -- 学期
-  p_department_id text,     -- 开课学院ID
-  p_rollcall_ratio integer, -- 旷课比例
-  p_leave_ratio integer     -- 请假比例
+  p_department_id text      -- 开课学院ID
 ) returns table (
   id uuid,                  -- 教学班ID
   code text,                -- 选课课号
@@ -1183,9 +1201,22 @@ create or replace function tm.sp_get_exam_disqual_stats_by_course_class_departme
   processed bigint,         -- 已处理数量
   unprocessed bigint        -- 未处理数量
 ) as $$
+declare
+  v_attendance_settings_id integer;
+  v_absent_disqual_ratio numeric(6, 6);
+  v_attend_disqual_ratio numeric(6, 6);
 begin
+  select attendance_settings.id, absent_disqual_ratio, attend_disqual_ratio
+    into v_attendance_settings_id, v_absent_disqual_ratio, v_attend_disqual_ratio
+  from attendance_settings
+  where p_term_id between coalesce(start_term_id, 00000) and coalesce(end_term_id, 99999);
+
   return query
-  with course_class as (
+  with type_ratio as (
+    select type, as_type, instance_ratio, sections_ratio
+    from attendance_type_ratio
+    where attendance_settings_id = v_attendance_settings_id
+  ), course_class as (
     select course_class.id
     from ea.course_class
     where course_class.department_id = p_department_id
@@ -1213,24 +1244,18 @@ begin
       and (student_id, task_schedule_id) not in (
         select student_id, task_schedule_id from free_listen
       )
-  ), attendance as ( -- 按学生和教学班统计旷课和迟到节数
+  ), course_class_student_stats as ( -- 按学生和教学班统计旷课和迟到节数
     select student_id, course_class_id,
-      sum(case type
-          when 1 then x.total_section
-          when 2 then 0.5
-          when 3 then x.total_section
-          when 5 then x.total_section
-          else 0 end) as absent_section,
-      sum(case type
-          when 4 then x.total_section
-          else 0 end) as leave_section
+      sum(case when as_type in (1, 2, 3) then instance_ratio + total_section * sections_ratio else 0.0 end) as absent,
+      sum(case when as_type in (4)       then instance_ratio + total_section * sections_ratio else 0.0 end) as leave
     from (
       select student_id, course_class_id, total_section, type from rollcall
       union all
       select student_id, course_class_id, total_section, type from student_leave
     ) as x
+    join type_ratio on type_ratio.type = x.type
     group by student_id, course_class_id
-  ), course_class_section as ( -- 按教学班统计总节数
+  ), course_class_section_stats as ( -- 按教学班统计总节数
     select course_class.id as course_class_id,
            sum(total_section * floor((task_schedule.end_week - task_schedule.start_week + 1) /
            (case task_schedule.odd_even when 0 then 1 else 2 end))::integer) as total_section
@@ -1238,31 +1263,31 @@ begin
     join ea.task on course_class.id = task.course_class_id
     join ea.task_schedule on task.id = task_schedule.task_id
     where course_class.id in (
-      select course_class_id from attendance
+      select course_class_id from course_class_student_stats
     )
     group by course_class.id
   ), course_class_student_disqual as ( -- 计算达到取消资格标准的学生
-    select attendance.student_id,
-           attendance.course_class_id,
-           course_class_section.total_section,
+    select course_class_student_stats.student_id,
+           course_class_student_stats.course_class_id,
+           course_class_section_stats.total_section,
            exists (
              select *
              from ea.task
              join ea.task_student on task.id = task_student.task_id
-              and attendance.student_id = task_student.student_id
-             where task.course_class_id = attendance.course_class_id
+              and course_class_student_stats.student_id = task_student.student_id
+             where task.course_class_id = course_class_student_stats.course_class_id
                and task_student.exam_flag = 1
            ) as disqualified
-    from attendance
-    join course_class_section on attendance.course_class_id = course_class_section.course_class_id
-    where attendance.absent_section * p_rollcall_ratio >= course_class_section.total_section
-       or attendance.leave_section * p_leave_ratio >= course_class_section.total_section
+    from course_class_student_stats
+    join course_class_section_stats on course_class_student_stats.course_class_id = course_class_section_stats.course_class_id
+    where course_class_student_stats.absent >= course_class_section_stats.total_section * v_absent_disqual_ratio
+       or (course_class_student_stats.absent + course_class_student_stats.leave) >= course_class_section_stats.total_section * v_attend_disqual_ratio
        or exists (
             select *
             from ea.task
             join ea.task_student on task.id = task_student.task_id
-             and attendance.student_id = task_student.student_id
-            where task.course_class_id = attendance.course_class_id
+             and course_class_student_stats.student_id = task_student.student_id
+            where task.course_class_id = course_class_student_stats.course_class_id
               and task_student.exam_flag = 1
           )
   )
@@ -1287,33 +1312,50 @@ $$ LANGUAGE plpgsql;
  * 按教学班查询取消考试资格记录
   */
 create or replace function tm.sp_get_exam_disqual_by_course_class (
-  p_course_class_id uuid,         -- 教学班ID
-  p_rollcall_ratio integer,       -- 旷课比例
-  p_leave_ratio integer           -- 请假比例
+  p_course_class_id uuid          -- 教学班ID
 ) returns table (
   id text,                        -- 学号
   name text,                      -- 学生姓名
   admin_class text,               -- 行政班
   department text,                -- 学生所在学院
-  rollcall_section numeric(8, 1), -- 旷课节数
-  rollcall_exceeded boolean,      -- 旷课超限
-  leave_section bigint,           -- 请假节数
-  leave_exceeded boolean,         -- 请假超限
+  absent_section numeric(8, 1),   -- 旷课节数
+  absent_exceeded boolean,        -- 旷课超限
+  leave_section numeric(8, 1),    -- 请假节数
+  attend_exceeded boolean,        -- 缺勤超限
   disqualified boolean            -- 是否已取消
 ) as $$
 declare
-  course_class_section bigint;
+  v_term_id integer;
+  v_course_class_section bigint;
+  v_attendance_settings_id integer;
+  v_absent_disqual_ratio numeric(6, 6);
+  v_attend_disqual_ratio numeric(6, 6);
 begin
+  select term_id
+    into v_term_id
+  from ea.course_class
+  where course_class.id = p_course_class_id;
+
   -- 计算教学班总学时
   select sum(total_section * floor((task_schedule.end_week - task_schedule.start_week + 1) /
-         (case task_schedule.odd_even when 0 then 1 else 2 end))::integer) into course_class_section
+         (case task_schedule.odd_even when 0 then 1 else 2 end))::integer)
+    into v_course_class_section
   from ea.course_class
   join ea.task on course_class.id = task.course_class_id
   join ea.task_schedule on task.id = task_schedule.task_id
   where course_class.id = p_course_class_id;
 
+  select attendance_settings.id, absent_disqual_ratio, attend_disqual_ratio
+    into v_attendance_settings_id, v_absent_disqual_ratio, v_attend_disqual_ratio
+  from attendance_settings
+  where v_term_id between coalesce(start_term_id, 00000) and coalesce(end_term_id, 99999);
+
   return query
-  with free_listen as (
+  with type_ratio as (
+    select type, as_type, instance_ratio, sections_ratio
+    from attendance_type_ratio
+    where attendance_settings_id = v_attendance_settings_id
+  ), free_listen as (
     select student_id, task_schedule_id
     from tm.dva_valid_free_listen
     where course_class_id = p_course_class_id
@@ -1334,54 +1376,48 @@ begin
       and (student_id, task_schedule_id) not in (
         select student_id, task_schedule_id from free_listen
       )
-  ), attendance as (
+  ), course_class_student_stats as ( -- 按学生和教学班统计旷课和迟到节数
     select student_id,
-      sum(case type
-          when 1 then x.total_section
-          when 2 then 0.5
-          when 3 then x.total_section
-          when 5 then x.total_section
-          else 0 end) as rollcall_section,
-      sum(case type
-          when 4 then x.total_section
-          else 0 end) as leave_section
+      sum(case when as_type in (1, 2, 3) then instance_ratio + total_section * sections_ratio else 0.0 end) as absent,
+      sum(case when as_type in (4)       then instance_ratio + total_section * sections_ratio else 0.0 end) as leave
     from (
       select student_id, total_section, type from rollcall
       union all
       select student_id, total_section, type from student_leave
     ) as x
+    join type_ratio on type_ratio.type = x.type
     group by student_id
   ), course_class_student_disqual as (
-    select attendance.student_id,
-           attendance.rollcall_section,
-           attendance.rollcall_section * p_rollcall_ratio >= course_class_section as rollcall_exceeded,
-           attendance.leave_section,
-           attendance.leave_section * p_leave_ratio >= course_class_section as leave_exceeded,
+    select course_class_student_stats.student_id,
+           course_class_student_stats.absent as absent_section,
+           course_class_student_stats.absent >= v_course_class_section * v_absent_disqual_ratio as absent_exceeded,
+           course_class_student_stats.leave as leave_section,
+           (course_class_student_stats.absent + course_class_student_stats.leave) >= v_course_class_section * v_attend_disqual_ratio as attend_exceeded,
            exists (
              select *
              from ea.task
              join ea.task_student on task.id = task_student.task_id
-              and attendance.student_id = task_student.student_id
+              and course_class_student_stats.student_id = task_student.student_id
              where task.course_class_id = p_course_class_id
                and task_student.exam_flag = 1
            ) as disqualified
-    from attendance
+    from course_class_student_stats
   )
   select student.id::text,
          student.name::text,
          admin_class.name::text as admin_class,
          department.name::text as department,
-         ccd.rollcall_section::numeric(8, 1),
-         ccd.rollcall_exceeded,
+         ccd.absent_section,
+         ccd.absent_exceeded,
          ccd.leave_section,
-         ccd.leave_exceeded,
+         ccd.attend_exceeded,
          ccd.disqualified
   from course_class_student_disqual ccd
   join ea.student on ccd.student_id = student.id
   join ea.admin_class on student.admin_class_id = admin_class.id
   join ea.department on student.department_id = department.id
-  where ccd.rollcall_exceeded
-     or ccd.leave_exceeded
+  where ccd.absent_exceeded
+     or ccd.attend_exceeded
      or ccd.disqualified
   order by id;
 end;
