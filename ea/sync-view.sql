@@ -422,13 +422,11 @@ select kcdm as id,
     decode(khfs, '考试', 1, '考查', 2, '毕业论文', 3, /*空*/ 9) as assess_type,
     nvl2(pk_kcdm, 1, 0) as schedule_type,
     kcjj as introduction,
-    d.dm as timeplate_code,
     decode(tkbj, '1', 0, 1) enabled,
     case when kkbmdm is null then substr(kcdm, 1, 2) else kkbmdm end as department_id
 from zfxfzb.kcdmb a
 left join zfxfzb.kcxzdmb b on b.kcxzmc = a.kcxz
 left join scheduled c on c.pk_kcdm = a.kcdm
-left join zfxfzb.bkkcdmb d on d.bkkcdm = a.kcdm
 where a.kcxz is not null
 order by id;
 
