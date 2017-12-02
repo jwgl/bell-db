@@ -406,6 +406,12 @@ department_id     = EXCLUDED.department_id,
 teacher_id        = EXCLUDED.teacher_id,
 timeplate_id      = EXCLUDED.timeplate_id;
 
+-- 教学班-选课条件
+insert into ea.course_class_condition(course_class_id, include, condition_group, condition_name, condition_value)
+select course_class_id, include, condition_group, condition_name, condition_value from ea.sv_course_class_condition
+on conflict(course_class_id, include, condition_group, condition_name) do update set
+condition_value = EXCLUDED.condition_value;
+
 -- 教学班-计划
 insert into ea.course_class_program(course_class_id, program_id)
 select course_class_id, program_id from ea.sv_course_class_program
