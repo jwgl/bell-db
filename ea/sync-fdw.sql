@@ -439,6 +439,16 @@ create foreign table ea.sv_course_class (
     timeplate_id bigint
 ) server zf options (schema 'EA', table 'SV_COURSE_CLASS', readonly 'true');
 
+-- 教学班-选课条件
+drop foreign table if exists ea.sv_course_class_condition;
+create foreign table ea.sv_course_class_condition (
+    course_class_id uuid,
+    include boolean,
+    condition_group integer,
+    condition_name text,
+    condition_value text
+) server zf options (schema 'EA', table 'SV_COURSE_CLASS_CONDITION', readonly 'true');
+
 -- 教学班-计划
 drop foreign table if exists ea.sv_course_class_program;
 create foreign table ea.sv_course_class_program (
