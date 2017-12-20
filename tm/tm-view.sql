@@ -73,7 +73,10 @@ union all
 select distinct s.teacher_id as user_id, 'ROLE_OBSERVER' as role_id
 from tm.observer s
 join ea.term t on s.term_id = t.id
-where t.active is true;
+where t.active is true
+union all
+select distinct s.teacher_id as user_id, 'ROLE_DUALDEGREE_ADMIN_DEPT' as role_id
+from tm.dual_degree_dept_admin s;
 
 -- 学生角色
 create or replace view tm.dv_student_role as
@@ -434,6 +437,7 @@ select distinct form.id,
     place.name as place_name,
     courseteacher.name as teacher_name,
     department.name as department_name,
+    cp.property_name AS property,
     courseclass.term_id as term_id
    from tm.observation_form form
      join ea.teacher supervisor on form.observer_id = supervisor.id
@@ -450,7 +454,8 @@ select distinct form.id,
      join ea.course course_1 on courseclass.course_id = course_1.id
      join ea.teacher courseteacher on courseclass.teacher_id = courseteacher.id
      left join ea.place on schedule.place_id = place.id
-  where form.term_id=courseclass.term_id
+     cross join tm.dv_observation_course_property cp
+  where form.term_id=courseclass.term_id and courseclass.id = cp.id
   order by form.id;
 
 -- 督导听课视图，合并了新旧数据，只抽取重要的字段信息;
@@ -470,24 +475,7 @@ select view.id,
     view.start_section,
     view.total_section
 from tm.dv_observation_view view
-where view.status = 2
-union all
-select legacy_form.id,
-    true as is_legacy,
-    legacy_form.listentime as supervisor_date,
-    legacy_form.evaluategrade as evaluate_level,
-    legacy_form.observer_type,
-    legacy_form.term_id,
-    legacy_form.collegename as department_name,
-    legacy_form.teachercode as teacher_id,
-    legacy_form.teachername as teacher_name,
-    legacy_form.coursename as course_name,
-    legacy_form.classpostion as place,
-    null as day_of_week,
-    null as start_section,
-    null as total_section
-from tm.dv_observation_legacy_form legacy_form
-where legacy_form.state;
+where view.status = 2;
 
 -- 课程性质视图
 create or replace view tm.dv_observation_course_property as

@@ -27,6 +27,10 @@ INSERT INTO tm.role (id,name) VALUES ('ROLE_ROLLCALL_ADMIN',             '考勤
 INSERT INTO tm.role (id,name) VALUES ('ROLE_ROLLCALL_DEPT_ADMIN',        '考勤管理员-学院');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_OBSERVER',                   '现任督导员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_OBSERVATION_ADMIN',          '督导管理员');
+INSERT INTO tm.role (id,name) VALUES ('ROLE_AGREEMENT_ADMIN',            '2+2合作协议管理员');
+INSERT INTO tm.role (id,name) VALUES ('ROLE_DUALDEGREE_ADMIN',           '2+2管理员-教务处');
+INSERT INTO tm.role (id,name) VALUES ('ROLE_DUALDEGREE_ADMIN_DEPT',      '2+2管理员-学院');
+INSERT INTO tm.role (id,name) VALUES ('ROLE_DUALDEGREE_STUDENT',         '2+2学生');
 
 INSERT INTO tm.permission (id,name) VALUES ('PERM_WORK_ITEMS',              '待办事项');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_SYSTEM_SETUP',            '系统设置');
@@ -76,6 +80,12 @@ INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_DEPT_APPROVE','督
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVER_ADMIN',          '督导管理');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVER_DEPT_ADMIN',     '督导管理-院督导员管理');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_STUDENT_SCHEDULES_READ',  '学生个人课表-查看');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_AGREEMENT_WRITE',         '2+2合作协议-编辑');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_AGREEMENT_READ',          '2+2合作协议-查看');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_DUALDEGREE_ADMIN',        '2+2权限设置');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_DUALDEGREE_WRITE',        '2+2学位-编辑');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_DUALDEGREE_APPROVE',      '2+2学位-审批');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_DUALDEGREE_DEPT_ADMIN',   '2+2学院权限-管理');
 
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_SYSTEM_ADMIN',               'PERM_SYSTEM_SETUP');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_USER',                       'PERM_PROFILE_SETUP');
@@ -142,6 +152,12 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DEAN_OF_TEA
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ACADEMIC_SECRETARY',         'PERM_OBSERVER_DEPT_ADMIN');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',          'PERM_STUDENT_SCHEDULES_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_POSTPONED_STUDENT',          'PERM_STUDENT_SCHEDULES_READ');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_AGREEMENT_ADMIN',            'PERM_AGREEMENT_WRITE');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DUALDEGREE_ADMIN',           'PERM_DUALDEGREE_ADMIN');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DUALDEGREE_ADMIN_DEPT',      'PERM_DUALDEGREE_APPROVE');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DUALDEGREE_ADMIN_DEPT',      'PERM_DUALDEGREE_DEPT_ADMIN');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DUALDEGREE_ADMIN_DEPT',      'PERM_AGREEMENT_READ');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DUALDEGREE_STUDENT',         'PERM_DUALDEGREE_WRITE');
 
 INSERT INTO tm.workflow (id,name) VALUES ('scheme.create',  '教学计划编制');
 INSERT INTO tm.workflow (id,name) VALUES ('scheme.revise',  '教学计划变更');

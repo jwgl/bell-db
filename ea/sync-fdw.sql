@@ -17,14 +17,17 @@ create extension oracle_fdw;
 
 -- 创建外部服务器
 create server zf foreign data wrapper oracle_fdw options (dbserver '//localhost/zf');
+create server zf_print foreign data wrapper oracle_fdw options (dbserver '//localhost/zf_print');
 
 -- 授权用户可以使用
 grant usage on foreign server zf to ea;
 grant usage on foreign server zf to tm;
+grant usage on foreign server zf_print to tm;
 
 -- 创建用户映射
 create user mapping for ea server zf options (user 'ea',password 'zf_ea_password');
 create user mapping for tm server zf options (user 'tm',password 'zf_tm_password');
+create user mapping for tm server zf_print options (user 'print',password 'print_password');
 
 -- 创建外部表
 \c bell ea
