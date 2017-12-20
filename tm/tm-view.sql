@@ -475,11 +475,7 @@ select view.id,
     view.start_section,
     view.total_section
 from tm.dv_observation_view view
-<<<<<<< HEAD
 where view.status = 2;
-=======
-where view.status = 2
->>>>>>> upstream/master
 
 -- 课程性质视图
 create or replace view tm.dv_observation_course_property as
