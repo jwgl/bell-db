@@ -32,7 +32,7 @@ create user mapping for tm server zf_print options (user 'print',password 'print
 -- 创建外部表
 \c bell ea
 
---- 学期
+-- 学期
 drop foreign table if exists ea.sv_term;
 create foreign table ea.sv_term (
     id integer,
@@ -44,7 +44,7 @@ create foreign table ea.sv_term (
     max_week integer
 ) server zf options (schema 'EA', table 'TERM', readonly 'true');
 
---- 学院
+-- 学院
 drop foreign table if exists ea.sv_department;
 create foreign table ea.sv_department (
     id char(2),
@@ -56,7 +56,7 @@ create foreign table ea.sv_department (
     enabled boolean
 ) server zf options (schema 'EA', table 'SV_DEPARTMENT', readonly 'true');
 
---- 场地
+-- 场地
 drop foreign table if exists ea.sv_place;
 create foreign table ea.sv_place (
     id char(6),
@@ -74,21 +74,21 @@ create foreign table ea.sv_place (
     note varchar(200)
 ) server zf options (schema 'EA', table 'SV_PLACE', readonly 'true');
 
---- 教学场地-允许使用单位
+-- 教学场地-允许使用单位
 drop foreign table if exists ea.sv_place_department;
 create foreign table ea.sv_place_department (
     place_id char(6),
     department_id varchar(2)
 ) server zf options (schema 'EA', table 'SV_PLACE_DEPARTMENT', readonly 'true');
 
---- 教学场地-允许借用学期
+-- 教学场地-允许借用学期
 drop foreign table if exists ea.sv_place_booking_term;
 create foreign table ea.sv_place_booking_term (
     place_id char(6),
     term_id integer
 ) server zf options (schema 'EA', table 'SV_PLACE_BOOKING_TERM', readonly 'true');
 
---- 学科门类
+-- 学科门类
 drop foreign table if exists ea.sv_discipline;
 create foreign table ea.sv_discipline (
     id numeric(6),
@@ -96,7 +96,7 @@ create foreign table ea.sv_discipline (
     name varchar(10)
 ) server zf options (schema 'EA', table 'DISCIPLINE', readonly 'true');
 
---- 专业类
+-- 专业类
 drop foreign table if exists ea.sv_field_class;
 create foreign table ea.sv_field_class (
     id numeric(8),
@@ -105,7 +105,7 @@ create foreign table ea.sv_field_class (
     name varchar(20)
 ) server zf options (schema 'EA', table 'FIELD_CLASS', readonly 'true');
 
---- 专业目录
+-- 专业目录
 drop foreign table if exists ea.sv_field;
 create foreign table ea.sv_field (
     id numeric(10),
@@ -115,14 +115,14 @@ create foreign table ea.sv_field (
     flag varchar(2)
 ) server zf options (schema 'EA', table 'FIELD', readonly 'true');
 
---- 专业目录
+-- 专业目录
 drop foreign table if exists ea.sv_field_allow_degree;
 create foreign table ea.sv_field_allow_degree (
     field_id numeric(10),
     discipline_id numeric(6)
 ) server zf options (schema 'EA', table 'FIELD_ALLOW_DEGREE', readonly 'true');
 
---- 校内专业
+-- 校内专业
 drop foreign table if exists ea.sv_subject;
 create foreign table ea.sv_subject (
     id char(4),
@@ -140,7 +140,7 @@ create foreign table ea.sv_subject (
     department_id char(2)
 ) server zf options (schema 'EA', table 'SV_SUBJECT', readonly 'true');
 
---- 校内专业
+-- 校内专业
 drop foreign table if exists ea.sv_major;
 create foreign table ea.sv_major (
     id integer,
@@ -152,7 +152,7 @@ create foreign table ea.sv_major (
     department_id char(2)
 ) server zf options (schema 'EA', table 'SV_MAJOR', readonly 'true');
 
---- 专业方向
+-- 专业方向
 drop foreign table if exists ea.sv_direction;
 create foreign table ea.sv_direction (
     id integer,
@@ -160,7 +160,7 @@ create foreign table ea.sv_direction (
     name varchar(30)
 ) server zf options (schema 'EA', table 'SV_DIRECTION', readonly 'true');
 
---- 教学计划
+-- 教学计划
 drop foreign table if exists ea.sv_program;
 create foreign table ea.sv_program (
     id integer,
@@ -169,7 +169,7 @@ create foreign table ea.sv_program (
     credit integer
 ) server zf options (schema 'EA', table 'SV_PROGRAM', readonly 'true');
 
---- 课程性质
+-- 课程性质
 drop foreign table if exists ea.sv_property;
 create foreign table ea.sv_property (
     id integer,
@@ -179,7 +179,7 @@ create foreign table ea.sv_property (
     is_primary boolean
 ) server zf options (schema 'EA', table 'SV_PROPERTY', readonly 'true');
 
---- 教学计划-课程性质
+-- 教学计划-课程性质
 drop foreign table if exists ea.sv_program_property;
 create foreign table ea.sv_program_property (
     program_id integer,
@@ -188,7 +188,7 @@ create foreign table ea.sv_program_property (
     is_weighted boolean
 ) server zf options (schema 'EA', table 'SV_PROGRAM_PROPERTY', readonly 'true');
 
---- 课程
+-- 课程
 drop foreign table if exists ea.sv_course;
 create foreign table ea.sv_course (
     id char(8),
@@ -209,7 +209,7 @@ create foreign table ea.sv_course (
     department_id char(2)
 ) server zf options (schema 'EA', table 'SV_COURSE', readonly 'true');
 
---- 课程项目
+-- 课程项目
 drop foreign table if exists ea.sv_course_item;
 create foreign table ea.sv_course_item (
     id char(10),
@@ -220,7 +220,7 @@ create foreign table ea.sv_course_item (
     task_course_id char(8)
 ) server zf options (schema 'EA', table 'SV_COURSE_ITEM', readonly 'true');
 
---- 教学计划-课程
+-- 教学计划-课程
 drop foreign table if exists ea.sv_program_course;
 create foreign table ea.sv_program_course (
     program_id integer,
@@ -242,7 +242,7 @@ create foreign table ea.sv_program_course (
     direction_id integer
 ) server zf options (schema 'EA', table 'SV_PROGRAM_COURSE', readonly 'true');
 
---- 教师
+-- 教师
 drop foreign table if exists ea.sv_teacher;
 create foreign table ea.sv_teacher (
     id char(5),
@@ -268,7 +268,7 @@ create foreign table ea.sv_teacher (
     resume varchar(3000)
 ) server zf options (schema 'EA', table 'SV_TEACHER', readonly 'true');
 
---- 行政班
+-- 行政班
 drop foreign table if exists ea.sv_admin_class;
 create foreign table ea.sv_admin_class (
     id bigint,
@@ -279,7 +279,7 @@ create foreign table ea.sv_admin_class (
     counsellor_id char(5)
 ) server zf options (schema 'EA', table 'SV_ADMIN_CLASS', readonly 'true');
 
---- 录取信息
+-- 录取信息
 drop foreign table if exists ea.sv_admission;
 create foreign table ea.sv_admission (
     id numeric(12),
@@ -307,7 +307,7 @@ create foreign table ea.sv_admission (
     bank_number varchar(25)
 ) server zf options (schema 'EA', table 'SV_ADMISSION', readonly 'true');
 
---- 学生
+-- 学生
 drop foreign table if exists ea.sv_student;
 create foreign table ea.sv_student (
     id char(10),
@@ -336,7 +336,73 @@ create foreign table ea.sv_student (
     admission_id bigint
 ) server zf options (schema 'EA', table 'SV_STUDENT', readonly 'true');
 
----教学班ID映射，使用insert触发
+-- 学生-等级
+drop foreign table if exists ea.sv_student_level;
+create foreign table ea.sv_student_level (
+    student_id char(10),
+    type varchar(20),
+    level integer
+) server zf options (schema 'EA', table 'SV_STUDENT_LEVEL');
+
+-- 板块课程
+drop foreign table if exists ea.sv_timeplate_course;
+create foreign table ea.sv_timeplate_course (
+    id char(3),
+    course_id char(8)
+) server zf options (schema 'EA', table 'SV_TIMEPLATE_COURSE');
+
+-- 排课板块
+drop foreign table if exists ea.sv_timeplate;
+create foreign table ea.sv_timeplate (
+    id bigint,
+    term_id integer,
+    course_id char(10),
+    grade integer,
+    ordinal integer,
+    name text
+) server zf options (schema 'EA', table 'SV_TIMEPLATE');
+
+-- 排课板块-时段
+drop foreign table if exists ea.sv_timeplate_slot;
+create foreign table ea.sv_timeplate_slot (
+    timeplate_id bigint,
+    odd_even integer,
+    day_of_week integer,
+    start_section integer,
+    total_section integer
+) server zf options (schema 'EA', table 'SV_TIMEPLATE_SLOT');
+
+-- 排课板块-行政班
+drop foreign table if exists ea.sv_timeplate_admin_class;
+create foreign table ea.sv_timeplate_admin_class (
+    timeplate_id bigint,
+    admin_class_id bigint
+) server zf options (schema 'EA', table 'SV_TIMEPLATE_ADMIN_CLASS');
+
+-- 排课板块-任务
+drop foreign table if exists ea.sv_timeplate_task;
+create foreign table ea.sv_timeplate_task (
+    id bigint,
+    timeplate_id bigint,
+    start_week integer,
+    end_week integer,
+    course_item_id char(10)
+) server zf options (schema 'EA', table 'SV_TIMEPLATE_TASK');
+
+-- 排课板块-安排
+drop foreign table if exists ea.sv_timeplate_schedule;
+create foreign table ea.sv_timeplate_schedule (
+    id bigint,
+    timeplate_task_id bigint,
+    start_week integer,
+    end_week integer,
+    odd_even integer,
+    day_of_week integer,
+    start_section integer,
+    total_section integer
+) server zf options (schema 'EA', table 'SV_TIMEPLATE_SCHEDULE');
+
+-- 教学班ID映射，使用insert触发
 drop foreign table if exists ea.sv_course_class_map;
 create foreign table ea.sv_course_class_map (
     term_id numeric(5),
@@ -345,17 +411,17 @@ create foreign table ea.sv_course_class_map (
     date_created timestamp
 ) server zf options (schema 'EA', table 'SV_COURSE_CLASS_MAP');
 
----教学任务ID映射实体表，使用insert触发
+-- 教学任务ID映射实体表，使用insert触发
 drop foreign table if exists ea.sv_task_map;
 create foreign table ea.sv_task_map (
     term_id numeric(5),
     task_id uuid,
     task_code varchar(31),
-    course_item_id varchar(10),
+    course_item_id char(10),
     date_created timestamp
 ) server zf options (schema 'EA', table 'SV_TASK_MAP');
 
---- 教学班
+-- 教学班
 drop foreign table if exists ea.sv_course_class;
 create foreign table ea.sv_course_class (
     term_id numeric(5),
@@ -372,10 +438,21 @@ create foreign table ea.sv_course_class (
     end_week integer,
     course_id char(8),
     department_id char(2),
-    teacher_id char(5)
+    teacher_id char(5),
+    timeplate_id bigint
 ) server zf options (schema 'EA', table 'SV_COURSE_CLASS', readonly 'true');
 
---- 教学班-计划
+-- 教学班-选课条件
+drop foreign table if exists ea.sv_course_class_condition;
+create foreign table ea.sv_course_class_condition (
+    course_class_id uuid,
+    include boolean,
+    condition_group integer,
+    condition_name text,
+    condition_value text
+) server zf options (schema 'EA', table 'SV_COURSE_CLASS_CONDITION', readonly 'true');
+
+-- 教学班-计划
 drop foreign table if exists ea.sv_course_class_program;
 create foreign table ea.sv_course_class_program (
     term_id numeric(5),
@@ -383,7 +460,7 @@ create foreign table ea.sv_course_class_program (
     program_id integer
 ) server zf options (schema 'EA', table 'SV_COURSE_CLASS_PROGRAM', readonly 'true');
 
---- 教学任务
+-- 教学任务
 drop foreign table if exists ea.sv_task;
 create foreign table ea.sv_task (
     term_id numeric(5),
@@ -396,7 +473,7 @@ create foreign table ea.sv_task (
     course_class_id uuid
 ) server zf options (schema 'EA', table 'SV_TASK', readonly 'true');
 
---- 教学任务-教师
+-- 教学任务-教师
 drop foreign table if exists ea.sv_task_teacher;
 create foreign table ea.sv_task_teacher (
     term_id numeric(5),
@@ -404,7 +481,7 @@ create foreign table ea.sv_task_teacher (
     teacher_id char(5)
 ) server zf options (schema 'EA', table 'SV_TASK_TEACHER', readonly 'true');
 
---- 教学安排
+-- 教学安排
 drop foreign table if exists ea.sv_task_schedule;
 create foreign table ea.sv_task_schedule (
     term_id numeric(5),

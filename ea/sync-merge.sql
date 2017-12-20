@@ -287,11 +287,11 @@ bank_number        = EXCLUDED.bank_number;
 -- 学生
 insert into ea.student(id, name, pinyin_name, sex, birthday, political_status, nationality, date_enrolled,
     date_graduated, is_enrolled, at_school, is_registered, train_range,
-    category, foreign_language, foreign_language_level, change_type, department_id,
+    category, foreign_language, change_type, department_id,
     admin_class_id, major_id, direction_id, admission_id)
 select id, name, pinyin_name, sex, birthday, political_status, nationality, date_enrolled,
     date_graduated, is_enrolled, at_school, is_registered, train_range,
-    category, foreign_language, foreign_language_level, change_type, department_id,
+    category, foreign_language, change_type, department_id,
     admin_class_id, major_id, direction_id, admission_id
 from ea.sv_student
 on conflict(id) do update set
@@ -309,7 +309,6 @@ is_registered          = EXCLUDED.is_registered,
 train_range            = EXCLUDED.train_range,
 category               = EXCLUDED.category,
 foreign_language       = EXCLUDED.foreign_language,
-foreign_language_level = EXCLUDED.foreign_language_level,
 change_type            = EXCLUDED.change_type,
 department_id          = EXCLUDED.department_id,
 admin_class_id         = EXCLUDED.admin_class_id,
@@ -317,16 +316,78 @@ major_id               = EXCLUDED.major_id,
 direction_id           = EXCLUDED.direction_id,
 admission_id           = EXCLUDED.admission_id;
 
+-- 学生-等级
+insert into ea.student_level(student_id, type, level)
+select student_id, type, level
+from ea.sv_student_level
+on conflict(student_id, type) do update set
+level = EXCLUDED.level;
+
+-- 板块课程
+insert into ea.timeplate_course(id, course_id)
+select id, course_id
+from ea.sv_timeplate_course
+on conflict(id) do update set
+id        = EXCLUDED.id,
+course_id = EXCLUDED.course_id;
+
+-- 排课板块
+insert into ea.timeplate(id, term_id, course_id, grade, ordinal, name)
+select id, term_id, course_id, grade, ordinal, name
+from ea.sv_timeplate
+on conflict(id) do update set
+term_id   = EXCLUDED.term_id,
+course_id = EXCLUDED.course_id,
+grade     = EXCLUDED.grade,
+ordinal   = EXCLUDED.ordinal,
+name      = EXCLUDED.name;
+
+-- 排课板块时段
+insert into ea.timeplate_slot(timeplate_id, odd_even, day_of_week, start_section, total_section)
+select timeplate_id, odd_even, day_of_week, start_section, total_section
+from ea.sv_timeplate_slot
+on conflict(timeplate_id, odd_even, day_of_week, start_section) do update set
+total_section = EXCLUDED.total_section;
+
+-- 排课板块-行政班
+insert into ea.timeplate_admin_class(timeplate_id, admin_class_id)
+select timeplate_id, admin_class_id
+from ea.sv_timeplate_admin_class
+on conflict(timeplate_id, admin_class_id) do nothing;
+
+-- 排课板块-任务
+insert into ea.timeplate_task(id, timeplate_id, start_week, end_week, course_item_id)
+select id, timeplate_id, start_week, end_week, course_item_id
+from ea.sv_timeplate_task
+on conflict(id) do update set
+timeplate_id   = EXCLUDED.timeplate_id,
+start_week     = EXCLUDED.start_week,
+end_week       = EXCLUDED.end_week,
+course_item_id = EXCLUDED.course_item_id;
+
+-- 排课板块-安排
+insert into ea.timeplate_schedule(id, timeplate_task_id, start_week, end_week, odd_even, day_of_week, start_section, total_section)
+select id, timeplate_task_id, start_week, end_week, odd_even, day_of_week, start_section, total_section
+from ea.sv_timeplate_schedule
+on conflict(id) do update set
+timeplate_task_id = EXCLUDED.timeplate_task_id,
+start_week        = EXCLUDED.start_week,
+end_week          = EXCLUDED.end_week,
+odd_even          = EXCLUDED.odd_even,
+day_of_week       = EXCLUDED.day_of_week,
+start_section     = EXCLUDED.start_section,
+total_section     = EXCLUDED.total_section;
+
 -- 生成course_class_id与course_class_code对应关系，通过视图触发器实现
 insert into ea.sv_course_class_map values(null, null, null);
 
 -- 教学班
 insert into ea.course_class(term_id, id, code, name, period_theory, period_experiment, period_weeks,
     property_id, assess_type, test_type, start_week, end_week,
-    course_id, department_id, teacher_id)
+    course_id, department_id, teacher_id, timeplate_id)
 select term_id, id, code, name, period_theory, period_experiment, period_weeks,
     property_id, assess_type, test_type, start_week, end_week,
-    course_id, department_id, teacher_id
+    course_id, department_id, teacher_id, timeplate_id
 from ea.sv_course_class
 on conflict(id) do update set
 term_id           = EXCLUDED.term_id,
@@ -342,7 +403,14 @@ start_week        = EXCLUDED.start_week,
 end_week          = EXCLUDED.end_week,
 course_id         = EXCLUDED.course_id,
 department_id     = EXCLUDED.department_id,
-teacher_id        = EXCLUDED.teacher_id;
+teacher_id        = EXCLUDED.teacher_id,
+timeplate_id      = EXCLUDED.timeplate_id;
+
+-- 教学班-选课条件
+insert into ea.course_class_condition(course_class_id, include, condition_group, condition_name, condition_value)
+select course_class_id, include, condition_group, condition_name, condition_value from ea.sv_course_class_condition
+on conflict(course_class_id, include, condition_group, condition_name) do update set
+condition_value = EXCLUDED.condition_value;
 
 -- 教学班-计划
 insert into ea.course_class_program(course_class_id, program_id)

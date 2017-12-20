@@ -422,13 +422,11 @@ select kcdm as id,
     decode(khfs, '考试', 1, '考查', 2, '毕业论文', 3, /*空*/ 9) as assess_type,
     nvl2(pk_kcdm, 1, 0) as schedule_type,
     kcjj as introduction,
-    d.dm as timeplate_code,
     decode(tkbj, '1', 0, 1) enabled,
     case when kkbmdm is null then substr(kcdm, 1, 2) else kkbmdm end as department_id
 from zfxfzb.kcdmb a
 left join zfxfzb.kcxzdmb b on b.kcxzmc = a.kcxz
 left join scheduled c on c.pk_kcdm = a.kcdm
-left join zfxfzb.bkkcdmb d on d.bkkcdm = a.kcdm
 where a.kcxz is not null
 order by id;
 
@@ -700,14 +698,7 @@ select xh as id,
         '法语',     'fr',
         /*缺省*/    'en'
     ) as foreign_language,
-    case
-        when dqszj < 2013 then 0
-        when dqszj is not null then
-            to_number(substr(dj, ( -- 取选课学期
-                (select max(substr(xn, 1, 4)) from zfxfzb.xxmc) - dqszj) * 2 +
-                (select max(xq) from zfxfzb.xxmc), 1))
-        else 0
-    end as foreign_language_level,
+    0 as foreign_language_level, -- TODO: remove
     to_number(xjyddm) as change_type,
     xydm as department_id,
     sv_admin_class.id as admin_class_id,
@@ -726,6 +717,24 @@ left join ea.sv_direction on zyfx = sv_direction.name and (dqszj || zydm || '0')
 order by id;
 
 /**
+ * 学生-等级
+ */
+create or replace view ea.sv_student_level as
+with student_level as (
+  select xh, case
+    when instr(substr(dj, 1, 4), '2') <> 0 then 2
+    when instr(substr(dj, 1, 4), '1') <> 0 then 1
+    when instr(substr(dj, 11, 14), '2') <> 0 then 2
+    when instr(substr(dj, 11, 44), '1') <> 0 then 1
+    end as dj
+  from zfxfzb.xsjbxxb
+)
+select xh as student_id, '英语' as type, dj as "level"
+from student_level
+where dj is not null
+order by xh;
+
+/**
  * 排课板块（辅助视图）
  */
 create or replace view ea.sva_timeplate_base as
@@ -734,6 +743,14 @@ select to_number(substr(a.xn, 1, 4) || a.xq || b.dm || substr(to_char(a.nj), 3, 
        a.xn, a.xq, b.bkkcdm, a.bkkcmc, a.nj, a.bkdm, a.bkmc
 from zfxfzb.bkdmb a
 join zfxfzb.bkkcdmb b on a.bkkcmc = b.bkkcmc;
+
+/**
+ * 板块课程
+ */
+create or replace view ea.sv_timeplate_course as
+select dm as id, bkkcdm as course_id
+from zfxfzb.bkkcdmb
+order by id;
 
 /**
  * 排课板块
@@ -745,7 +762,7 @@ from ea.sva_timeplate_base
 order by id;
 
 /**
- * 排课板块时段
+ * 排课板块-时段
  */
 create or replace view ea.sv_timeplate_slot as
 with normal as (
@@ -773,19 +790,21 @@ order by timeplate_id, odd_even, day_of_week, start_section, total_section;
  * 排课板块-行政班
  */
 create or replace view ea.sv_timeplate_admin_class as
-select b.bkbh as timeplate_id, a.bjdm as admin_class_id
+select b.bkbh as timeplate_id,
+    to_number(c.nj || c.sszydm || substr(c.bjdm, -2, 2)) as admin_class_id
 from zfxfzb.bkzyfpb a
 join ea.sva_timeplate_base b on a.xn = b.xn and a.xq = b.xq and a.bkkcmc = b.bkkcmc and a.nj = b.nj and a.bkdm = b.bkdm
-join zfxfzb.bjdmb c on a.bjdm = c.bjdm;
+join zfxfzb.bjdmb c on (a.bjdm = c.bjdm or a.bjdm = '无' and c.sszydm = a.zydm and c.nj = a.nj)
+order by timeplate_id, admin_class_id;
 
 /**
  * 排课板块-任务
  */
 create or replace view ea.sv_timeplate_task as
-select b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh as id,
+select to_number(b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh) as id,
     b.bkbh as timeplate_id,
-    qsz as start_week,
-    jsz as end_week,
+    nvl(qsz, 1) as start_week,
+    nvl(jsz, 18) as end_week,
     c.id as course_item_id
 from zfxfzb.bksjapb a
 join ea.sva_timeplate_base b on a.xn = b.xn and a.xq = b.xq and a.bkkcmc = b.bkkcmc and a.nj = b.nj and a.bkdm = b.bkdm
@@ -796,9 +815,9 @@ order by id;
  * 排课板块-安排
  */
 create or replace view ea.sv_timeplate_schedule as
-select b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh ||
-       to_char(rank() over(partition by b.bkbh, a.xh order by qsz, jsz, dsz, xqj, qssjd, skcd), 'fm09') as id,
-    b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh as timeplate_task_id,
+select to_number(b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh ||
+    to_char(rank() over(partition by b.bkbh, a.xh order by qsz, jsz, dsz, xqj, qssjd, skcd), 'fm09')) as id,
+    to_number(b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh) as timeplate_task_id,
     nvl(qsz, 1) as start_week,
     nvl(jsz, 18) as end_week,
     case dsz when '单' then 1 when '双' then 2 else 0 end as odd_even,
@@ -854,7 +873,7 @@ end;
  */
 create or replace view ea.sv_course_class as
 with normal as (
-  select d.term_id,
+  select distinct d.term_id,
       d.course_class_id as id,
       d.course_class_code as code,
       a.jxbmc as name, -- 有不同的名称
@@ -874,15 +893,220 @@ with normal as (
   join ea.course_class_map d on a.xkkh = d.course_class_code
   join ea.sv_department e on a.kkxy = e.name
   left join ea.sv_property g on a.kcxz = g.name
+), timeplate_course_class as (
+  select distinct a.bkbh as timeplate_id, b.xkkh as code
+  from ea.sva_timeplate_base a
+  join zfxfzb.bkdjjsfpb b on a.xn = b.xn and a.xq = b.xq and a.nj = b.nj and a.bkkcmc = b.bkkcmc and a.bkdm = b.bkdm
+  where b.xkkh is not null
 )
-select term_id, id, code, max(name) as name, period_theory, period_experiment, period_weeks,
+select term_id, id, normal.code, listagg(name, ';') within group(order by name) as name,
+  period_theory, period_experiment, period_weeks,
   property_id, assess_type, test_type, start_week, end_week, course_id,
-  department_id, teacher_id
+  department_id, teacher_id, timeplate_id
 from normal
-group by term_id, id, code, period_theory, period_experiment, period_weeks,
+left join timeplate_course_class on normal.code = timeplate_course_class.code
+group by term_id, id, normal.code, period_theory, period_experiment, period_weeks,
   property_id, assess_type, test_type, start_week, end_week, course_id,
-  department_id, teacher_id
+  department_id, teacher_id, timeplate_id
 order by code;
+
+/**
+ * 选课条件
+ */
+create or replace view sv_course_class_condition as
+with task_base as ( -- 所有任务
+  select distinct xkkh as code, 1 as include, regexp_replace(mxdx, '^,(.*),$', '\1', 1, 1, 'm') as conditions
+  from zfxfzb.jxrwbview
+  where mxdx is not null
+  union
+  select distinct xkkh as code, 0 as include, regexp_replace(xzdx, '^,(.*),$', '\1', 1, 1, 'm') as conditions
+  from zfxfzb.jxrwbview
+  where xzdx is not null
+  union
+  select xkkh as code, 1 as include, '计划内提高班' as conditions -- 使用“计划内提高班”标记英语等级2
+  from zfxfzb.xxkjxrwb
+  where kcxz='公共必修课'
+    and kkxy ='外国语学院'
+    and (mxdx is null or mxdx not like '%计划内提高班%')
+    and (xzdx is null or xzdx not like '%计划内%')
+), task as ( -- 任务去重
+  select code, include, listagg(conditions, ',') within group (order by conditions) as conditions
+  from task_base
+  group by code, include
+), direction as ( -- 专业方向
+  select substr(zyfxdm, 1, 8) || '0' || substr(zyfxdm, 9, 1) direction_id,
+    nj, zydmb.zydm, zydmb.zymc, zyfxdm, zyfxmc, xz
+  from zfxfzb.zyfxb
+  join zfxfzb.jxjhzyxxb on substr(zyfxdm, 1, 8) = nj || jxjhzyxxb.zydm
+  join zfxfzb.zydmb on zydmb.zydm = jxjhzyxxb.zydm
+), condition_base as ( -- 递归分割字符串
+  select distinct code, include, level as condition_group,
+    regexp_substr(conditions, '[^,]+', 1, level) as condition
+  from task
+  where conditions is not null
+  connect by level <= regexp_count(conditions, '[^,]+')
+      and prior code = code
+      and prior include = include
+      and prior dbms_random.value is not null
+), condition_all as ( -- 去重
+  select distinct code, include, min(condition_group) as condition_group, condition
+  from condition_base
+  group by code, include, condition
+), with_sex as ( -- 包含性别
+  select code, include, condition_group,
+    '性别'  as condition_name, substr(condition, -2, 1) as condition_value
+  from condition_all
+  where condition like '%男生' or condition like '%女生'
+), without_sex as ( -- 排除性别
+  select code, include, condition_group, condition,
+    regexp_replace(condition, '(.*)[男女]生$', '\1') as replaced
+  from condition_all
+  where condition not in ('男生', '女生')
+), with_major as ( -- 包含年级专业
+  select code, include, condition_group,
+    '年级专业'  as condition_name, nj || zydm  as condition_value
+  from without_sex
+  join zfxfzb.jxjhzyxxb on replaced = nj || '级' || zymc
+), without_major as ( -- 排除年级专业
+  select code, include, condition_group, condition, replaced
+  from without_sex
+  where replaced not in (select nj || '级' || zymc from zfxfzb.jxjhzyxxb)
+), with_direction as ( -- 包含专业方向
+  select code, include, condition_group,
+    '专业方向'  as condition_name, direction_id as condition_value
+  from without_major
+  join direction on replaced = nj || '级' || zymc || zyfxmc
+), without_direction as ( -- 排除专业方向
+  select code, include, condition_group, condition, replaced
+  from without_major a
+  where replaced not in (select nj || '级' || zymc || zyfxmc from direction)
+), with_grade as ( -- 包含年级
+  select distinct code, include, condition_group,
+    '年级'  as condition_name, substr(replaced, 1, 4) as condition_value
+  from without_direction
+  where replaced like'____级%'
+), without_grade as ( -- 排除年级
+  select code, include, condition_group, condition,
+    regexp_replace(replaced, '^\d{4}级(.*)', '\1') as replaced
+  from without_direction
+  where replaced not like '____级'
+), with_department as ( -- 包含学院
+  select distinct code, include, condition_group,
+    '学院'  as condition_name, xydm as condition_value
+  from without_grade
+  join zfxfzb.xydmb on instr(replaced, xymc) = 1
+), without_department as (  -- 排除学院
+  select code, include, condition_group, condition,
+    replace(replaced, xymc) as replaced
+  from without_grade
+  left join zfxfzb.xydmb on replaced like xymc || '%'
+  where replaced not in (select xymc from zfxfzb.xydmb)
+), with_admin_class as ( -- 包含班级
+  select code, include, condition_group,
+    '班级'  as condition_name, nj || sszydm || substr(bjdm, -2, 2) as condition_value
+  from without_department
+  join zfxfzb.bjdmb on replaced = bjmc
+), without_admin_class as ( -- 排除班级
+  select code, include, condition_group, condition, replaced
+  from without_department
+  where replaced not in (select bjmc from zfxfzb.bjdmb)
+), with_english_level as ( -- 包含英语等级
+  select code, include, condition_group,
+    '英语等级'  as condition_name, '2' as condition_value
+  from without_admin_class
+  where replaced = '计划内提高班' and include = 1 or replaced = '计划内' and include = 0
+), without_student_level as (  -- 排除英语等级
+  select code, include, condition_group, condition, replaced
+  from without_admin_class
+  where not (replaced = '计划内提高班' and include = 1 or replaced = '计划内' and include = 0)
+), subject_name_1 as ( -- 唯一专业
+  select zymc from zfxfzb.zydmb group by zymc having count(*) = 1
+), subject_name_n as ( -- 重名专业
+  select zymc from zfxfzb.zydmb group by zymc having count(*) > 1
+), with_subject as ( -- 包含专业
+  -- 唯一专业名称
+  select code, include, condition_group,
+    '专业'  as condition_name, zydm as condition_value
+  from without_student_level
+  join zfxfzb.zydmb on replaced = zymc
+  join subject_name_1 on replaced = subject_name_1.zymc
+  union
+  -- 重复专业，存在教学计划
+  select distinct code, include, condition_group,
+    '专业'  as condition_name, jxjhzyxxb.zydm as condition_value
+  from without_student_level
+  join zfxfzb.jxrwbview on code = jxrwbview.xkkh
+  join zfxfzb.jxjhzyxxb on jxrwbview.jxjhh = jxjhzyxxb.jxjhh and replaced = jxjhzyxxb.zymc
+  join subject_name_n on replaced = subject_name_n.zymc
+  union
+  -- 重复专业，公选课中开课单位关联专业
+  select code, include, condition_group,
+    '专业'  as condition_name, zydmb.zydm as condition_value
+  from without_student_level
+  join zfxfzb.jxrwbview on code = jxrwbview.xkkh and jxrwbview.tab = 'xxkjxrwb'
+  join zfxfzb.xydmb on jxrwbview.kkxy = xymc
+  join zfxfzb.zydmb on replaced = zydmb.zymc and substr(zydmb.zydm, 1, 2) = xydmb.xydm
+  join subject_name_n on replaced = subject_name_n.zymc
+), with_cross_subject as ( -- 包含专业（根据年级/学制，存在交叉）
+  -- 重复专业，根据专业年级区间
+  select code, include, zydm * 100 + condition_group as condition_group,
+    '专业'  as condition_name, zydm as condition_value
+  from (
+    select code, include, condition_group, condition, replaced
+    from without_student_level
+    where (code, include, condition_group, condition) not in (
+      select code, include, condition_group, condition from with_subject
+    )
+  ) a join (
+    select zydmb.zydm, zydmb.zymc, min(nj) as min_nj, max(nj + xz) as max_nj
+    from zfxfzb.zydmb
+    join zfxfzb.jxjhzyxxb on zydmb.zydm = jxjhzyxxb.zydm
+    group by zydmb.zydm, zydmb.zymc
+  ) b on a.replaced = b.zymc and substr(code, 2, 4) between min_nj and max_nj
+), without_subject as ( -- 排除专业
+  select code, include, condition_group, condition, replaced
+  from without_student_level
+  where replaced not in (
+    select zymc from zfxfzb.zydmb
+  )
+), with_cross_direction as ( -- 包含专业方向（交叉）
+  select code, include, substr(direction_id, 2) * 100 + condition_group as condition_group,
+    '专业方向'  as condition_name, direction_id as condition_value
+  from without_subject
+  join direction on (replaced = zyfxmc or replaced = zymc || zyfxmc) and substr(code, 2, 4) between nj and nj + xz - 1
+), without_cross_direction as ( -- 排除专业方向（交叉）
+  select code, include, condition_group, condition, replaced
+  from without_subject
+  where replaced not in (
+    select zyfxmc from direction
+    union
+    select zymc || zyfxmc from direction
+  )
+), condition_normal as (
+  select * from with_sex
+  union
+  select * from with_major
+  union
+  select * from with_direction
+  union
+  select * from with_grade
+  union
+  select * from with_department
+  union
+  select * from with_admin_class
+  union
+  select * from with_english_level
+  union
+  select * from with_subject
+  union
+  select * from with_cross_subject
+  union
+  select * from with_cross_direction
+)
+select course_class_id, include, condition_group, condition_name, condition_value
+from condition_normal
+join ea.course_class_map on course_class_code = code
+order by 1, 2 desc, 3, 5;
 
 /**
  * 教学班-计划
