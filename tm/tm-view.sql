@@ -437,7 +437,7 @@ select distinct form.id,
     place.name as place_name,
     courseteacher.name as teacher_name,
     department.name as department_name,
-    cp.property_name AS property,
+    cp.property_name as property,
     courseclass.term_id as term_id
    from tm.observation_form form
      join ea.teacher supervisor on form.observer_id = supervisor.id
@@ -454,8 +454,8 @@ select distinct form.id,
      join ea.course course_1 on courseclass.course_id = course_1.id
      join ea.teacher courseteacher on courseclass.teacher_id = courseteacher.id
      left join ea.place on schedule.place_id = place.id
-     cross join tm.dv_observation_course_property cp
-  where form.term_id=courseclass.term_id and courseclass.id = cp.id
+     join tm.dv_observation_course_property cp on courseclass.id = cp.id
+  where form.term_id=courseclass.term_id
   order by form.id;
 
 -- 督导听课视图，合并了新旧数据，只抽取重要的字段信息;
