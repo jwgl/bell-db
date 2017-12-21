@@ -121,7 +121,7 @@ create foreign table tm.et_dualdegree_student(
     date_deleted timestamp, 
     creator varchar(20), 
     deleter varchar(20), 
-    is_dualdegree integer, 
+    enabled boolean, 
     region varchar(20)
 ) server zf_print options (schema 'BNUEP_PRINT', table 'T_ZZ_XSMD');
 
