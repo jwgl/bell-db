@@ -126,7 +126,7 @@ create foreign table tm.et_dualdegree_student(
 ) server zf_print options (schema 'BNUEP_PRINT', table 'T_ZZ_XSMD');
 
 -- 自助打印系统教学计划号与项目名称对应表，用于学生打印四分制成绩单
-drop foreign table if exists tm.et_dualdegree_student;
+drop foreign table if exists tm.et_dualdegree_major_region;
 create foreign table tm.et_dualdegree_major_region(
     major_id varchar(10), 
     region varchar(50)
