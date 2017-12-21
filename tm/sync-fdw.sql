@@ -112,20 +112,22 @@ create foreign table tm.et_task_student (
 ) server zf options (schema 'TM', table 'IV_TASK_STUDENT');
 
 -- 自助打印系统学生名单，用于学生打印四分制成绩单
-create foreign table tm.et_zz_xsmd(
-    mdid integer, 
-    xh varchar(20), 
-    xm varchar(50), 
-    adddate timestamp, 
-    deldate timestamp, 
-    addauthor varchar(20), 
-    delauthor varchar(20), 
-    inproject integer, 
-    kind varchar(20)
+drop foreign table if exists tm.et_dualdegree_student;
+create foreign table tm.et_dualdegree_student(
+    id integer, 
+    student_id varchar(20), 
+    name varchar(50), 
+    add_date timestamp, 
+    delete_date timestamp, 
+    add_operator varchar(20), 
+    delete_operator varchar(20), 
+    is_dualdegree integer, 
+    region varchar(20)
 ) server zf_print options (schema 'BNUEP_PRINT', table 'T_ZZ_XSMD');
 
 -- 自助打印系统教学计划号与项目名称对应表，用于学生打印四分制成绩单
-create foreign table tm.et_tms_project(
-    id varchar(10), 
-    name varchar(50)
+drop foreign table if exists tm.et_dualdegree_student;
+create foreign table tm.et_dualdegree_major_region(
+    major_id varchar(10), 
+    region varchar(50)
 ) server zf_print options (schema 'BNUEP_PRINT', table 'T_TMS_PROJECT');

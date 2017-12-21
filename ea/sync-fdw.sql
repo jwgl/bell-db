@@ -27,7 +27,7 @@ grant usage on foreign server zf_print to tm;
 -- 创建用户映射
 create user mapping for ea server zf options (user 'ea',password 'zf_ea_password');
 create user mapping for tm server zf options (user 'tm',password 'zf_tm_password');
-create user mapping for tm server zf_print options (user 'print',password 'print_password');
+create user mapping for tm server zf_print options (user 'print',password 'zf_print_password');
 
 -- 创建外部表
 \c bell ea
