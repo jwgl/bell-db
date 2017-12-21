@@ -116,7 +116,7 @@ drop foreign table if exists tm.et_dualdegree_student;
 create foreign table tm.et_dualdegree_student(
     id integer, 
     student_id varchar(20), 
-    name varchar(50), 
+    student_name varchar(50), 
     add_date timestamp, 
     delete_date timestamp, 
     add_operator varchar(20), 
