@@ -76,7 +76,7 @@ join ea.term t on s.term_id = t.id
 where t.active is true
 union all
 select distinct s.teacher_id as user_id, 'ROLE_DUALDEGREE_ADMIN_DEPT' as role_id
-from tm.dual_degree_dept_admin s;
+from tm_dual.dual_degree_dept_admin s;
 
 -- 学生角色
 create or replace view tm.dv_student_role as
@@ -95,7 +95,10 @@ and exists (
     join ea.term on term.id = course_class.term_id
     where task_student.student_id = s.id
     and ea.course_class.term_id =  (select id from ea.term where active = true)
-);
+)
+union all
+select s.student_id as user_id, 'ROLE_DUALDEGREE_STUDENT' as role_id
+from tm_dual.student_abroad s;
 
 -- 外部用户角色
 create or replace view tm.dv_external_role as
