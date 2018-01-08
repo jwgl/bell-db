@@ -383,21 +383,9 @@ create foreign table ea.sv_timeplate_task (
     timeplate_id bigint,
     start_week integer,
     end_week integer,
+    period integer,
     course_item_id char(10)
 ) server zf options (schema 'EA', table 'SV_TIMEPLATE_TASK');
-
--- 排课板块-安排
-drop foreign table if exists ea.sv_timeplate_schedule;
-create foreign table ea.sv_timeplate_schedule (
-    id bigint,
-    timeplate_task_id bigint,
-    start_week integer,
-    end_week integer,
-    odd_even integer,
-    day_of_week integer,
-    start_section integer,
-    total_section integer
-) server zf options (schema 'EA', table 'SV_TIMEPLATE_SCHEDULE');
 
 -- 教学班ID映射，使用insert触发
 drop foreign table if exists ea.sv_course_class_map;

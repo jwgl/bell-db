@@ -356,27 +356,15 @@ from ea.sv_timeplate_admin_class
 on conflict(timeplate_id, admin_class_id) do nothing;
 
 -- 排课板块-任务
-insert into ea.timeplate_task(id, timeplate_id, start_week, end_week, course_item_id)
-select id, timeplate_id, start_week, end_week, course_item_id
+insert into ea.timeplate_task(id, timeplate_id, start_week, end_week, period, course_item_id)
+select id, timeplate_id, start_week, end_week, period, course_item_id
 from ea.sv_timeplate_task
 on conflict(id) do update set
 timeplate_id   = EXCLUDED.timeplate_id,
 start_week     = EXCLUDED.start_week,
 end_week       = EXCLUDED.end_week,
+period         = EXCLUDED.period,
 course_item_id = EXCLUDED.course_item_id;
-
--- 排课板块-安排
-insert into ea.timeplate_schedule(id, timeplate_task_id, start_week, end_week, odd_even, day_of_week, start_section, total_section)
-select id, timeplate_task_id, start_week, end_week, odd_even, day_of_week, start_section, total_section
-from ea.sv_timeplate_schedule
-on conflict(id) do update set
-timeplate_task_id = EXCLUDED.timeplate_task_id,
-start_week        = EXCLUDED.start_week,
-end_week          = EXCLUDED.end_week,
-odd_even          = EXCLUDED.odd_even,
-day_of_week       = EXCLUDED.day_of_week,
-start_section     = EXCLUDED.start_section,
-total_section     = EXCLUDED.total_section;
 
 -- 生成course_class_id与course_class_code对应关系，通过视图触发器实现
 insert into ea.sv_course_class_map values(null, null, null);
@@ -418,7 +406,7 @@ select course_class_id, program_id from ea.sv_course_class_program
 on conflict(course_class_id, program_id) do nothing;
 
 -- 生成task_id与task_code对应关系，通过视图触发器实现
-insert into ea.sv_task_map values(null);
+insert into ea.sv_task_map values(null, null, null, null, null);
 
 -- 教学任务
 insert into ea.task(id, code, is_primary, start_week, end_week, course_item_id, course_class_id)
@@ -554,6 +542,11 @@ delete from ea.course_class_program
 where (course_class_id, program_id) not in (
     select course_class_id, program_id
     from ea.sv_course_class_program
+);
+
+delete from ea.course_class_condition
+where (course_class_id, include, condition_group, condition_name) not in (
+  select course_class_id, include, condition_group, condition_name from ea.sv_course_class_condition
 );
 
 delete from ea.course_class

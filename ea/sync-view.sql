@@ -801,32 +801,29 @@ order by timeplate_id, admin_class_id;
  * 排课板块-任务
  */
 create or replace view ea.sv_timeplate_task as
-select to_number(b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh) as id,
+select -- 外语
+    to_number(b.bkbh || case when c.ordinal < 10 then '0' else '' end || c.ordinal) as id,
     b.bkbh as timeplate_id,
-    nvl(qsz, 1) as start_week,
-    nvl(jsz, 18) as end_week,
+    min(qsz) as start_week,
+    max(jsz) as end_week,
+    decode(dsz, null, 2, 1) as period,
     c.id as course_item_id
+from zfxfzb.bkdjjsfpb a
+join ea.sva_timeplate_base b on a.xn = b.xn and a.xq = b.xq and a.bkkcmc = b.bkkcmc and a.nj = b.nj and a.bkdm = b.bkdm
+join ea.sv_course_item c on b.bkkcdm = c.course_id and a.bz = c.name
+group by b.bkbh, c.id, c.ordinal, decode(dsz, null, 2, 1)
+union all
+select -- 体育
+    to_number(b.bkbh || '01') as id,
+    b.bkbh as timeplate_id,
+    qsz as start_week,
+    jsz as end_week,
+    decode(dsz, null, 2, 1) as period,
+    null as course_item_id
 from zfxfzb.bksjapb a
 join ea.sva_timeplate_base b on a.xn = b.xn and a.xq = b.xq and a.bkkcmc = b.bkkcmc and a.nj = b.nj and a.bkdm = b.bkdm
 left join ea.sv_course_item c on b.bkkcdm = c.course_id and a.bz = c.name
-order by id;
-
-/**
- * 排课板块-安排
- */
-create or replace view ea.sv_timeplate_schedule as
-select to_number(b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh ||
-    to_char(rank() over(partition by b.bkbh, a.xh order by qsz, jsz, dsz, xqj, qssjd, skcd), 'fm09')) as id,
-    to_number(b.bkbh || case when a.xh < 10 then '0' else '' end || a.xh) as timeplate_task_id,
-    nvl(qsz, 1) as start_week,
-    nvl(jsz, 18) as end_week,
-    case dsz when '单' then 1 when '双' then 2 else 0 end as odd_even,
-    xqj as day_of_week,
-    qssjd as start_section,
-    skcd as total_section
-from zfxfzb.bksjapb a
-join ea.sva_timeplate_base b on a.xn = b.xn and a.xq = b.xq and a.bkkcmc = b.bkkcmc and a.nj = b.nj and a.bkdm = b.bkdm
-left join ea.sv_course_item c on b.bkkcdm = c.course_id and a.bz = c.name
+where a.bz = '无' and qsz is not null
 order by id;
 
 /**
