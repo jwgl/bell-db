@@ -76,7 +76,7 @@ join ea.term t on s.term_id = t.id
 where t.active is true
 union all
 select distinct s.teacher_id as user_id, 'ROLE_DUALDEGREE_ADMIN_DEPT' as role_id
-from tm.dual_degree_dept_admin s;
+from tm_dual.dual_degree_dept_admin s;
 
 -- 学生角色
 create or replace view tm.dv_student_role as
@@ -95,7 +95,10 @@ and exists (
     join ea.term on term.id = course_class.term_id
     where task_student.student_id = s.id
     and ea.course_class.term_id =  (select id from ea.term where active = true)
-);
+)
+union all
+select s.student_id as user_id, 'ROLE_DUALDEGREE_STUDENT' as role_id
+from tm_dual.student_abroad s;
 
 -- 外部用户角色
 create or replace view tm.dv_external_role as
@@ -452,7 +455,7 @@ select distinct form.id,
      join ea.course_class courseclass on task.course_class_id = courseclass.id
      join ea.department department on courseclass.department_id = department.id
      join ea.course course_1 on courseclass.course_id = course_1.id
-     join ea.teacher courseteacher on courseclass.teacher_id = courseteacher.id
+     join ea.teacher courseteacher on form.teacher_id = courseteacher.id
      left join ea.place on schedule.place_id = place.id
      join tm.dv_observation_course_property cp on courseclass.id = cp.id
   where form.term_id=courseclass.term_id

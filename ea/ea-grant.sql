@@ -51,3 +51,19 @@ grant select on ea.course_class_program  to tm;
 grant select on ea.sv_program_course  to tm;
 
 grant update(exam_flag) on ea.task_student to tm;
+
+grant usage on schema ea to tm_dual;	
+
+grant references on ea.admin_class    to tm_dual;
+grant references on ea.teacher        to tm_dual;
+grant references on ea.student        to tm_dual;
+grant references on ea.department     to tm_dual;
+grant references on ea.major          to tm_dual;
+grant references on ea.subject        to tm_dual;
+
+grant select on ea.admin_class        to tm_dual;
+grant select on ea.teacher            to tm_dual;
+grant select on ea.student            to tm_dual;
+grant select on ea.department         to tm_dual;
+grant select on ea.subject            to tm_dual;
+grant select on ea.major              to tm_dual;
