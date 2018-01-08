@@ -455,7 +455,7 @@ select distinct form.id,
      join ea.course_class courseclass on task.course_class_id = courseclass.id
      join ea.department department on courseclass.department_id = department.id
      join ea.course course_1 on courseclass.course_id = course_1.id
-     join ea.teacher courseteacher on courseclass.teacher_id = courseteacher.id
+     join ea.teacher courseteacher on form.teacher_id = courseteacher.id
      left join ea.place on schedule.place_id = place.id
      join tm.dv_observation_course_property cp on courseclass.id = cp.id
   where form.term_id=courseclass.term_id
