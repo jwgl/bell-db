@@ -1,21 +1,18 @@
--- 创建用户
-create user tm_dual with password 'bell_tm_dual_password';
-
 -- 创建架构
-create schema tm_dual authorization tm_dual;
+create schema tm_dual authorization tm;
 
 -- 创建外部服务器
 create server zf_print foreign data wrapper oracle_fdw options (dbserver '//localhost/zf_print');
 
 -- 授权用户可以使用
-grant usage on foreign server zf_print to tm_dual;
+grant usage on foreign server zf_print to tm;
 
 -- 创建用户映射
-create user mapping for tm_dual server zf_print options (user 'zf_print',password 'zf_print_password');
+create user mapping for tm server zf_print options (user 'zf_print',password 'zf_print_password');
 
 -- 自助打印系统学生名单，用于学生打印四分制成绩单
-drop foreign table if exists tm_dual.et_dualdegree_student;
-create foreign table tm_dual.et_dualdegree_student(
+drop foreign table if exists tm.et_dualdegree_student;
+create foreign table tm.et_dualdegree_student(
     id integer, 
     student_id varchar(20), 
     student_name varchar(50), 
