@@ -25,4 +25,10 @@ grant select, zfxfzb.cjb                       to tm; -- 成绩表
 
 grant usage on schema tm to tm_dual;	
 
-grant references on tm.workflow_instance    to tm_dual;	
+grant references on tm.workflow_instance    to tm_dual;	-- 工作流
+grant insert on tm.user_log            		to tm_dual; -- 用户操作日志
+grant select, insert, update  on tm.workflow        			to tm_dual;
+grant select, insert, update  on tm.workflow_activity        	to tm_dual;
+grant select, insert, update  on tm.workflow_instance        	to tm_dual;
+grant select, insert, update  on tm.workitem					to tm_dual;
+grant select on tm.system_user				to tm_dual;

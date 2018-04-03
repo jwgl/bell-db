@@ -76,7 +76,10 @@ join ea.term t on s.term_id = t.id
 where t.active is true
 union all
 select distinct s.teacher_id as user_id, 'ROLE_DUALDEGREE_ADMIN_DEPT' as role_id
-from tm_dual.dual_degree_dept_admin s;
+from tm_dual.department_administrator s
+union all
+select distinct s.teacher_id as user_id, 'ROLE_DUALDEGREE_MENTOR' as role_id
+from tm_dual.mentor s;
 
 -- 学生角色
 create or replace view tm.dv_student_role as
@@ -429,7 +432,7 @@ select distinct form.id,
     form.observer_type,
     courseteacher.id as teacher_id,
     courseteacher.academic_title,
-    courseclass.name as course_class_name,
+    array_to_string(array_agg(distinct courseclass.name), ',', '*') as course_class_name,
     schedule.start_week,
     schedule.end_week,
     schedule.odd_even,
@@ -459,6 +462,14 @@ select distinct form.id,
      left join ea.place on schedule.place_id = place.id
      join tm.dv_observation_course_property cp on courseclass.id = cp.id
   where form.term_id=courseclass.term_id
+  group by form.id, form.attendant_stds, form.due_stds, form.earlier, form.evaluate_level,
+  form.evaluation_text, form.late, form.late_stds, form.leave, form.leave_stds,
+  form.lecture_week, form.status, form.suggest, supervisor.id, form.supervisor_date,
+  form.teaching_methods, form.total_section, form.record_date, form.reward_date,
+  supervisor.name, form.observer_type, courseteacher.id, courseteacher.academic_title,
+  schedule.start_week, schedule.end_week, schedule.odd_even, schedule.day_of_week,
+  schedule.start_section, schedule.total_section, course_1.name, place.name,
+  courseteacher.name, department.name, cp.property_name, courseclass.term_id
   order by form.id;
 
 -- 督导听课视图，合并了新旧数据，只抽取重要的字段信息;
