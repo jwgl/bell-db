@@ -1030,6 +1030,7 @@ begin
     where student_id = p_student_id
   ), student_leave as (
     select dva_valid_student_leave.item_id,
+           rank() over (partition by item_id order by dva_valid_student_leave.task_schedule_id) ordinal_id,
            dva_valid_student_leave.week,
            dva_valid_student_leave.task_schedule_id,
            dva_valid_student_leave.teacher_id,
@@ -1041,7 +1042,7 @@ begin
     left join free_listen on dva_valid_student_leave.task_schedule_id = free_listen.task_schedule_id
     where student_id = p_student_id
   )
-  select student_leave.item_id,
+  select student_leave.item_id * 100 + ordinal_id,
          student_leave.week,
          task_schedule.day_of_week,
          task_schedule.start_section,

@@ -8,7 +8,7 @@ INSERT INTO tm.permission (id,name) VALUES ('PERM_DUALDEGREE_AGREEMENT_WRITE',  
 INSERT INTO tm.permission (id,name) VALUES ('PERM_DUALDEGREE_AGREEMENT_READ',      '2+2合作协议-查看');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_DUALDEGREE_ADMIN',               '2+2权限设置');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_DUALDEGREE_WRITE',               '2+2学位-编辑');
-INSERT INTO tm.permission (id,name) VALUES ('PERM_DUALDEGREE_PAPER_APPROVE',             '2+2学位-论文审批');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_DUALDEGREE_PAPER_APPROVE',       '2+2学位-论文审批');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_DUALDEGREE_DEPT_ADMIN',          '2+2学院权限-管理');
        
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DUALDEGREE_AGREEMENT_ADMIN', 'PERM_DUALDEGREE_AGREEMENT_WRITE');
@@ -27,7 +27,7 @@ INSERT INTO tm.workflow (id,name) VALUES ('card.reissue',   		'补办学生证�
 INSERT INTO tm.workflow (id,name) VALUES ('place.booking',  		'借用教室申请');
 INSERT INTO tm.workflow (id,name) VALUES ('student.leave',  		'学生请假');
 INSERT INTO tm.workflow (id,name) VALUES ('schedule.free',  		'免听申请');
-INSERT INTO tm.workflow (id,name) VALUES ('dualdegree.application',  	'国内学位申请');
+INSERT INTO tm.workflow (id,name) VALUES ('dualdegree.application', '国内学位申请');
 
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('dualdegree.application','dualdegree.application.approve', '初审','/web/dualdegree/approvers/${userId}/applications#/${todo}/${id}/workitems/${workitem}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('dualdegree.application','dualdegree.application.reject', '退回','/web/dualdegree/students/${userId}/applications#/${id}');
