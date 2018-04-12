@@ -461,7 +461,7 @@ select distinct form.id,
      join ea.teacher courseteacher on form.teacher_id = courseteacher.id
      left join ea.place on schedule.place_id = place.id
      join tm.dv_observation_course_property cp on courseclass.id = cp.id
-  where form.term_id=courseclass.term_id
+  where form.term_id=courseclass.term_id and not form.is_schedule_temp is true
   group by form.id, form.attendant_stds, form.due_stds, form.earlier, form.evaluate_level,
   form.evaluation_text, form.late, form.late_stds, form.leave, form.leave_stds,
   form.lecture_week, form.status, form.suggest, supervisor.id, form.supervisor_date,
@@ -470,7 +470,67 @@ select distinct form.id,
   schedule.start_week, schedule.end_week, schedule.odd_even, schedule.day_of_week,
   schedule.start_section, schedule.total_section, course_1.name, place.name,
   courseteacher.name, department.name, cp.property_name, courseclass.term_id
-  order by form.id;
+  union all
+  select distinct form.id,
+    form.attendant_stds,
+    form.due_stds,
+    form.earlier,
+    form.evaluate_level,
+    form.evaluation_text,
+    form.late,
+    form.late_stds,
+    form.leave,
+    form.leave_stds,
+    form.lecture_week,
+    form.status,
+    form.suggest,
+    supervisor.id as supervisor_id,
+    form.supervisor_date,
+    form.teaching_methods,
+    form.total_section as form_total_section,
+    form.record_date,
+    form.reward_date,
+    supervisor.name as supervisor_name,
+    form.observer_type,
+    courseteacher.id as teacher_id,
+    courseteacher.academic_title,
+    array_to_string(array_agg(distinct courseclass.name), ',', '*') as course_class_name,
+    schedule.start_week,
+    schedule.end_week,
+    schedule.odd_even,
+    schedule.day_of_week,
+    schedule.start_section,
+    schedule.total_section,
+    course_1.name as course_name,
+    schedule.place as place_name,
+    courseteacher.name as teacher_name,
+    department.name as department_name,
+    cp.property_name as property,
+    courseclass.term_id as term_id
+   from tm.observation_form form
+     join ea.teacher supervisor on form.observer_id = supervisor.id
+     join tm.task_schedule_temp schedule on (form.teacher_id = schedule.teacher_id
+          and (form.lecture_week between schedule.start_week and schedule.end_week )
+          and (schedule.odd_even = 0
+               or schedule.odd_even = 1 and form.lecture_week % 2 =1
+               or schedule.odd_even = 2 and form.lecture_week % 2 =0)
+          and schedule.day_of_week = form.day_of_week
+          and form.start_section = schedule.start_section)
+     join ea.task task on schedule.task_id = task.id
+     join ea.course_class courseclass on task.course_class_id = courseclass.id
+     join ea.department department on courseclass.department_id = department.id
+     join ea.course course_1 on courseclass.course_id = course_1.id
+     join ea.teacher courseteacher on form.teacher_id = courseteacher.id
+     join tm.dv_observation_course_property cp on courseclass.id = cp.id
+  where form.term_id=courseclass.term_id and form.is_schedule_temp is true
+  group by form.id, form.attendant_stds, form.due_stds, form.earlier, form.evaluate_level,
+  form.evaluation_text, form.late, form.late_stds, form.leave, form.leave_stds,
+  form.lecture_week, form.status, form.suggest, supervisor.id, form.supervisor_date,
+  form.teaching_methods, form.total_section, form.record_date, form.reward_date,
+  supervisor.name, form.observer_type, courseteacher.id, courseteacher.academic_title,
+  schedule.start_week, schedule.end_week, schedule.odd_even, schedule.day_of_week,
+  schedule.start_section, schedule.total_section, course_1.name, schedule.place,
+  courseteacher.name, department.name, cp.property_name, courseclass.term_id;
 
 -- 督导听课视图，合并了新旧数据，只抽取重要的字段信息;
 create or replace view tm.dv_observation_public as
