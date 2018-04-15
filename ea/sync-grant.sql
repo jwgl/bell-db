@@ -44,6 +44,8 @@ grant select on zfxfzb.xsxkb         to ea; -- 学生选课表
 grant select on zfxfzb.cjb           to ea with grant option; -- 成绩
 grant select on zfxfzb.czrzb         to ea; -- 日志
 grant select on zfxfzb.ttkjlb        to ea with grant option; -- 调停课记录 
+grant select on zfxfzb.cjdzb         to ea; -- 成绩对照表
+grant select on zfxfzb.cjb_sqxgb     to ea; -- 成绩申请修改表
 
 /**
  * database zf/ea

@@ -367,7 +367,7 @@ period         = EXCLUDED.period,
 course_item_id = EXCLUDED.course_item_id;
 
 -- 生成course_class_id与course_class_code对应关系，通过视图触发器实现
-insert into ea.sv_course_class_map values(null, null, null);
+insert into ea.sv_course_class_map values(null);
 
 -- 教学班
 insert into ea.course_class(term_id, id, code, name, period_theory, period_experiment, period_weeks,
@@ -406,7 +406,7 @@ select course_class_id, program_id from ea.sv_course_class_program
 on conflict(course_class_id, program_id) do nothing;
 
 -- 生成task_id与task_code对应关系，通过视图触发器实现
-insert into ea.sv_task_map values(null, null, null, null, null);
+insert into ea.sv_task_map values(null);
 
 -- 教学任务
 insert into ea.task(id, code, is_primary, start_week, end_week, course_item_id, course_class_id)
@@ -425,7 +425,7 @@ select task_id, teacher_id from ea.sv_task_teacher
 on conflict(task_id, teacher_id) do nothing;
 
 -- 教学安排
--- Oracle 11g端合并性能低，合并逻辑移到PostgreSQL端
+-- Oracle端合并性能低，合并逻辑移到PostgreSQL端
 insert into ea.task_schedule(id, task_id, teacher_id, place_id, start_week, end_week,
     odd_even, day_of_week, start_section, total_section, root_id)
 with formal as (
@@ -465,24 +465,27 @@ root_id        = EXCLUDED.root_id;
 insert into ea.task_student(task_id, student_id, date_created, register_type, repeat_type, exam_flag)
 select task_id, student_id, date_created, register_type, repeat_type, exam_flag
 from ea.sv_task_student
-where term_id = 20171
+where term_id = 20172
 on conflict(task_id, student_id) do update set
 date_created     = EXCLUDED.date_created,
 register_type    = EXCLUDED.register_type,
 repeat_type      = EXCLUDED.repeat_type,
 exam_flag        = EXCLUDED.exam_flag;
 
+insert into ea.sv_course_assessment_map values(null,null,null,null,null);
+insert into ea.sv_course_grade_submit_map values(null,null,null,null,null);
+
 -- 删除数据
 delete from ea.task_student
 where (task_id, student_id) not in (
     select task_id, student_id
     from ea.sv_task_student
-    where term_id = 20171
+    where term_id = 20172
 ) and task_id in (
     select task.id
     from ea.task
     join ea.course_class on course_class.id = task.course_class_id
-    where course_class.term_id = 20171
+    where course_class.term_id = 20172
 );
 
 delete from ea.task_teacher
