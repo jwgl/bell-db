@@ -1220,8 +1220,8 @@ begin
   order by xkkh_normal, course_item_id;
 
   delete from ea.task_map
-  where task_code not in (
-    select xkkh
+  where (task_code, course_item_id) not in (
+    select xkkh, nvl(course_item_id, '0000000000')
     from ea.sva_task
   );
 end;
@@ -1251,17 +1251,12 @@ create or replace view ea.sva_task_teacher as
 with task_with_lab as ( -- 带实验课任务
     select distinct a.xkkh
     from zfxfzb.jxrwb a
-    join zfxfzb.dgjsskxxb b on a.xkkh = substr(b.xkkh, 1, length(b.xkkh) - 1)
-        and a.jxjhh || a.bjmc = b.bjmc
-        and a.zyfx = b.zyfx
-        and substr(b.xkkh, -1, 1) >= 'A'
-    where jxjhh in (select jxjhh from zfxfzb.jxjhkcxxb)
+    join zfxfzb.dgjsskxxb b on a.xkkh = substr(b.xkkh, 1, length(b.xkkh) - 1) and substr(b.xkkh, -1, 1) >= 'A'
     and nvl(xkzt, 0) <> 4
 ), task_en as ( -- 外语
     select distinct xkkh
     from zfxfzb.jxrwb
-    where jxjhh not in (select jxjhh from zfxfzb.jxjhkcxxb)
-    and jsxm like ('%/%') -- 多教师
+    where substr(jxjhh, 5, 1) = 'a'
     and nvl(xkzt, 0) <> 4
 ), task_pe as ( -- 体育
     select distinct xkkh
@@ -1276,36 +1271,25 @@ with task_with_lab as ( -- 带实验课任务
     minus
     select xkkh from task_pe
 )
-(select distinct -- 正常教学任务
-    a.xkkh, a.jszgh, null as course_item_id, 'norm1' as tab
-from ea.sva_task_base a
-join task_normal b on b.xkkh = a.xkkh
-union
 select distinct -- 正常教学任务（多教师）
-    a.xkkh, c.jszgh, null, 'norm2'
+    a.xkkh, coalesce(c.jszgh, a.jszgh) as jszgh, null as course_item_id, 'norm1' as tab
 from ea.sva_task_base a
 join task_normal b on b.xkkh = a.xkkh
-join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh)
+left join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh
 union all
-(select distinct -- 带实验课程的主任务
-    a.xkkh, a.jszgh, c.id, 'wl_t1'
+select distinct -- 带实验课程的主任务（多教师）
+    a.xkkh, coalesce(d.jszgh, a.jszgh) as jszgh, c.id, 'wl_t'
 from ea.sva_task_base a
 join task_with_lab b on a.xkkh = b.xkkh
 join ea.sv_course_item c on c.course_id = a.kcdm and ordinal = 1
-union
-select distinct -- 带实验课程的主任务（多教师）
-    a.xkkh, c.jszgh, d.id, 'wl_t2'
-from ea.sva_task_base a
-join task_with_lab b on a.xkkh = b.xkkh
-join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh
-join ea.sv_course_item d on d.course_id = a.kcdm and ordinal = 1)
+left join zfxfzb.dgjsskxxb d on d.xkkh = a.xkkh
 union all
 select distinct -- 带实验课程的实验任务
-    c.xkkh, c.jszgh, d.id, 'wl_e'
+    d.xkkh, d.jszgh, c.id, 'wl_e'
 from ea.sva_task_base a
 join task_with_lab b on b.xkkh = a.xkkh
-join zfxfzb.dgjsskxxb c on substr(c.xkkh, 1, length(c.xkkh) - 1) = a.xkkh
-join ea.sv_course_item d on d.course_id = a.kcdm and ordinal = 2
+join ea.sv_course_item c on c.course_id = a.kcdm and ordinal = 2
+join zfxfzb.dgjsskxxb d on substr(d.xkkh, 1, length(d.xkkh) - 1) = a.xkkh
 union all
 select distinct -- 外语
     a.xkkh, d.jszgh, c.id, 'en'
@@ -1340,17 +1324,13 @@ with task_normal_all as (
 ), task_with_lab as ( -- 带实验课任务
     select distinct a.xkkh
     from task_normal_all a
-    join zfxfzb.dgjsskxxb b on a.xkkh = substr(b.xkkh, 1, length(b.xkkh) - 1)
-        and a.jxjhh || a.bjmc = b.bjmc
-        and a.zyfx = b.zyfx
-        and substr(b.xkkh, -1, 1) >= 'A'
-    where a.jxjhh in (select jxjhh from zfxfzb.jxjhkcxxb)
+    join zfxfzb.dgjsskxxb b on a.xkkh = substr(b.xkkh, 1, length(b.xkkh) - 1) and substr(b.xkkh, -1, 1) >= 'A'
 ), task_en as ( -- 外语
     select distinct xkkh
-    from zfxfzb.jxrwb
-    where jxjhh not in (select jxjhh from zfxfzb.jxjhkcxxb)
+    from task_normal_all
+    where substr(jxjhh, 5, 1) = 'a'
 ), task_normal as ( -- 正常任务
-    select distinct xkkh from task_normal_all
+    select xkkh from task_normal_all
     minus
     select xkkh from task_with_lab
     minus
@@ -1367,75 +1347,49 @@ with task_normal_all as (
     from zfxfzb.cfbjxrwb
     where nvl(xkzt, 0) <> 4
     and kcdm <> '74000000'
-), tjkbapqkb_fix as (
-    select xkkh, jszgh, xqj, dsz, qssj, jssj, sjdxh, qssjd, coalesce(jsbh, (
-        select distinct jsbh from zfxfzb.tjkbapqkb
-        where xkkh = a.xkkh and jszgh = a.jszgh and qssj = a.qssj and jssj = a.jssj and xqj = a.xqj and sjdxh = a.sjdxh
-        and jsbh is not null
-    )) as jsbh, kc as guid
-    from zfxfzb.tjkbapqkb a
 ), arr_normal as (
     select xkkh, jszgh, jsbh, xqj,
         min(sjdxh) as qssjd,
-        case
-            when count(case when dsz='单' then dsz end)<>0 and count(case when dsz='双' then dsz end)=0  then 1
-            when count(case when dsz='单' then dsz end)=0  and count(case when dsz='双' then dsz end)<>0 then 2
-            else 0
-        end as dsz,
+        decode(sign(sum(decode(dsz, '单', -1, '双', 1))), -1, 1, 1, 2, 0) as dsz,
         qssj as qsz,
         jssj as jsz,
         max(sjdxh) - min(sjdxh) + 1 as skcd,
-        guid
-    from tjkbapqkb_fix
-    group by xkkh, jszgh, jsbh, xqj, qssjd, qssj, jssj, guid
+        kc as guid,sknr
+    from zfxfzb.tjkbapqkb
+    group by xkkh, jszgh, jsbh, xqj, qssjd, qssj, jssj, kc, sknr
+), task_normal_info as (
+    select distinct -- 正常教学任务（多教师）
+        a.xn, a.xq, a.kcdm, a.xkkh, coalesce(c.jszgh, a.jszgh) as jszgh,
+        null as course_item_id, -- 课程项目ID
+        'norm' as tab
+    from zfxfzb.jxrwb a
+    join task_normal b on b.xkkh = a.xkkh
+    left join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh
+    union all
+    select distinct -- 带实验课程的主任务（多教师）
+        a.xn, a.xq, a.kcdm, a.xkkh, coalesce(c.jszgh, a.jszgh) as jszgh,
+        a.kcdm || '01' as course_item_id,
+        'wl_t' as tabset
+    from zfxfzb.jxrwb a
+    join task_with_lab b on a.xkkh = b.xkkh
+    left join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh
+    union all
+    select distinct -- 带实验课程的实验任务
+        a.xn, a.xq, a.kcdm, c.xkkh, c.jszgh,
+        a.kcdm || '02' as course_item_id,
+        'wl_e' as tab
+    from zfxfzb.jxrwb a
+    join task_with_lab b on a.xkkh = b.xkkh
+    join zfxfzb.dgjsskxxb c on substr(c.xkkh, 1, length(c.xkkh) - 1) = a.xkkh
 )
-(select distinct -- 正常教学任务
-    a.xkkh, a.jszgh, c.jsbh, c.qsz, c.jsz, c.dsz, c.xqj, c.qssjd, c.skcd, c.guid,
-    null as course_item_id, -- 课程项目ID
-    'norm' as tab
-from zfxfzb.jxrwb a
-join task_normal b on b.xkkh = a.xkkh
-join arr_normal c on c.xkkh = a.xkkh and c.jszgh = a.jszgh
-union
-select distinct -- 正常教学任务（多教师）
-    a.xkkh, c.jszgh, d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, d.guid,
-    null as course_item_id,
-    'norm' as tab
-from zfxfzb.jxrwb a
-join task_normal b on b.xkkh = a.xkkh
-join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh
-join arr_normal d on d.xkkh = a.xkkh and d.jszgh = c.jszgh)
-union all
-(select distinct -- 带实验课程的主任务
-    a.xkkh, a.jszgh, c.jsbh, c.qsz, c.jsz, c.dsz, c.xqj, c.qssjd, c.skcd, c.guid,
-    a.kcdm || '01' as course_item_id,
-    'wl_t' as tabset
-from zfxfzb.jxrwb a
-join task_with_lab b on a.xkkh = b.xkkh
-join arr_normal c on c.xkkh = a.xkkh and c.jszgh = a.jszgh
-union
-select distinct -- 带实验课程的主任务（多教师）
-    a.xkkh, c.jszgh, d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, d.guid,
-    a.kcdm || '01' as course_item_id,
-    'wl_t' as tab
-from zfxfzb.jxrwb a
-join task_with_lab b on a.xkkh = b.xkkh
-join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh
-join arr_normal d on d.xkkh = a.xkkh and d.jszgh = c.jszgh)
-union all
-select distinct -- 带实验课程的实验任务
-    c.xkkh, c.jszgh, d.jsbh, d.qsz, d.jsz, d.dsz, d.xqj, d.qssjd, d.skcd, d.guid,
-    a.kcdm || '02' as course_item_id,
-    'wl_e' as tab
-from zfxfzb.jxrwb a
-join task_with_lab b on a.xkkh = b.xkkh
-join zfxfzb.dgjsskxxb c on substr(c.xkkh, 1, length(c.xkkh) - 1) = a.xkkh
-join arr_normal d on d.xkkh = c.xkkh and d.jszgh = c.jszgh
+select a.xn, a.xq, a.kcdm, a.xkkh, c.jszgh, c.jsbh, c.qsz, c.jsz, c.dsz,
+    c.xqj, c.qssjd, c.skcd, c.guid, course_item_id, tab, c.sknr
+from task_normal_info a
+join arr_normal c on a.xkkh=c.xkkh and a.jszgh=c.jszgh
 union all
 select distinct -- 外语
-    b.xkkh, b.jszgh, f.jsbh/*b.jsbh*/, b.qsz, b.jsz, decode(a.dsz, '单', 1, '双', 2, 0) as dsz, a.xqj, a.qssjd, a.skcd, b.guid,
-    d.id as course_item_id,
-    'en' as tab
+    a.xn,a.xq,d.course_id,b.xkkh, b.jszgh, b.jsbh, b.qsz, b.jsz, decode(a.dsz, '单', 1, '双', 2, 0) as dsz,
+    a.xqj, a.qssjd, a.skcd, b.guid, d.id as course_item_id, 'en' as tab,'5' sknr
 from zfxfzb.bksjapb a
 join zfxfzb.bkdjjsfpb b on b.bkdm = a.bkdm and b.bkkcmc = a.bkkcmc and
     b.nj = a.nj and b.xn = a.xn and b.xq = a.xq
@@ -1444,27 +1398,19 @@ join zfxfzb.bkdjjsfpb b on b.bkdm = a.bkdm and b.bkkcmc = a.bkkcmc and
 join ea.sv_course_item d on d.course_id = substr(b.xkkh, 15, 8) and d.name = b.bz
 join task_en e on e.xkkh = b.xkkh
 join zfxfzb.jsxxb g on g.zgh = b.jszgh -- 有不存在的教师
-left join zfxfzb.jxcdxxb f on b.jsbh = f.jsbh -- 有不存在的场地
 union all
 select distinct -- 其它课
-    a.xkkh, nvl(c.jszgh, a.jszgh) as jszgh,
-    d.jsbh/*a.jsbh*/, a.qsz, a.jsz, decode(a.dsz, '单', 1, '双', 2, 0) dsz, a.xqj, a.qssjd, a.skcd,
-    case
-        when c.xkkh is not null then -- 多教师情况，用序号替换GUID后两位
-            substr(a.bz, 1, 30) || to_char(c.xh, 'fm0X')
-        else
-            a.bz
-    end as guid,
+    a.xn, to_number(a.xq), a.kcdm ,a.xkkh, a.jszgh,
+    a.jsbh, a.qsz, a.jsz, decode(a.dsz, '单', 1, '双', 2, 0) dsz, a.xqj, a.qssjd, a.skcd,
+    a.bz,
     null as course_item_id, -- todo: verify
-    'qt' tab
+    'qt' tab,'5' sknr
 from zfxfzb.qtkapb a
 join task_other b on a.xkkh = b.xkkh
-left join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh
-left join zfxfzb.jxcdxxb d on a.jsbh = d.jsbh -- 有不存在的场地
 where xqj is not null
 union all
 select distinct  -- 体育
-    xkkh, jszgh,
+    a.xn, a.xq, a.kcdm,  xkkh, jszgh,
     b.jsbh,
     to_number(regexp_substr(sksj, '第(\d+)-(\d+)周', 1, 1, null, 1)) qsz,
     to_number(regexp_substr(sksj, '第(\d+)-(\d+)周', 1, 1, null, 2)) jsz,
@@ -1479,7 +1425,7 @@ select distinct  -- 体育
     end as skcd,
     a.guid,
     c.id as course_item_id,
-    'pe' tab
+    'pe' tab, '5' sknr
 from zfxfzb.tykjxrwb a
 join zfxfzb.jxcdxxb b on b.jsmc = a.skdd
 join ea.sv_course_item c on c.task_course_id = a.kcdm
@@ -1526,7 +1472,7 @@ select term_id,
     task_id,
     xh as student_id,
     to_date(xksj, 'yyyy-mm-dd HH24:MI:SS') as date_created,
-    decode(xsf, 
+    decode(xsf,
         '6', 0, -- 排课
         '1', 1, -- 选课
         '2', 2  -- 跨专业选课
@@ -1539,3 +1485,468 @@ select term_id,
     ) as exam_flag
 from zfxfzb.xsxkb
 join ea.task_map on task_code = xkkh;
+
+/**
+ * 教学班考核方案
+ */
+create or replace view ea.sv_course_class_assessment as
+with assess_normal as (
+  select distinct xkkh,
+    round(to_number(nvl(pscj,0)) / 100.0, 2) as pscj, '考查' as psfs,
+    round(to_number(nvl(sycj,0)) / 100.0, 2) as sycj, '考查' as syfs,
+    round(to_number(nvl(qzcj,0)) / 100.0, 2) as qzcj, khfs as qzfs,
+    round(to_number(nvl(qmcj,0)) / 100.0, 2) as qmcj, khfs as qmfs,
+    khfs as bkfs
+  from zfxfzb.jxrwbview
+), assess_ratio as (
+  select *
+  from assess_normal
+  unpivot(
+    (assess_type, assess_ratio) for assess_stage in (
+      (psfs, pscj) as '平时',
+      (syfs, sycj) as '实验',
+      (qzfs, qzcj) as '期中',
+      (qmfs, qmcj) as '期末'
+    )
+  )
+  where assess_ratio > 0
+)
+select
+  b.course_class_id,
+  b.course_class_code,
+  a.assess_stage,
+  a.assess_type,
+  a.assess_ratio
+from assess_ratio a
+join course_class_map b on a.xkkh = b.course_class_code;
+
+/**
+ * 选课课号与成绩来源映射
+ */
+create or replace view ea.sv_course_class_suffix_map as
+select course_class_code, course_grade_source_code, submit_type, suffix
+from ea.course_class_suffix_map;
+
+/**
+ * 用于同步时触发生成course_class_suffix_map数据，使用insert语句触发
+ */
+create or replace trigger ea.sv_course_class_suffix_map_trigger
+  instead of insert
+  on ea.sv_course_class_suffix_map
+begin
+  merge into ea.course_class_suffix_map a
+  using (
+    select x.xkkh as course_class_code, case y.trim_flag
+      when 2 then substr(x.xkkh, 1, length(x.xkkh) - length(y.suffix) + 1)
+      when 1 then substr(x.xkkh, 1, length(x.xkkh) - length(y.suffix))
+      else x.xkkh
+    end as course_grade_source_code,
+    y.submit_type,
+    substr(y.suffix, y.trim_flag) as suffix
+    from (select distinct coalesce(xmdm, xkkh) as xkkh from zfxfzb.cjb) x
+    join ea.course_class_suffix y on reverse(x.xkkh) like reverse('%' || y.suffix)
+  ) b on (a.course_class_code = b.course_class_code)
+  when not matched then insert (course_class_code, course_grade_source_code, submit_type, suffix)
+    values(b.course_class_code, b.course_grade_source_code, b.submit_type, b.suffix)
+  when matched then update set
+    course_grade_source_code = b.course_grade_source_code,
+    submit_type = b.submit_type,
+    suffix = b.suffix;
+
+  delete from ea.course_class_suffix_map
+  where (course_class_code) not in (
+    select coalesce(xmdm, xkkh) as xkkh from zfxfzb.cjb
+  );
+end;
+/
+
+/**
+ * 辅助视图-课程考核阶段
+ */
+create or replace view ea.sva_course_assessment_stage as
+with grade_normal_count_base as ( -- 正考及其它成绩
+  select coalesce(xmdm, xkkh) as xkkh,
+    count(zscj) as zpcj_count,
+    count(pscj) as pscj_count,
+    count(sycj) as sycj_count,
+    count(qzcj) as qzcj_count,
+    count(qmcj) as qmcj_count
+  from zfxfzb.cjb
+  group by coalesce(xmdm, xkkh)
+), grade_normal_count as (
+  select coalesce(course_grade_source_code, xkkh) as xkkh,
+    zpcj_count, pscj_count, sycj_count, qzcj_count, qmcj_count,
+    nvl(submit_type, '正考') as submit_type, suffix
+  from grade_normal_count_base a
+  left join ea.sv_course_class_suffix_map b on a.xkkh = b.course_class_code
+), grade_makeup_count_base as ( -- 补考成绩
+  select coalesce(xmdm, xkkh) as xkkh,
+    count(bkcj) as zpcj_count,
+    count(bkcj) as bkcj_count
+  from zfxfzb.cjb
+  where bkcj is not null
+  group by coalesce(xmdm, xkkh)
+), grade_makeup_count as (
+  select coalesce(course_grade_source_code, xkkh) as xkkh,
+    zpcj_count, bkcj_count,
+    '补考' as submit_type, suffix
+  from grade_makeup_count_base a
+  left join ea.sv_course_class_suffix_map b on a.xkkh = b.course_class_code
+), grade_deferred_count_base as ( -- 缓考成绩
+  select coalesce(xmdm, xkkh) as xkkh,
+    count(zscj) as zpcj_count,
+    count(zscj) as hkcj_count
+  from zfxfzb.cjb
+  where bz = '缓考'
+  group by coalesce(xmdm, xkkh)
+), grade_deferred_count as (
+  select coalesce(course_grade_source_code, xkkh) as xkkh,
+    zpcj_count, hkcj_count,
+    '补考' as submit_type, suffix
+  from grade_deferred_count_base a
+  left join ea.sv_course_class_suffix_map b on a.xkkh = b.course_class_code
+), grade_count_unpivot as (
+  select xkkh, submit_type, assess_stage, grade_count, suffix
+  from grade_normal_count
+  unpivot(
+    (grade_count) for assess_stage in (
+      zpcj_count as '总评',
+      pscj_count as '平时',
+      sycj_count as '实验',
+      qzcj_count as '期中',
+      qmcj_count as '期末'
+    )
+  )
+  where grade_count > 0
+  union all
+  select xkkh, submit_type, assess_stage, grade_count, suffix
+  from grade_makeup_count
+  unpivot(
+    (grade_count) for assess_stage in (
+      zpcj_count as '总评',
+      bkcj_count as '补考'
+    )
+  )
+  where grade_count > 0
+  union all
+  select xkkh, submit_type, assess_stage, grade_count, suffix
+  from grade_deferred_count
+  unpivot(
+    (grade_count) for assess_stage in (
+      zpcj_count as '总评',
+      hkcj_count as '缓考'
+    )
+  )
+  where grade_count > 0
+)
+select xkkh, submit_type, assess_stage,
+  sum(grade_count) grade_count,
+  listagg(suffix, ',') within group(order by suffix) as suffixes
+from grade_count_unpivot
+group by xkkh, submit_type, assess_stage;
+
+/**
+ * 课程成绩提交ID映射
+ */
+create or replace view ea.sv_course_grade_submit_map as
+select term_id, course_grade_submit_id, course_class_code, submit_type, date_submitted，date_created
+from ea.course_grade_submit_map;
+
+/**
+ * 用于同步时触发生成course_assessment_map和course_grade_submit_map数据，使用insert语句触发
+ */
+create or replace trigger ea.sv_course_grade_submit_map_trigger
+  instead of insert
+  on ea.sv_course_grade_submit_map
+begin
+  -- 合并course_assessment_map
+  merge into ea.course_assessment_map a
+  using (
+    select to_number(substr(xkkh, 2, 4) || substr(xkkh, 12, 1)) as term_id,
+      xkkh as course_class_code, submit_type, assess_stage
+    from ea.sva_course_assessment_stage
+  ) b on (a.course_class_code = b.course_class_code and a.assess_stage = b.assess_stage)
+  when not matched then insert (term_id, course_class_code, submit_type, assess_stage)
+  values(b.term_id, b.course_class_code, b.submit_type, b.assess_stage);
+
+  delete from ea.course_assessment_map
+  where (course_class_code, assess_stage) not in (
+    select xkkh, assess_stage
+    from ea.sva_course_assessment_stage
+  );
+
+  -- 合并course_grade_submit_map
+  merge into ea.course_grade_submit_map a
+  using (
+    select distinct term_id, course_class_code, submit_type
+    from ea.course_assessment_map
+    order by course_class_code, submit_type
+  ) b on (a.course_class_code = b.course_class_code and a.submit_type = b.submit_type)
+  when not matched then insert (term_id, course_class_code, submit_type)
+  values(b.term_id, b.course_class_code, b.submit_type);
+
+  delete from ea.course_grade_submit_map
+  where (course_class_code, submit_type) not in (
+    select distinct course_class_code, submit_type
+    from ea.course_assessment_map
+  );
+
+  -- 计算初次提交时间，修改任务表后可直接获取
+  merge into ea.course_grade_submit_map a
+  using (
+    select xkkh as course_class_code, to_timestamp(min(cjdate), 'YYYY-MM-DD HH24:MI:SS') as date_submitted
+    from zfxfzb.cjb
+    where xn || '-' || xq >= '2013-2014-2'
+    group by xkkh
+  ) b on (a.course_class_code = b.course_class_code and a.submit_type='正考')
+  when matched then update set date_submitted = b.date_submitted;
+end;
+/
+
+/**
+ * 课程成绩来源ID映射
+ */
+create or replace view ea.sv_course_grade_source_map as
+select term_id, course_grade_source_id, course_grade_source_code, date_created
+from ea.course_grade_source_map;
+
+/**
+ * 用于同步时触发生成sv_course_grade_source_map数据，使用insert语句触发
+ */
+create or replace trigger ea.sv_course_grade_source_map_trigger
+  instead of insert
+  on ea.sv_course_grade_source_map
+begin
+  merge into ea.course_grade_source_map a
+  using (
+    select distinct x.term_id, x.course_class_code
+    from course_grade_submit_map x
+    left join ea.course_class_map y on x.course_class_code = y.course_class_code
+    where y.course_class_id is null
+  ) b on (a.course_grade_source_code = b.course_class_code)
+  when not matched then insert (term_id, course_grade_source_code)
+  values(b.term_id, b.course_class_code);
+
+  delete from ea.course_grade_source_map
+  where (course_grade_source_code) not in (
+    select x.course_class_code
+    from course_grade_submit_map x
+    left join ea.course_class_map y on x.course_class_code = y.course_class_code
+    where y.course_class_id is null
+  );
+end;
+/
+
+/**
+ * 课程成绩提交
+ */
+create or replace view ea.sv_course_grade_submit as
+select a.course_grade_submit_id as id,
+  b.course_class_id as course_grade_source_id,
+  1 as course_grade_source_type, -- 来自教学班
+  submit_type, c.teacher_id, a.date_submitted, a.term_id
+from ea.course_grade_submit_map a
+join ea.course_class_map b on a.course_class_code = b.course_class_code
+left join ea.sv_course_class c on a.course_class_code = c.code
+union all
+select a.course_grade_submit_id as id,
+  b.course_grade_source_id,
+  2 as course_grade_source_type, -- 来自其它
+  submit_type, null as teacher_id, a.date_submitted, a.term_id
+from ea.course_grade_submit_map a
+join ea.course_grade_source_map b on a.course_class_code = b.course_grade_source_code;
+
+/**
+ * 课程考核
+ */
+create or replace view ea.sv_course_assessment as
+select a.course_assessment_id as id,
+  b.course_grade_submit_id,
+  assess_stage
+from ea.course_assessment_map a
+join ea.course_grade_submit_map b on a.course_class_code = b.course_class_code and a.submit_type = b.submit_type
+
+/**
+ * 课程考核成绩
+ */
+create or replace view ea.sv_course_assessment_grade as
+with assess_normal_grade_base as ( -- 正考及其它成绩
+  select coalesce(xmdm, xkkh) as xkkh, xh,
+    case bz when '缓考' then '0' else cj end as zpcj,
+    b.value as zpcj_flag,
+    nvl2(b.value, bzxx, case
+      when bz is not null and bzxx is not null then bz || '|' || bzxx
+      when bz is null then bzxx
+      when bzxx is null then bz
+    end) as zpcj_note,
+    pscj, null as pscj_flag, null as pscj_note,
+    sycj, null as sycj_flag, null as sycj_note,
+    qzcj, null as qzcj_flag, null as qzcj_note,
+    case bz when '缓考' then '0' else qmcj end as qmcj,
+    b.value as qmcj_flag,
+    nvl2(b.value, null, bz) as qmcj_note
+  from zfxfzb.cjb a
+  left join ea.assess_flag b on a.bz = b.id
+), assess_normal_grade as (
+  select coalesce(course_grade_source_code, xkkh) as xkkh, xh,
+    zpcj, zpcj_flag, zpcj_note,
+    pscj, pscj_flag, pscj_note,
+    sycj, sycj_flag, sycj_note,
+    qzcj, qzcj_flag, qzcj_note,
+    qmcj, qmcj_flag, qmcj_note,
+    nvl(submit_type, '正考') as submit_type,
+    suffix
+  from assess_normal_grade_base a
+  left join ea.sv_course_class_suffix_map b on a.xkkh = b.course_class_code
+), assess_makeup_grade_base as ( -- 补考成绩
+  select coalesce(xmdm, xkkh) as xkkh, xh,
+    bkcj as zpcj, null as zpcj_flag, null as zpcj_note,
+    bkcj, b.value as bkcj_flag, nvl2(b.value, null, bkcj_bz) as bkcj_note
+  from zfxfzb.cjb a
+  left join ea.assess_flag b on a.bkcj_bz = b.id
+  where bkcj is not null
+), assess_makeup_grade as (
+  select coalesce(course_grade_source_code, xkkh) as xkkh, xh,
+    zpcj, zpcj_flag, zpcj_note,
+    bkcj, bkcj_flag, bkcj_note,
+    '补考' as submit_type,
+    suffix
+  from assess_makeup_grade_base a
+  left join ea.sv_course_class_suffix_map b on a.xkkh = b.course_class_code
+), assess_defered_grade_base as ( -- 缓考成绩
+  select coalesce(xmdm, xkkh) as xkkh, xh,
+    cj as zpcj, null as zpcj_flag, null as zpcj_note,
+    qmcj as hkcj, b.value as hkcj_flag, nvl2(b.value, null, bkcj_bz) as hkcj_note
+  from zfxfzb.cjb a
+  left join ea.assess_flag b on a.bkcj_bz = b.id
+  where bz = '缓考'
+), assess_defered_grade as (
+  select coalesce(course_grade_source_code, xkkh) as xkkh, xh,
+    zpcj, zpcj_flag, zpcj_note,
+    hkcj, hkcj_flag, hkcj_note,
+    '补考' as submit_type,
+    suffix
+  from assess_defered_grade_base a
+  left join ea.sv_course_class_suffix_map b on a.xkkh = b.course_class_code
+), assess_stage_grade as (
+  select xkkh, xh, submit_type, assess_stage, grade, assess_flag, note
+  from assess_normal_grade
+  unpivot(
+    (grade, assess_flag, note) for assess_stage in (
+      (zpcj, zpcj_flag, zpcj_note) as '总评',
+      (pscj, pscj_flag, pscj_note) as '平时',
+      (sycj, sycj_flag, sycj_note) as '实验',
+      (qzcj, qzcj_flag, qzcj_note) as '期中',
+      (qmcj, qmcj_flag, qmcj_note) as '期末'
+    )
+  )
+  union all
+  select xkkh, xh, submit_type, assess_stage, grade, assess_flag, note
+  from assess_makeup_grade
+  unpivot(
+    (grade, assess_flag, note) for assess_stage in (
+      (zpcj, zpcj_flag, zpcj_note) as '总评',
+      (bkcj, bkcj_flag, bkcj_note) as '补考'
+    )
+  )
+  union all
+  select xkkh, xh, submit_type, assess_stage, grade, assess_flag, note
+  from assess_defered_grade
+  unpivot(
+    (grade, assess_flag, note) for assess_stage in (
+      (zpcj, zpcj_flag, zpcj_note) as '总评',
+      (hkcj, hkcj_flag, hkcj_note) as '缓考'
+    )
+  )
+), assess_stage_grade_normal as (
+  select xkkh as course_class_code,
+    submit_type,
+    assess_stage,
+    xh as student_id,
+    cjdzb.cj as letter_grade,
+    coalesce(cjdzb.dycj, round(to_number(grade), 1)) as percentage_grade,
+    assess_flag, note
+  from assess_stage_grade
+  left join zfxfzb.cjdzb on cjdzb.cj = grade
+)
+select term_id, b.course_assessment_id, student_id,
+  letter_grade, percentage_grade, assess_flag, note
+from assess_stage_grade_normal a
+join ea.course_assessment_map b on a.course_class_code = b.course_class_code
+ and a.submit_type = b.submit_type
+ and a.assess_stage = b.assess_stage;
+
+/**
+ * 学生成绩
+ */
+create or replace view ea.sv_student_grade as
+with assess_normal_grade as ( -- 正考及其它成绩
+  select coalesce(xmdm, xkkh) as xkkh, xh,
+    decode(bz, '缓考', '0', cj) as grade, b.value as flag, cjdate, xgsj,
+    nvl2(b.value,
+      case when bz = '缓考' and bzxx = '学院申请' then null else bzxx end,
+      case when bz is not null and bzxx is not null then bz || '|' || bzxx else coalesce(bz, bzxx) end
+    ) as note
+  from zfxfzb.cjb a
+  left join ea.assess_flag b on a.bz = b.id
+), assess_makeup_grade as ( -- 补考成绩
+  select coalesce(xmdm, xkkh) as xkkh, xh,
+    bkcj as grade, b.value as flag, cjdate, xgsj,
+    bzxx as note
+  from zfxfzb.cjb a
+  left join ea.assess_flag b on a.bkcj_bz = b.id
+  where bkcj is not null
+), assess_defered_grade as ( -- 缓考成绩
+  select coalesce(xmdm, xkkh) as xkkh, xh,
+    cj as grade, b.value as flag, cjdate, xgsj,
+    nvl2(b.value,
+      bzxx,
+      case when bz is not null and bzxx is not null then bz || '|' || bzxx else coalesce(bz, bzxx) end
+    ) as note
+  from zfxfzb.cjb a
+  left join ea.assess_flag b on a.bkcj_bz = b.id
+  where bz = '缓考'
+), assess_stage_grade as (
+  select coalesce(course_grade_source_code, xkkh) as xkkh, xh,
+    grade, flag, cjdate, xgsj, note,
+    nvl(submit_type, '正考') as submit_type, suffix
+  from assess_normal_grade a
+  left join ea.sv_course_class_suffix_map b on a.xkkh = b.course_class_code
+  union all
+  select coalesce(course_grade_source_code, xkkh) as xkkh, xh,
+    grade, flag, cjdate, xgsj, note,
+    '补考' as submit_type, suffix
+  from assess_makeup_grade a
+  left join ea.sv_course_class_suffix_map b on a.xkkh = b.course_class_code
+  union all
+  select coalesce(course_grade_source_code, xkkh) as xkkh, xh,
+    grade, flag, cjdate, xgsj, note,
+    '补考' as submit_type, suffix
+  from assess_defered_grade a
+  left join ea.sv_course_class_suffix_map b on a.xkkh = b.course_class_code
+), assess_stage_grade_normal as (
+  select xkkh as course_class_code,
+    submit_type,
+    xh as student_id,
+    cjdzb.cj as letter_grade,
+    coalesce(cjdzb.dycj, round(to_number(grade),1), 0) as percentage_grade,
+    flag as assess_flag,
+    to_timestamp(cjdate, 'YYYY-MM-DD HH24:MI:SS') as date_created,
+    to_timestamp(xgsj, case
+      when xgsj like '%,%'
+      then 'YYYY MM"月"  DD,HH24:MI:SS'
+      else 'YYYY-MM-DD HH24:MI:SS'
+    end) as date_modified,
+    note
+  from assess_stage_grade
+  left join zfxfzb.cjdzb on cjdzb.cj = grade
+)
+select term_id, b.course_grade_submit_id, substr(a.course_class_code, 15, 8) as course_id, student_id,
+  letter_grade, percentage_grade, assess_flag, a.date_created,
+    case
+      when a.date_created = date_modified then null
+      else date_modified
+    end as date_modified, note
+from assess_stage_grade_normal a
+join ea.course_grade_submit_map b on a.course_class_code = b.course_class_code
+ and a.submit_type = b.submit_type;

@@ -4,23 +4,23 @@
 
 CREATE TABLE EA.DISCIPLINE (
     ID   NUMBER(6,0) PRIMARY KEY,
-    CODE VARCHAR2(2 BYTE),
-    NAME VARCHAR2(10 BYTE)
+    CODE VARCHAR2(2),
+    NAME VARCHAR2(10)
 );
 
 CREATE TABLE EA.FIELD_CLASS (
     ID            NUMBER(8,0) PRIMARY KEY,
     DISCIPLINE_ID NUMBER(6,0) REFERENCES EA.DISCIPLINE(ID),
-    CODE          VARCHAR2(4 BYTE),
-    NAME          VARCHAR2(20 BYTE)
+    CODE          VARCHAR2(4),
+    NAME          VARCHAR2(20)
 );
 
 CREATE TABLE EA.FIELD (
     ID             NUMBER(10,0) PRIMARY KEY,
     FIELD_CLASS_ID NUMBER(8,0) REFERENCES EA.FIELD_CLASS(ID),
-    CODE           VARCHAR2(6 BYTE),
-    NAME           VARCHAR2(50 BYTE),
-    FLAG           VARCHAR2(2 BYTE)
+    CODE           VARCHAR2(6),
+    NAME           VARCHAR2(50),
+    FLAG           VARCHAR2(2)
 );
 
 CREATE TABLE EA.FIELD_ALLOW_DEGREE (
@@ -39,18 +39,71 @@ CREATE TABLE EA.TERM (
 );
 
 CREATE TABLE EA.COURSE_CLASS_MAP (
-    COURSE_CLASS_CODE VARCHAR2(31 BYTE) PRIMARY KEY,
+    COURSE_CLASS_CODE VARCHAR2(31) PRIMARY KEY,
     COURSE_CLASS_ID   RAW(16) DEFAULT SYS_GUID(),
-    DATE_CREATED      TIMESTAMP DEFAULT SYSTIMESTAMP
+    DATE_CREATED      TIMESTAMP DEFAULT SYSTIMESTAMP,
+    TERM_ID           NUMBER(5,0)
 );
 
 CREATE TABLE EA.TASK_MAP (
-    TASK_CODE      VARCHAR2(31 BYTE),
+    TASK_CODE      VARCHAR2(31),
     COURSE_ITEM_ID VARCHAR2(10),
     TASK_ID        RAW(16) DEFAULT SYS_GUID(),
     DATE_CREATED   TIMESTAMP DEFAULT SYSTIMESTAMP,
+    TERM_ID        NUMBER(5,0),
     PRIMARY KEY(TASK_CODE, COURSE_ITEM_ID)
 );
+
+CREATE TABLE EA.COURSE_ASSESSMENT_MAP (
+    COURSE_CLASS_CODE    VARCHAR2(31),
+    SUBMIT_TYPE          VARCHAR2(4), -- 正考；补考；提前；导入；外部；
+    ASSESS_STAGE         VARCHAR2(4), -- 总评；平时；实验；期中；期末；补考；缓考；
+    COURSE_ASSESSMENT_ID RAW(16) DEFAULT SYS_GUID(),
+    DATE_CREATED         TIMESTAMP DEFAULT SYSTIMESTAMP,
+    TERM_ID              NUMBER(5,0),
+    PRIMARY KEY(COURSE_CLASS_CODE, SUBMIT_TYPE, ASSESS_STAGE)
+);
+
+CREATE TABLE EA.COURSE_CLASS_SUFFIX (
+    SUFFIX       VARCHAR2(20) PRIMARY KEY,
+    SUBMIT_TYPE  VARCHAR2(4),
+    TRIM_FLAG    NUMBER(1), -- 是否删除后缀
+    REPEAT_FLAG  NUMBER(1), -- 是否重修
+    MINOR_FLAG   NUMBER(1), -- 是否辅修
+    ASSESS_FLAG  VARCHAR2(8),
+    NOTE         VARCHAR2(20)
+);
+CREATE INDEX COURSE_CLASS_SUFFIX_REVERSE ON COURSE_CLASS_SUFFIX(REVERSE('%' || SUFFIX));
+
+CREATE TABLE EA.COURSE_CLASS_SUFFIX_MAP (
+    COURSE_CLASS_CODE        VARCHAR2(40) PRIMARY KEY, -- 原选课课号
+    COURSE_GRADE_SOURCE_CODE VARCHAR2(31), -- 去后缀后的选课课号,成绩来源代码
+    SUBMIT_TYPE              VARCHAR2(4),
+    SUFFIX                   VARCHAR2(20)
+);
+
+CREATE TABLE EA.ASSESS_FLAG (
+    ID       VARCHAR2(20) PRIMARY KEY,
+    VALUE    VARCHAR2(20)
+);
+
+CREATE TABLE EA.COURSE_GRADE_SUBMIT_MAP (
+    COURSE_CLASS_CODE      VARCHAR2(31),
+    SUBMIT_TYPE            VARCHAR2(4), -- 正考；补考；提前；导入；外部；
+    COURSE_GRADE_SUBMIT_ID RAW(16) DEFAULT SYS_GUID(),
+    DATE_SUBMITTED         TIMESTAMP,
+    DATE_CREATED           TIMESTAMP DEFAULT SYSTIMESTAMP,
+    TERM_ID                NUMBER(5,0),
+    PRIMARY KEY(COURSE_CLASS_CODE, SUBMIT_TYPE)
+);
+
+CREATE TABLE EA.COURSE_GRADE_SOURCE_MAP (
+    COURSE_GRADE_SOURCE_CODE VARCHAR2(31 BYTE) PRIMARY KEY,
+    COURSE_GRADE_SOURCE_ID   RAW(16) DEFAULT SYS_GUID(),
+    DATE_CREATED             TIMESTAMP DEFAULT SYSTIMESTAMP,
+    TERM_ID                  NUMBER(5,0)
+);
+
 
 insert into EA.DISCIPLINE (ID,CODE,NAME) values (199801,'01','哲学');
 insert into EA.DISCIPLINE (ID,CODE,NAME) values (199802,'02','经济学');
@@ -1425,3 +1478,84 @@ insert into EA.TERM (ID,START_DATE,START_WEEK,MID_LEFT,MID_RIGHT,END_WEEK,MAX_WE
 insert into EA.TERM (ID,START_DATE,START_WEEK,MID_LEFT,MID_RIGHT,END_WEEK,MAX_WEEK) values (20162,to_date('2017-02-20','RRRR-MM-DD'),1,19,20,21,28);
 insert into EA.TERM (ID,START_DATE,START_WEEK,MID_LEFT,MID_RIGHT,END_WEEK,MAX_WEEK) values (20171,to_date('2017-09-11','RRRR-MM-DD'),1,null,null,19,26);
 insert into EA.TERM (ID,START_DATE,START_WEEK,MID_LEFT,MID_RIGHT,END_WEEK,MAX_WEEK) values (20172,to_date('2018-03-05','RRRR-MM-DD'),1,null,null,19,27);
+
+
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('正考',     '正考', 1, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('补考',     '补考', 1, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('旷考',     '正考', 1, 0, 0, '旷考',     null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('作弊',     '正考', 1, 0, 0, '作弊',     null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('免修',     '免修', 1, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('重考',     '毕业', 1, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('缓考',     '补考', 1, 0, 0, '缓考',     null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('重修',     '正考', 1, 1, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('-CX1',     '正考', 1, 1, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('cx',       '正考', 1, 1, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('CXKK',     '正考', 1, 1, 0, '旷考',     null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('辅修',     '正考', 1, 0, 1, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('FXZB',     '正考', 1, 0, 1, '作弊',     null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('QXZG',     '正考', 1, 0, 0, '取消资格', null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('qxzg',     '正考', 1, 0, 0, '取消资格', null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('zdzj',     '补录', 0, 0, 0, null,       '学院申请');
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('xt000-1',  '外部', 0, 0, 0, null,        null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('xt001-1',  '外部', 0, 0, 0, null,        null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('zxhr',     '外部', 1, 0, 0, null,       '转学互认');
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('hw000',    '导入', 0, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('hw000-1',  '导入', 0, 0, 0, null,       null); --
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('hw000-01', '导入', 0, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('hw000-bl', '导入', 0, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('hw000-cl', '导入', 0, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('hw000-z0', '导入', 0, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('hw001',    '导入', 0, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('huwei-1',  '导入', 0, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('jwc01-1',  '导入', 0, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('sjyyzh',   '导入', 0, 0, 0, null,       '四级英语通过'); -- remove
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('sjtg',     '导入', 0, 0, 0, null,       '四级英语通过'); -- remove
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('xwtd',     '导入', 0, 0, 0, null,       '学位英语替代'); -- remove
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('xwdt',     '导入', 0, 0, 0, null,       '学位英语替代'); -- remove
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('hw000-xw', '导入', 0, 0, 0, null,       '学位英语替代'); -- remove
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('0by',      '毕业', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('1by',      '毕业', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('2by',      '毕业', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('3by',      '毕业', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('4by',      '毕业', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('5by',      '毕业', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('6by',      '毕业', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('7by',      '毕业', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('8by',      '毕业', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('9by',      '毕业', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('正考by',   '毕业', 1, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('旷考by',   '毕业', 1, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('作弊by',   '毕业', 1, 0, 0, null,       null); -- 表示之前作弊的课程成绩，本次为毕业补考
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('缓考by',   '毕业', 1, 0, 1, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('QXZGby',   '毕业', 1, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('by-1',     '毕业', 0, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('bybk-01',  '毕业', 0, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('zdzjby',   '毕业', 0, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('TQby',     '毕业', 1, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('fby',      '毕业', 1, 0, 1, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('辅修by',   '毕业', 1, 0, 1, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('TQ',       '提前', 1, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('0tq',      '提前', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('1tq',      '提前', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('2tq',      '提前', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('3tq',      '提前', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('4tq',      '提前', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('5tq',      '提前', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('6tq',      '提前', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('7tq',      '提前', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('8tq',      '提前', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('9tq',      '提前', 2, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('tq1',      '提前', 1, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('hw000-tq', '提前', 0, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('tq000-1',  '提前', 0, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('zk000-tq', '提前', 0, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('zk000-z1', '直考', 0, 0, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('zk000-bk', '直补', 0, 0, 0, null,       null);
+
+INSERT INTO ASSESS_FLAG VALUES('缓考',         '缓考');
+INSERT INTO ASSESS_FLAG VALUES('旷考',         '旷考');
+INSERT INTO ASSESS_FLAG VALUES('作弊',         '作弊');
+INSERT INTO ASSESS_FLAG VALUES('抄袭',         '抄袭');
+INSERT INTO ASSESS_FLAG VALUES('取消资格',     '取消资格');
+INSERT INTO ASSESS_FLAG VALUES('Cheating',     '作弊');
+INSERT INTO ASSESS_FLAG VALUES('Disqualified', '取消资格');

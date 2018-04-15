@@ -19,7 +19,28 @@ select id, name, label_cn, label_en, path_level -1 as menu_level, root from r
 where path_level > 1
 order by display_order;
 
--- Auxiliary View
+-- 辅助视图
+-- 教学班
+create or replace view ea.av_course_class as
+select cc.term_id, cc.id, cc.code, c.name as course, d.name as department, p.name as property,
+  t.name as teacher,
+  cc.start_week, cc.end_week,
+  case cc.assess_type
+    when 1 then '考试'
+    when 2 then '考查'
+    when 3 then '毕业论文'
+    else '其它'
+  end as assess_type,
+  case cc.test_type
+    when 1 then '集中'
+    when 2 then '分散'
+    else '其它'
+  end as test_type
+from course_class cc
+join course c on c.id = cc.course_id
+join teacher t on t.id = cc.teacher_id
+join department d on d.id = cc.department_id
+left join property p on p.id = cc.property_id;
 
 -- 教学任务
 create or replace view ea.av_task as
