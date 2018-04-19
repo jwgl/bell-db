@@ -583,6 +583,7 @@ select p.id as program_id,
     course.name as course_name,
     course.credit,
     sc.practice_credit,
+    suggested_term,
     sc.revise_version
 from scheme_course sc
 join ea.course on sc.course_id = course.id
@@ -605,6 +606,7 @@ select p.id as program_id,
     course.name as course_name,
     course.credit,
     sc.practice_credit,
+    suggested_term,
     sc.revise_version
 from scheme_temp_course sc
 join temp_course course on sc.temp_course_id = course.id

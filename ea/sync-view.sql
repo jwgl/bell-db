@@ -164,6 +164,7 @@ select zydm as id,
     end as is_joint_program,
     case
         when zyjc like '%2+2%' then 1
+        when zymc = '视觉传达设计（中德联合培养）' then 1
         else 0
     end as is_dual_degree,
     case
