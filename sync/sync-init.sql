@@ -140,11 +140,13 @@ select_sql = $$with task_schedule as (
     and a.total_section = 1
     and (a.start_section + a.total_section = b.start_section and b.start_section not in (5, 10)
       or b.start_section + b.total_section = a.start_section and a.start_section not in (5, 10))
-)
-select id, day_of_week, end_week, odd_even, place_id, min(start_section) as start_section,
+), schedule as (
+  select id, day_of_week, end_week, odd_even, place_id, min(start_section) as start_section,
      start_week, task_id, teacher_id, sum(total_section) as total_section, root_id
-from formal
-group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, root_id$$,
+  from formal
+  group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, root_id
+)
+select * from schedule where root_id in (select id from schedule)$$,
 upsert_condition = $$term_id = ${term_id}$$,
 delete_condition = $$task_id in (
     select task.id
