@@ -1163,7 +1163,7 @@ select distinct -- 带实验课程的实验任务
 from ea.sva_task_base a
 join task_with_lab b on a.xkkh = b.xkkh
 join ea.sv_course_item c on a.kcdm = c.task_course_id and ordinal = 2
-join zfxfzb.dgjsskxxb d on a.xkkh = substr(d.xkkh, 1, length(d.xkkh) - 1)
+join zfxfzb.dgjsskxxb d on a.xkkh = d.xkkh_root and a.xkkh <> d.xkkh
 union all
 select distinct -- 外语
     a.xn, a.xq, a.xkkh, a.xkkh as zkh, a.qsz, a.jsz, c.is_primary, c.id, 'en' as tab
