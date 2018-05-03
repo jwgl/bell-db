@@ -433,8 +433,8 @@ with formal as (
         case when b.id is null then a.root_id else b.root_id end as root_id, -- 统一ROOT_ID为长度不等于1的安排
         a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week,
         a.odd_even, a.day_of_week, a.start_section, a.total_section
-    from sv_task_schedule a
-    left join sv_task_schedule b on a.task_id = b.task_id
+    from ea.sv_task_schedule a
+    left join ea.sv_task_schedule b on a.task_id = b.task_id
     and a.teacher_id = b.teacher_id
     and (a.place_id = b.place_id or a.place_id is null and b.place_id is null)
     and a.start_week = b.start_week
@@ -446,7 +446,7 @@ with formal as (
       or b.start_section + b.total_section = a.start_section and a.start_section not in (5, 10))
 )
 select id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week,
-    min(start_section), sum(total_section) as total_section, root_id
+    min(start_section) as start_section, sum(total_section) as total_section, root_id
 from formal
 group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, root_id
 on conflict(id) do update set
@@ -519,8 +519,8 @@ where id not in (
             case when b.id is null then a.root_id else b.root_id end as root_id, -- 统一ROOT_ID为长度不等于1的安排
             a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week,
             a.odd_even, a.day_of_week, a.start_section, a.total_section
-        from sv_task_schedule a
-        left join sv_task_schedule b on a.task_id = b.task_id
+        from ea.sv_task_schedule a
+        left join ea.sv_task_schedule b on a.task_id = b.task_id
         and a.teacher_id = b.teacher_id
         and (a.place_id = b.place_id or a.place_id is null and b.place_id is null)
         and a.start_week = b.start_week

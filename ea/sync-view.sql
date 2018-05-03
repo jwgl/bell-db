@@ -324,7 +324,7 @@ with task as (
     select -- 按专业培养方案产生的教学计划（主修）
         jxjhh, zydm, zymc, zyfx,
         xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
-        jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+        jszgh, jsxm, xkkh, skdd, sksj, rs, qsz, jsz,
         bjmc, jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
         jxjhh || '0' as program_id,
         'jxrwb-1' tab
@@ -334,7 +334,7 @@ with task as (
     select -- 按实际执行产生的教学计划（外语）
         jxjhh, zydm, zymc, zyfx,
         xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
-        jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+        jszgh, jsxm, xkkh, skdd, sksj, rs, qsz, jsz,
         bjmc, jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
         null as program_id,
         'jxrwb-2' tab
@@ -344,7 +344,7 @@ with task as (
     select -- 按实际执行产生的教学计划（公选，政治）
         substr(xn, 1, 4) || xq jxjhh, null zydm, null zymc, null zyfx,
         xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
-        jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+        jszgh, jsxm, xkkh, skdd, sksj, rs, qsz, jsz,
         null bjmc, null jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
         null as program_id,
         'xxkjxrwb' tab
@@ -353,7 +353,7 @@ with task as (
     select -- 按专业培养方案产生的教学计划（辅修）
         jxjhh, zydm, zymc, null zyfx,
         xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
-        jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+        jszgh, jsxm, xkkh, skdd, sksj, rs, qsz, jsz,
         null bjmc, null jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
         jxjhh || case
             when substr(jxjhh, 1, 4) < 2012 then '9'
@@ -367,7 +367,7 @@ with task as (
     select -- 按实际执行产生的教学计划（特殊课）
         case when mxnj is null then substr(xn, 1, 4) else mxnj end || xq jxjhh, null zydm, null zymc, null zyfx,
         xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
-        jszgh, jsxm, xkkh, skdd, sksj, rs, qsjsz,
+        jszgh, jsxm, xkkh, skdd, sksj, rs, qsz, jsz,
         null bjmc, null jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
         null as program_id,
         'cfbjxrwb' tab
@@ -377,7 +377,7 @@ with task as (
     select -- 按实际执行产生的教学计划（体育课）
         substr(xn, 1, 4) || xq jxjhh, null zydm, null zymc, null zyfx,
         xn, xq, c.kcdm, c.kczwmc, a.xf, a.kcxz, a.kclb, a.kkxy, a.kkx,
-        jszgh, a.jsxm, a.xkkh, a.skdd, a.sksj, a.rs, a.qsjsz,
+        jszgh, a.jsxm, a.xkkh, a.skdd, a.sksj, a.rs, a.qsz, a.jsz,
         null bjmc, null jxbmc, a.zxs, xkzt, mxdx, xzdx, a.ksfs, a.khfs,
         null program_id,
         'tykjxrwb' tab
@@ -386,15 +386,12 @@ with task as (
     join zfxfzb.kcdmb c on c.kcdm = b.sskcdm -- 还原体育1、体育2
 )
 select jxjhh, zydm, zymc, zyfx,
-        xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
-        jszgh, jsxm, xkkh, skdd, sksj, rs,
-        nvl(to_number(regexp_substr(qsjsz, '^\d+')), term.start_week) as qsz,
-        nvl(to_number(regexp_substr(qsjsz, '\d+$')), term.end_week) as jsz,
-        bjmc, jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
-        program_id, tab
+    xn, xq, kcdm, kcmc, xf, kcxz, kclb, kkxy, kkx,
+    jszgh, jsxm, xkkh, skdd, sksj, rs, qsz, jsz,
+    bjmc, jxbmc, zxs, xkzt, mxdx, xzdx, ksfs, khfs,
+    program_id, tab
 from task
-join term on term.id = substr(xn, 1, 4) || xq
-where nvl(xkzt, 0) <> 4;
+where xkzt <> '4';
 
 /**
  * 课程
@@ -403,7 +400,7 @@ create or replace view ea.sv_course as
 with scheduled as ( -- 已排课的代码
     select distinct kcdm as pk_kcdm
     from ea.sva_task_base
-    where (skdd is not null or sksj is not null) and xkzt <> 4
+    where (skdd is not null or sksj is not null)
     union
     select distinct kcdm as pk_kcdm
     from zfxfzb.kcdmb
@@ -438,7 +435,7 @@ create or replace view ea.sv_course_item as
 with sykc as ( -- 实验课
     select distinct substr(xkkh, 15, 8) as kcdm
     from zfxfzb.dgjsskxxb
-    where substr(xkkh, -1, 1) between 'A' and 'Z'
+    where xkkh <> xkkh_root
 )
 -- 理论
 select kcdm || '01' as id,
@@ -1123,21 +1120,18 @@ create or replace view ea.sva_task as
 with task_with_lab as ( -- 带实验课任务
     select distinct a.xkkh
     from zfxfzb.jxrwb a
-    join zfxfzb.dgjsskxxb b on a.xkkh = substr(b.xkkh, 1, length(b.xkkh) - 1)
+    join zfxfzb.dgjsskxxb b on a.xkkh = b.xkkh_root and a.xkkh <> b.xkkh
         and a.jxjhh || a.bjmc = b.bjmc
         and a.zyfx = b.zyfx
-        and substr(b.xkkh, -1, 1) >= 'A'
     where jxjhh in (select jxjhh from zfxfzb.jxjhkcxxb)
-    and nvl(xkzt, 0) <> 4
 ), task_en as ( -- 外语
     select distinct xkkh
     from zfxfzb.jxrwb
     where jxjhh not in (select jxjhh from zfxfzb.jxjhkcxxb)
-    and nvl(xkzt, 0) <> 4
 ), task_pe as ( -- 体育
     select distinct xkkh
     from zfxfzb.tykjxrwb
-    where nvl(xkzt, 0) <> 4
+    where xkzt <> '4'
 ), task_normal as ( -- 其它
     select distinct xkkh from ea.sva_task_base
     minus
@@ -1153,7 +1147,7 @@ select distinct -- 正常教学任务
     a.xkkh as zkh, -- 主任务课号
     a.qsz, a.jsz, -- 起始结束周
     1 as is_primary, -- 是否主任务
-    null as course_item_id, -- 课程项目ID
+    '0000000000' as course_item_id, -- 课程项目ID
     'norm' as tab
 from ea.sva_task_base a
 join task_normal b on a.xkkh = b.xkkh
@@ -1200,7 +1194,7 @@ create or replace trigger ea.sv_task_map_trigger
 begin
   insert into ea.task_map(term_id, task_code, course_item_id)
   with normal as (
-    select xn, xq, xkkh, nvl(course_item_id, '0000000000') as course_item_id -- 注意反向操作
+    select xn, xq, xkkh, course_item_id
     from ea.sva_task
   ), unsynced as (
       select distinct xn, xq, xkkh, course_item_id, case
@@ -1222,7 +1216,7 @@ begin
 
   delete from ea.task_map
   where (task_code, course_item_id) not in (
-    select xkkh, nvl(course_item_id, '0000000000')
+    select xkkh, course_item_id
     from ea.sva_task
   );
 end;
@@ -1239,11 +1233,11 @@ select distinct
     a.is_primary,
     a.qsz as start_week,
     a.jsz as end_week,
-    a.course_item_id,
+    nullif(a.course_item_id, '0000000000') as course_item_id,
     b.course_class_id
 from ea.sva_task a
 join ea.course_class_map b on b.course_class_code = a.zkh
-join ea.task_map c on c.task_code = a.xkkh and nvl(a.course_item_id, '0000000000') = c.course_item_id;
+join ea.task_map c on c.task_code = a.xkkh and a.course_item_id = c.course_item_id;
 
 /**
  * 辅助视图 - 教学任务-教师
@@ -1252,17 +1246,15 @@ create or replace view ea.sva_task_teacher as
 with task_with_lab as ( -- 带实验课任务
     select distinct a.xkkh
     from zfxfzb.jxrwb a
-    join zfxfzb.dgjsskxxb b on a.xkkh = substr(b.xkkh, 1, length(b.xkkh) - 1) and substr(b.xkkh, -1, 1) >= 'A'
-    and nvl(xkzt, 0) <> 4
+    join zfxfzb.dgjsskxxb b on a.xkkh = b.xkkh_root and a.xkkh <> b.xkkh
 ), task_en as ( -- 外语
     select distinct xkkh
     from zfxfzb.jxrwb
     where substr(jxjhh, 5, 1) = 'a'
-    and nvl(xkzt, 0) <> 4
 ), task_pe as ( -- 体育
     select distinct xkkh
     from zfxfzb.tykjxrwb
-    where nvl(xkzt, 0) <> 4
+    where xkzt <> '4'
 ), task_normal as ( -- 其它
     select distinct xkkh from ea.sva_task_base
     minus
@@ -1273,7 +1265,7 @@ with task_with_lab as ( -- 带实验课任务
     select xkkh from task_pe
 )
 select distinct -- 正常教学任务（多教师）
-    a.xkkh, coalesce(c.jszgh, a.jszgh) as jszgh, null as course_item_id, 'norm1' as tab
+    a.xkkh, coalesce(c.jszgh, a.jszgh) as jszgh, '0000000000' as course_item_id, 'norm1' as tab
 from ea.sva_task_base a
 join task_normal b on b.xkkh = a.xkkh
 left join zfxfzb.dgjsskxxb c on c.xkkh = a.xkkh
@@ -1290,7 +1282,7 @@ select distinct -- 带实验课程的实验任务
 from ea.sva_task_base a
 join task_with_lab b on b.xkkh = a.xkkh
 join ea.sv_course_item c on c.course_id = a.kcdm and ordinal = 2
-join zfxfzb.dgjsskxxb d on substr(d.xkkh, 1, length(d.xkkh) - 1) = a.xkkh
+join zfxfzb.dgjsskxxb d on a.xkkh = d.xkkh_root and a.xkkh <> d.xkkh
 union all
 select distinct -- 外语
     a.xkkh, d.jszgh, c.id, 'en'
@@ -1311,7 +1303,7 @@ join ea.sv_course_item c on c.task_course_id = a.kcdm;
 create or replace view ea.sv_task_teacher as
 select distinct b.term_id, b.task_id, jszgh as teacher_id
 from ea.sva_task_teacher a
-join ea.task_map b on b.task_code = a.xkkh and b.course_item_id = nvl(a.course_item_id, '0000000000')
+join ea.task_map b on b.task_code = a.xkkh and b.course_item_id = a.course_item_id
 join zfxfzb.jsxxb c on c.zgh = a.jszgh;
 
 /**
@@ -1321,11 +1313,11 @@ create or replace view ea.sva_task_schedule as
 with task_normal_all as (
     select distinct jxjhh, xkkh, bjmc, zyfx, jszgh
     from zfxfzb.jxrwb
-    where nvl(xkzt, 0) <> 4
+    where xkzt <> '4'
 ), task_with_lab as ( -- 带实验课任务
     select distinct a.xkkh
     from task_normal_all a
-    join zfxfzb.dgjsskxxb b on a.xkkh = substr(b.xkkh, 1, length(b.xkkh) - 1) and substr(b.xkkh, -1, 1) >= 'A'
+    join zfxfzb.dgjsskxxb b on a.xkkh = b.xkkh_root and a.xkkh <> b.xkkh
 ), task_en as ( -- 外语
     select distinct xkkh
     from task_normal_all
@@ -1338,15 +1330,15 @@ with task_normal_all as (
     select xkkh from task_en
 ), task_other as ( -- 其它课（公选、辅修、特殊）
     select xkkh from zfxfzb.xxkjxrwb
-    where nvl(xkzt, 0) <> 4
+    where xkzt <> '4'
     union
     select distinct xkkh
     from zfxfzb.fxkjxrwb
-    where nvl(xkzt, 0) <> 4
+    where xkzt <> '4'
     union
     select distinct xkkh
     from zfxfzb.cfbjxrwb
-    where nvl(xkzt, 0) <> 4
+    where xkzt <> '4'
     and kcdm <> '74000000'
 ), arr_normal as (
     select xkkh, jszgh, jsbh, xqj,
@@ -1361,7 +1353,7 @@ with task_normal_all as (
 ), task_normal_info as (
     select distinct -- 正常教学任务（多教师）
         a.xn, a.xq, a.kcdm, a.xkkh, coalesce(c.jszgh, a.jszgh) as jszgh,
-        null as course_item_id, -- 课程项目ID
+        '0000000000' as course_item_id, -- 课程项目ID
         'norm' as tab
     from zfxfzb.jxrwb a
     join task_normal b on b.xkkh = a.xkkh
@@ -1381,12 +1373,12 @@ with task_normal_all as (
         'wl_e' as tab
     from zfxfzb.jxrwb a
     join task_with_lab b on a.xkkh = b.xkkh
-    join zfxfzb.dgjsskxxb c on substr(c.xkkh, 1, length(c.xkkh) - 1) = a.xkkh
+    join zfxfzb.dgjsskxxb c on a.xkkh = c.xkkh_root and a.xkkh <> c.xkkh
 )
 select a.xn, a.xq, a.kcdm, a.xkkh, c.jszgh, c.jsbh, c.qsz, c.jsz, c.dsz,
-    c.xqj, c.qssjd, c.skcd, c.guid, course_item_id, tab, c.sknr
+    c.xqj, c.qssjd, c.skcd, c.guid, a.course_item_id, tab, c.sknr
 from task_normal_info a
-join arr_normal c on a.xkkh=c.xkkh and a.jszgh=c.jszgh
+join arr_normal c on a.xkkh = c.xkkh and a.jszgh=c.jszgh
 union all
 select distinct -- 外语
     a.xn,a.xq,d.course_id,b.xkkh, b.jszgh, b.jsbh, b.qsz, b.jsz, decode(a.dsz, '单', 1, '双', 2, 0) as dsz,
@@ -1404,7 +1396,7 @@ select distinct -- 其它课
     a.xn, to_number(a.xq), a.kcdm ,a.xkkh, a.jszgh,
     a.jsbh, a.qsz, a.jsz, decode(a.dsz, '单', 1, '双', 2, 0) dsz, a.xqj, a.qssjd, a.skcd,
     a.bz,
-    null as course_item_id, -- todo: verify
+    '0000000000' as course_item_id, -- todo: verify
     'qt' tab,'5' sknr
 from zfxfzb.qtkapb a
 join task_other b on a.xkkh = b.xkkh
@@ -1430,7 +1422,7 @@ select distinct  -- 体育
 from zfxfzb.tykjxrwb a
 join zfxfzb.jxcdxxb b on b.jsmc = a.skdd
 join ea.sv_course_item c on c.task_course_id = a.kcdm
-where nvl(a.xkzt, 0) <> 4;
+where a.xkzt <> '4';
 
 /**
  * 教学安排（未合并）
@@ -1463,7 +1455,7 @@ select b.term_id,
     skcd as total_section,
     HEXTORAW(root_guid) as root_id
 from task_schedule a
-join ea.task_map b on b.task_code = a.xkkh and b.course_item_id = nvl(a.course_item_id, '0000000000');
+join ea.task_map b on b.task_code = a.xkkh and b.course_item_id = a.course_item_id;
 
 /**
  * 学生选课
