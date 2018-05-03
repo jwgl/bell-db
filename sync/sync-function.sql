@@ -14,7 +14,7 @@ create or replace function sync.fn_build_sync_sql(
 declare
   v_config record;
   v_foreign_table text;
-  v_column_names text; 
+  v_column_names text;
   v_key_names text;
   v_update_column_names text;
   v_update_condition text;
@@ -29,21 +29,21 @@ begin
   end if;
 
   v_foreign_table := v_config.basic_schema || '.' || v_config.foreign_table;
-  
+
   select string_agg(a.name, ', '),
     string_agg(case when a.primary_key then a.name else null end, ', '),
     string_agg(case when not a.primary_key then format('%1$s = EXCLUDED.%1$s', a.name) else null end, E',\n'),
-    string_agg(case when not a.primary_key then format('%1$s.%2$s <> EXCLUDED.%2$s', v_config.basic_table, a.name) else null end, E' or\n')
+    string_agg(case when not a.primary_key then format('%1$s.%2$s is distinct from EXCLUDED.%2$s', v_config.basic_table, a.name) else null end, E' or\n')
   into v_column_names, v_key_names, v_update_column_names, v_update_condition
   from sync.dv_basic_table_column a
   join sync.dv_foreign_table_column b on a.name = b.name
   where a.table_id = i_table_id
   and b.table_id = v_foreign_table;
-  
+
   if v_config.upsert_condition is not null then
     v_upsert_condition := 'where ' || replace(v_config.upsert_condition, '${term_id}', i_term_id::text);
   end if;
-  
+
   -- select sql
   if v_config.select_sql is not null then
     v_select_sql := v_config.select_sql;
@@ -60,11 +60,11 @@ begin
       v_select_sql := v_select_sql || E'\n' || v_upsert_condition;
     end if;
   end if;
-  
+
   if v_config.unique_index is not null then
     v_key_names := v_config.unique_index;
   end if;
-  
+
   if v_update_column_names is not null then
     v_doing := format(E'update set\n%s\nwhere %s', v_update_column_names, v_update_condition);
   else
@@ -76,17 +76,17 @@ begin
 %s
 on conflict(%s) do %s;$i$, v_config.id, v_column_names, v_select_sql,
             coalesce(v_config.unique_index, v_key_names), v_doing);
-  
+
   if v_config.delete_condition is not null then
     v_delete_condition := ' and ' || replace(v_config.delete_condition, '${term_id}', i_term_id::text);
   end if;
-  
+
   -- delete sql
   o_delete_sql = format($d$delete from %s
 where (%s) not in (
   select %2$s
   from %s %s
-) %s;$d$, v_config.id, v_key_names, v_foreign_table, v_upsert_condition, v_delete_condition);  
+) %s;$d$, v_config.id, v_key_names, v_foreign_table, v_upsert_condition, v_delete_condition);
 end;
 $$ language plpgsql;
 
@@ -103,7 +103,7 @@ begin
   if i_term_id is null then
     select id into i_term_id from ea.term where active = true;
   end if;
-  
+
   -- insert or update ordinal
   insert into sync.sync_context (id, ordinal, date_created)
   select id, ordinal, clock_timestamp()
@@ -113,7 +113,7 @@ begin
   ordinal = excluded.ordinal,
   date_modified = clock_timestamp()
   where sync_context.ordinal <> EXCLUDED.ordinal;
-  
+
   -- update schema_owner
   with owner_info as (
     select id, schema_owner
@@ -125,8 +125,8 @@ begin
   schema_owner = owner_info.schema_owner
   from owner_info
   where sync_context.id = owner_info.id
-  and coalesce(sync_context.schema_owner, '') <> coalesce(owner_info.schema_owner, '');
-  
+  and sync_context.schema_owner is distinct from owner_info.schema_owner;
+
   -- update upsert_sql and delete_sql
   with sync_sql as (
     select id, (sync.fn_build_sync_sql(id, i_term_id)).*,
@@ -143,11 +143,11 @@ begin
   date_modified = clock_timestamp()
   from sync_sql
   where sync_context.id = sync_sql.id 
-    and (coalesce(sync_context.before_sync, '') <> coalesce(sync_sql.before_sync, '')
-     or coalesce(sync_context.upsert_sql, '') <> coalesce(sync_sql.o_upsert_sql, '')
-     or coalesce(sync_context.delete_sql, '') <> coalesce(sync_sql.o_delete_sql, '')
-     or coalesce(sync_context.after_sync, '') <> coalesce(sync_sql.after_sync, ''));
-  
+   and (sync_context.before_sync is distinct from sync_sql.before_sync
+     or sync_context.upsert_sql is distinct from sync_sql.o_upsert_sql
+     or sync_context.delete_sql is distinct from sync_sql.o_delete_sql
+     or sync_context.after_sync is distinct from sync_sql.after_sync);
+
   -- update ancestors
   with depenency as (
     select a.descendant_id, array_agg(a.ancestor_id order by b.ordinal) as ancestors
@@ -161,7 +161,7 @@ begin
   date_modified = clock_timestamp()
   from depenency
   where sync_context.id = depenency.descendant_id 
-    and coalesce(sync_context.ancestors, '{}'::text[]) <> coalesce(depenency.ancestors, '{}'::text[]);
+    and sync_context.ancestors is distinct from depenency.ancestors;
 
   -- update descendants
   with depenency as (
@@ -176,7 +176,7 @@ begin
   date_modified = clock_timestamp()
   from depenency
   where sync_context.id = depenency.ancestor_id 
-    and coalesce(sync_context.descendants, '{}'::text[]) <> coalesce(depenency.descendants, '{}'::text[]);
+    and sync_context.descendants is distinct from depenency.descendants;
 end;
 $$ language plpgsql;
 
@@ -244,7 +244,7 @@ begin
         exit;
     end;
   end loop;
-  
+
   -- delete
   foreach v_sync_id in array v_descendants loop
     raise notice 'Deleting % ...', v_sync_id;
@@ -272,10 +272,75 @@ begin
         exit;
     end;
   end loop;
-  
+
   update sync.sync_log set
   end_time = clock_timestamp(),
   execute_result = v_execute_result
   where id = v_log_id;
+end;
+$$ language plpgsql;
+
+/**
+ * 检查同步数据
+ */
+create or replace function sync.fn_check_sync()
+returns void as $$
+declare
+  v_record record;
+begin
+  set local session authorization ea;
+
+  -- check task schedule root id
+  for v_record in with formal as (
+    select case when b.id is null then a.id else b.id end as id, -- 统一ID为长度不等于1的安排
+        case when b.id is null then a.root_id else b.root_id end as root_id, -- 统一ROOT_ID为长度不等于1的安排
+        a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week,
+        a.odd_even, a.day_of_week, a.start_section, a.total_section
+    from ea.sv_task_schedule a
+    left join ea.sv_task_schedule b on a.task_id = b.task_id
+    and a.teacher_id = b.teacher_id
+    and (a.place_id = b.place_id or a.place_id is null and b.place_id is null)
+    and a.start_week = b.start_week
+    and a.end_week = b.end_week
+    and a.odd_even = b.odd_even
+    and a.day_of_week = b.day_of_week
+    and a.total_section = 1
+    and (a.start_section + a.total_section = b.start_section and b.start_section not in (5, 10)
+      or b.start_section + b.total_section = a.start_section and a.start_section not in (5, 10))
+  ), schedule as (
+    select id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week,
+        min(start_section) as start_section, sum(total_section) as total_section, root_id
+    from formal
+    group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, root_id
+  )
+  select b.code as task_code, a.id as task_schedule_id, a.root_id
+  from schedule a
+  join ea.task b on a.task_id = b.id
+  where root_id not in (
+    select id from schedule
+  )
+  order by task_code
+  loop
+    raise notice 'root_id % does not exists - schedule: %, code: %',
+      v_record.root_id, v_record.task_schedule_id, v_record.task_code;
+  end loop;
+
+  -- check duplicate task_schedule
+  for v_record in select id task_schedule_id, task_code, start_week, end_week, odd_even, day_of_week, start_section, total_section
+  from ea.av_task_schedule
+  where (task_id, start_week, end_week, odd_even, day_of_week, start_section, teacher_id, place_id) in (
+    select task_id, start_week, end_week, odd_even, day_of_week, start_section, teacher_id, place_id
+    from ea.task_schedule
+    group by task_id, start_week, end_week, odd_even, day_of_week, start_section, teacher_id, place_id
+    having count(*) > 1
+  ) order by task_id, start_week, end_week, odd_even, day_of_week, start_section
+  loop
+    raise notice 'Duplicate task schedule % - % %-%周%/星期%/%-%节',
+      v_record.task_schedule_id, v_record.task_code, v_record.start_week, v_record.end_week,
+      case v_record.odd_even when 1 then '单' when 2 then '双' else '' end,
+      translate(v_record.day_of_week::text, '1234567', '一二三四五六日'),
+      v_record.start_section, v_record.start_section + v_record.total_section - 1;
+  end loop;
+  reset session authorization;
 end;
 $$ language plpgsql;
