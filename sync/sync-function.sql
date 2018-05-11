@@ -321,7 +321,7 @@ begin
   )
   order by task_code
   loop
-    raise notice 'root_id % does not exists - schedule: %, code: %',
+    raise notice 'Root ID does not exist % - schedule: %, code: %',
       v_record.root_id, v_record.task_schedule_id, v_record.task_code;
   end loop;
 
@@ -341,6 +341,18 @@ begin
       translate(v_record.day_of_week::text, '1234567', '一二三四五六日'),
       v_record.start_section, v_record.start_section + v_record.total_section - 1;
   end loop;
+
+  -- check duplicate student course
+  for v_record in select student_id, course_name, array_agg(distinct task_code order by task_code) as tasks
+  from ea.av_student_schedule
+  where term_id = (select id from ea.term where active = true)
+  group by student_id, course_name
+  having(count(distinct course_class_id) > 1)
+  loop
+    raise notice 'Duplicate student course - student: %, course: %, task code: %',
+      v_record.student_id, v_record.course_name, v_record.tasks;
+  end loop;
+
   reset session authorization;
 end;
 $$ language plpgsql;
