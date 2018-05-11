@@ -539,7 +539,6 @@ select to_number(program_id) as program_id, course_id, period_theory, period_exp
     property_id, assess_type, test_type, start_week, end_week,
     suggested_term, allowed_term, schedule_type, department_id, direction_id
 from all_program
-where program_id in (select id from ea.sv_program)
 order by program_id, suggested_term, course_id;
 
 /**
@@ -704,9 +703,9 @@ select xh as id,
     sv_direction.id as direction_id,
     to_number('20' || xh) as admission_id
 from zfxfzb.xsjbxxb
-left join zfxfzb.xydmb on xy = xymc
+join zfxfzb.xydmb on xy = xymc
+join zfxfzb.xslbdmb on xslb = xslbmc
 left join zfxfzb.xjyddmb on ydlb = xjydmc
-left join zfxfzb.xslbdmb on xslb = xslbmc
 left join zfxfzb.mzdmb on mz = mzmc
 left join zfxfzb.zzmmdmb on zzmm = zzmmmc
 left join ea.sv_admin_class on xzb = name
