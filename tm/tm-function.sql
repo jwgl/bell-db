@@ -1,7 +1,7 @@
 /**
  * 查找场地
  */
-CREATE OR REPLACE FUNCTION tm.sp_find_available_place (
+create or replace function tm.sp_find_available_place (
   p_term_id integer,       -- 学期
   p_start_week integer,    -- 开始周
   p_end_week integer,      -- 结束周
@@ -11,12 +11,12 @@ CREATE OR REPLACE FUNCTION tm.sp_find_available_place (
   p_place_type varchar(20),-- 结束节
   p_user_type integer,     -- 用户类型
   p_adv_user boolean       -- 是否高级用户
-) RETURNS TABLE(
+) returns table (
    id varchar(6),          -- 场地ID
    name varchar(50),       -- 场地名称
    seat integer,           -- 座位数
    count bigint            -- 预约次数
-) AS $$
+) as $$
 declare
   p_start_section integer;
   p_total_section integer;
@@ -86,16 +86,16 @@ begin
       )
   );
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 /**
  * 查询冲突的教室借用项
  */
-CREATE OR REPLACE FUNCTION tm.sp_find_booking_conflict(
+create or replace function tm.sp_find_booking_conflict (
   p_form_id bigint -- 借用表单ID
-) RETURNS TABLE (
+) returns table (
   item_id bigint   -- 冲突的教室借用项ID
-) AS $$
+) as $$
 begin
   return query
   with series as ( -- 生成序列，用于判断周次是否相交
@@ -128,9 +128,9 @@ begin
       )
   );
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
-create or replace function tm.timeslot_intersect(
+create or replace function tm.timeslot_intersect (
   p_start_week_1 integer,
   p_end_week_1 integer,
   p_odd_even_1 integer,
@@ -148,7 +148,7 @@ begin
   return p_day_of_week_1 = p_day_of_week_2
      and int4range(p_start_section_1, p_start_section_1 + p_total_section_1)
       && int4range(p_start_section_2, p_start_section_2 + p_total_section_2)
-     and exists(
+     and exists (
        with series as ( -- 生成序列，用于判断周次是否相交
          select i from generate_series(1, 30) as s(i)
        )
@@ -159,7 +159,7 @@ begin
        and (p_odd_even_2 = 0 or p_odd_even_2 = 1 and i % 2 = 1 or p_odd_even_2 = 2 and i % 2 = 0)
      );
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 /**
  * 查询指定行政班的学生考勤统计
@@ -233,7 +233,7 @@ begin
   join ea.admin_class on student.admin_class_id = admin_class.id
   order by total desc, leave desc;
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 /**
  * 查询指定管理员（班主任/辅导员）的学生考勤统计
@@ -318,7 +318,7 @@ begin
   order by total desc, leave desc
   limit p_limit;
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 /**
  * 查询指定管理员（班主任/辅导员）按行政班统计存在考勤数据的学生数
@@ -376,7 +376,7 @@ begin
   group by 1, 2
   order by 3 desc;
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 /**
  * 查询指定学院的学生考勤统计
@@ -459,7 +459,7 @@ begin
   order by total desc, leave desc
   limit p_limit;
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 /**
  * 查询指定学院按行政班统计存在考勤数据的学生数
@@ -517,7 +517,7 @@ begin
   group by 1, 2
   order by 3 desc;
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 /**
  * 按时间段查询学生考勤统计，用于点名显示
@@ -612,7 +612,7 @@ begin
   from attendance
   order by 1;
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 /**
  * 按安排和学生查询学生考勤统计，用于点名时实时更新
@@ -687,7 +687,7 @@ begin
   from attendance
   order by 1;
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 /**
  * 按教学班查询学生考勤统计
@@ -775,7 +775,7 @@ begin
   from attendance
   order by 1;
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 /**
  * 按教学班和学号查询学生点名详情
@@ -850,7 +850,7 @@ begin
   left join ea.course_item on task.course_item_id = course_item.id
   order by week, day_of_week, start_section;
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 /**
  * 按教学班和学号查询学生请假详情
@@ -918,7 +918,7 @@ begin
   left join ea.course_item on task.course_item_id = course_item.id
   order by week, day_of_week, start_section;
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 /**
  * 按学期和学号查询学生点名详情
@@ -993,7 +993,7 @@ begin
   left join ea.course_item on task.course_item_id = course_item.id
   order by week, day_of_week, start_section;
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 /**
  * 按学期和学号查询学生请假详情
@@ -1062,7 +1062,7 @@ begin
   left join ea.course_item on task.course_item_id = course_item.id
   order by week, day_of_week, start_section;
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 /**
  * 按学生所在学院查询取消考试资格统计
@@ -1183,7 +1183,7 @@ begin
   join ea.admin_class on student.admin_class_id = admin_class.id
   order by id, course_class_code;
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 /**
  * 按开课学院统计教学班取消考试资格学生数
@@ -1307,11 +1307,11 @@ begin
   group by 1, 2, 3, 4, 5, 6
   order by 2;
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 /**
  * 按教学班查询取消考试资格记录
-  */
+ */
 create or replace function tm.sp_get_exam_disqual_by_course_class (
   p_course_class_id uuid          -- 教学班ID
 ) returns table (
@@ -1422,4 +1422,80 @@ begin
      or ccd.disqualified
   order by id;
 end;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
+
+/**
+ * 构建用户菜单
+ */
+create or replace function tm.sp_build_menu(
+  p_roles text[] -- 角色数组
+) returns text   -- 菜单
+as $$
+declare
+  v_result text;
+begin
+  with recursive menu_tree as ( -- 从根开始生成菜单树
+    select jb
+    from menu_with_count
+    where submenu_count = 0
+    union all
+    select case when count(c) = (p).submenu_count then
+        -- 只有所有子节点聚齐时，才将子节点加入父节点
+        jsonb_set((p).jb, '{children}', (
+          select jsonb_agg(value order by value->'display_order')
+          from jsonb_array_elements((p).jb->'children' || jsonb_agg((c).jb - 'parent_id' - 'path_level'))
+        ))
+      else
+        -- 当所有子节点未聚齐时，将未连接的子节点重新加入worktable
+        unnest(array_agg((c).jb))
+      end
+    from (
+      select p, c
+      from menu_with_count p
+      join menu_tree c ON c.jb->'parent_id' = p.jb->'id'
+    ) t
+    group by p
+  ), menu_with_level as ( -- 菜单等级和父ID
+    select id, label, display_order,
+      length(id) - length(replace(id, '.', '')) as path_level,
+      substring(id, 1, length(id) - nullif(position('.' in reverse(id)), 0)) as parent_id
+    from tm.menu
+  ), menu_item as ( -- 菜单项
+    select a.*
+    from tm.menu_item a
+    join tm.permission b on a.permission_id = b.id
+    join tm.role_permission c on c.permission_id = b.id
+    where c.role_id = any(p_roles)
+  ), menu_with_items as ( -- 包含菜单项的菜单
+    select menu.id, jsonb_agg(json_build_object(
+        'id', menu_item.id,
+        'label', menu_item.label,
+        'url', menu_item.url,
+        'display_order', menu_item.display_order
+      ) order by menu_item.display_order) as children
+    from tm.menu as menu
+    join menu_item on menu_item.menu_id = menu.id
+    group by menu.id
+  ), menu_with_parent as ( -- 递归查询“包含菜单项的菜单”的父菜单
+    select a.*, b.children
+    from menu_with_level a
+    join menu_with_items b on a.id = b.id
+    union
+    select b.*, coalesce(c.children, jsonb '[]') as children
+    from menu_with_parent a
+    join menu_with_level b on a.parent_id = b.id
+    left join menu_with_items c on b.id = c.id
+  ), menu_with_count as (
+    select to_jsonb(p) as jb, count(c) as submenu_count
+    from (
+      select p, c
+      from menu_with_parent p
+      left join menu_with_parent c on c.parent_id = p.id
+    ) t
+    group by p
+  )
+  select jsonb_pretty(jsonb_object_agg(jb->>'id', jb->'children')) into v_result from menu_tree
+  where jb @> '{"path_level": 0}';
+  return v_result;
+end;
+$$ language plpgsql;
