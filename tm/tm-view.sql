@@ -584,7 +584,9 @@ select p.id as program_id,
     course.credit,
     sc.practice_credit,
     suggested_term,
-    sc.revise_version
+    sc.revise_version,
+    sc.id as scheme_course_id,
+    scheme.id as scheme_id
 from scheme_course sc
 join ea.course on sc.course_id = course.id
 join scheme on scheme.id = sc.scheme_id
@@ -594,7 +596,7 @@ join ea.subject s on s.id = m.subject_id
 join latest_scheme on latest_scheme.program_id = scheme.program_id
 join ea.property on property.id = sc.property_id
 left join ea.direction d on d.id = sc.direction_id
-where m.grade in (2016, 2017)
+where m.grade >= 2016
 and scheme.version_number <= latest_scheme.version_number
 and (sc.revise_version is null or sc.revise_version > latest_scheme.version_number)
 union all
@@ -607,7 +609,9 @@ select p.id as program_id,
     course.credit,
     sc.practice_credit,
     suggested_term,
-    sc.revise_version
+    sc.revise_version,
+    sc.id as scheme_course_id,
+    scheme.id as scheme_id
 from scheme_temp_course sc
 join temp_course course on sc.temp_course_id = course.id
 join scheme on scheme.id = sc.scheme_id
@@ -617,13 +621,36 @@ join ea.subject s on s.id = m.subject_id
 join latest_scheme on latest_scheme.program_id = scheme.program_id
 join ea.property on property.id = sc.property_id
 left join ea.direction d on d.id = sc.direction_id
-where m.grade in (2016, 2017)
+where m.grade >=2016
 and scheme.version_number <= latest_scheme.version_number
 and (sc.revise_version is null or sc.revise_version > latest_scheme.version_number);
 
--- 辅助视图：最新培养方案
-create or replace view av_latest_scheme as
+-- 辅助视图：最新培养方案学分统计
+create or replace view av_latest_scheme_credit as
 select program_id, subject, direction, property, sum(credit) as credit, sum(practice_credit) as practice_credit
 from av_latest_scheme_course
 group by program_id, subject, direction, property
 order by 1, 2, 3, 4;
+
+-- 检查视图：培养方案与执行计划学分比较
+create or replace view tm.cv_scheme_program_credit as
+with scheme_info as (
+  select program_id, subject, property, direction, sum(credit) as total_credit
+  from tm.av_latest_scheme_course
+  group by program_id, subject, property, direction
+), program_info as (
+  select pc.program_id, p.name as property, d.name as direction, sum(credit) as total_credit
+  from ea.program_course pc
+  join ea.property p on pc.property_id = p.id
+  join ea.course c on pc.course_id = c.id
+  left join ea.direction d on pc.direction_id = d.id
+  group by pc.program_id, p.name, d.name
+)
+select a.program_id, a.subject, a.property, a.direction,
+  a.total_credit as scheme_credit,
+  b.total_credit as program_credit,
+  a.total_credit = b.total_credit as is_same
+from scheme_info a
+left join program_info b on a.program_id = b.program_id and a.property = b.property
+  and a.direction is not distinct from b.direction
+order by 1, 3;
