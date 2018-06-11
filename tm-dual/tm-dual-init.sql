@@ -17,7 +17,6 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DUALDEGREE_
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DUALDEGREE_ADMIN',      	  'PERM_DUALDEGREE_AGREEMENT_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DUALDEGREE_STUDENT',         'PERM_DUALDEGREE_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DUALDEGREE_MENTOR',      	  'PERM_DUALDEGREE_PAPER_APPROVE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DUALDEGREE_ADMIN_DEPT',      'PERM_DUALDEGREE_PAPER_APPROVE');
 
 INSERT INTO tm.workflow (id,name) VALUES ('dualdegree.application', '国内学位申请');
 
