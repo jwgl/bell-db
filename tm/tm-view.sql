@@ -373,6 +373,8 @@ with active_term as (
           courseteacher.name as teacher_name,
           courseteacher.academic_title,
           department.name as department_name,
+          array_to_string(array_agg(distinct course_1.name), ',', '*') as course_name,
+          course_dept.name as course_dept_name,
           courseclass.term_id as termid
     from ea.task_schedule schedule
     join ea.task task on schedule.task_id = task.id
@@ -380,9 +382,11 @@ with active_term as (
     join ea.course course_1 on courseclass.course_id = course_1.id
     join ea.place place on schedule.place_id = place.id
     join ea.teacher courseteacher on courseclass.teacher_id = courseteacher.id
+    join ea.department course_dept on courseclass.department_id = course_dept.id
     join ea.department department on courseteacher.department_id = department.id
     where courseclass.term_id = ((select active_term.id from active_term)) and place.building <> '北理工'
     and schedule.end_week > (( select date_part('week', now()) - date_part('week', term.start_date) + 1 from ea.term where term.active is true))
+    group by courseteacher.id,courseteacher.name,courseteacher.academic_title,department.name,course_dept.name,courseclass.term_id
 ), new_teacher as (
     select course_teacher.teacher_id
     from course_teacher
@@ -397,15 +401,17 @@ with active_term as (
     from tm.observation_form form
     where form.observer_type =1 and (form.term_id + 20) > (( select active_term.id from active_term))
 )
-select distinct active.teacher_id,
+select active.teacher_id,
     active.teacher_name,
     active.department_name,
     active.academic_title,
     a.teacher_id as isnew,
-    inspect4.teacher_id as has_supervisor
+    inspect4.teacher_id as has_supervisor,
+    array_to_string(array_agg(distinct concat(active.course_dept_name,': ',active.course_name)), ';') as course_name
 from active_teacher active
 left join new_teacher a on active.teacher_id = a.teacher_id
-left join inspect4 on active.teacher_id = inspect4.teacher_id;
+left join inspect4 on active.teacher_id = inspect4.teacher_id
+group by active.teacher_id,active.teacher_name,active.department_name,active.academic_title,a.teacher_id,inspect4.teacher_id;
 
 -- JOIN课表，抽取最全常用字段
 create or replace view tm.dv_observation_view as

@@ -17,13 +17,12 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DUALDEGREE_
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DUALDEGREE_ADMIN',      	  'PERM_DUALDEGREE_AGREEMENT_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DUALDEGREE_STUDENT',         'PERM_DUALDEGREE_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DUALDEGREE_MENTOR',      	  'PERM_DUALDEGREE_PAPER_APPROVE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DUALDEGREE_ADMIN_DEPT',      'PERM_DUALDEGREE_PAPER_APPROVE');
 
 INSERT INTO tm.workflow (id,name) VALUES ('dualdegree.application', '国内学位申请');
 
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('dualdegree.application','dualdegree.application.approve', '初审','/web/dualdegree/approvers/${userId}/applications#/${todo}/${id}/workitems/${workitem}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('dualdegree.application','dualdegree.application.reject', '退回','/web/dualdegree/students/${userId}/applications#/${id}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('dualdegree.application','dualdegree.application.view', '查看','/web/dualdegree/students/${userId}/applications#/${id}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('dualdegree.application','dualdegree.application.process', '提交论文','/web/dualdegree/students/${userId}/applications#/${id}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('dualdegree.application','dualdegree.application.finish', '审批论文','/web/dualdegree/approvers/${userId}/papers#/${todo}/${id}/workitems/${workitem}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('dualdegree.application','dualdegree.application.review', '预审论文','/web/dualdegree/approvers/${userId}/papermentors#/${todo}/${id}/workitems/${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('dualdegree.application','dualdegree.application.check',       '初审',     '/web/dualdegree/checkers/${userId}/applications#/${todo}/${id}/workitems/${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('dualdegree.application','dualdegree.application.reject',      '退回',     '/web/dualdegree/students/${userId}/applications#/${id}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('dualdegree.application','dualdegree.application.submitPaper', '提交论文', '/web/dualdegree/students/${userId}/applications#/${id}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('dualdegree.application','dualdegree.application.checkPaper',  '预审论文', '/web/dualdegree/checkers/${userId}/papers#/${todo}/${id}/workitems/${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('dualdegree.application','dualdegree.application.approvePaper','审批论文', '/web/dualdegree/mentors/${userId}/papers#/${todo}/${id}/workitems/${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('dualdegree.application','dualdegree.application.view',        '查看',     '/web/dualdegree/students/${userId}/applications#/${id}');
