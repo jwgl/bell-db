@@ -1461,7 +1461,7 @@ begin
       substring(id, 1, length(id) - nullif(position('.' in reverse(id)), 0)) as parent_id
     from tm.menu
   ), menu_item as ( -- 菜单项
-    select a.*
+    select distinct a.*
     from tm.menu_item a
     join tm.permission b on a.permission_id = b.id
     join tm.role_permission c on c.permission_id = b.id
@@ -1497,5 +1497,18 @@ begin
   select jsonb_pretty(jsonb_object_agg(jb->>'id', jb->'children')) into v_result from menu_tree
   where jb @> '{"path_level": 0}';
   return v_result;
+end;
+$$ language plpgsql;
+
+/**
+ * 更新菜单项状态
+ */
+create or replace function tm.sp_update_menu_item_status(
+  applications text[] -- 依赖的应用
+) returns integer as $$
+begin
+  update tm.menu_item
+  set enabled = applications @> depends_on;
+  return 1;
 end;
 $$ language plpgsql;

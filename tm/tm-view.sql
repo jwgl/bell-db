@@ -641,22 +641,27 @@ order by 1, 2, 3, 4;
 -- 检查视图：培养方案与执行计划学分比较
 create or replace view tm.cv_scheme_program_credit as
 with scheme_info as (
-  select program_id, subject, property, direction, sum(credit) as total_credit
+  select program_id, subject, property, direction, sum(credit) as credit
   from tm.av_latest_scheme_course
   group by program_id, subject, property, direction
 ), program_info as (
-  select pc.program_id, p.name as property, d.name as direction, sum(credit) as total_credit
+  select pc.program_id, p.name as property, d.name as direction, sum(credit) as credit
   from ea.program_course pc
   join ea.property p on pc.property_id = p.id
   join ea.course c on pc.course_id = c.id
   left join ea.direction d on pc.direction_id = d.id
   group by pc.program_id, p.name, d.name
+), program_property as (
+  select pp.program_id, p.name as property, pp.credit
+  from ea.program_property pp
+  join ea.property p on pp.property_id = p.id
 )
 select a.program_id, a.subject, a.property, a.direction,
-  a.total_credit as scheme_credit,
-  b.total_credit as program_credit,
-  a.total_credit = b.total_credit as is_same
+  a.credit as scheme_course_total_credit,
+  c.credit as program_property_credit,
+  b.credit as program_course_total_credit
 from scheme_info a
+join program_property c on a.program_id = c.program_id and a.property = c.property
 left join program_info b on a.program_id = b.program_id and a.property = b.property
   and a.direction is not distinct from b.direction
 order by 1, 3;
