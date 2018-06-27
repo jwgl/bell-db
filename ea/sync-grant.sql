@@ -2,7 +2,7 @@
  * database zf/zfxfzb
  */
 grant select on zfxfzb.xydmb         to ea with grant option; -- 学院
-grant select on zfxfzb.bjdmb         to ea; -- 班级
+grant select on zfxfzb.bjdmb         to ea with grant option; -- 班级
 grant select on zfxfzb.yhb           to ea; -- 用户表
 grant select on zfxfzb.jsxxb         to ea; -- 教师
 grant select on zfxfzb.xsjbxxb       to ea with grant option; -- 学生

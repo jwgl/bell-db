@@ -62,6 +62,7 @@ insert into sync.sync_config(id, basic_schema, basic_table, foreign_table) value
 ('ea.timeplate_admin_class', 'ea', 'timeplate_admin_class', 'sv_timeplate_admin_class'),
 ('ea.timeplate_task',        'ea', 'timeplate_task',        'sv_timeplate_task'),
 ('ea.course_class',          'ea', 'course_class',          'sv_course_class'),
+('ea.course_class_condition','ea', 'course_class_condition','sv_course_class_condition'),
 ('ea.course_class_program',  'ea', 'course_class_program',  'sv_course_class_program'),
 ('ea.task',                  'ea', 'task',                  'sv_task'),
 ('ea.task_teacher',          'ea', 'task_teacher',          'sv_task_teacher'),
@@ -91,6 +92,15 @@ before_sync = $$insert into ea.sv_course_class_map values(null);$$,
 upsert_condition = $$term_id = ${term_id}$$,
 delete_condition = $$term_id = ${term_id}$$
 where id = 'ea.course_class';
+
+update sync.sync_config set
+upsert_condition = $$term_id = ${term_id}$$,
+delete_condition = $$course_class_id in (
+    select id
+    from ea.course_class
+    where term_id = ${term_id}
+)$$
+where id = 'ea.course_class_condition';
 
 update sync.sync_config set
 upsert_condition = $$term_id = ${term_id}$$,
@@ -146,7 +156,7 @@ select_sql = $$with task_schedule as (
   from formal
   group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, root_id
 )
-select * from schedule where root_id in (select id from schedule)$$,
+select * from schedule where (root_id is null or root_id in (select id from schedule))$$,
 upsert_condition = $$term_id = ${term_id}$$,
 delete_condition = $$task_id in (
     select task.id

@@ -430,6 +430,7 @@ create foreign table ea.sv_course_class (
 -- 教学班-选课条件
 drop foreign table if exists ea.sv_course_class_condition;
 create foreign table ea.sv_course_class_condition (
+    term_id numeric(5),
     course_class_id uuid,
     include boolean,
     condition_group integer,

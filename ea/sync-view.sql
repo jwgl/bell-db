@@ -222,6 +222,15 @@ select to_number(a.jxjhh) as id,
     a.xydm as department_id
 from zfxfzb.jxjhzyxxb a join zfxfzb.zydmb b on a.zydm = b.zydm
 where a.xydm is not null
+union all
+select to_number(nj || sszydm) as id,
+    a.sszydm as subject_id,
+    a.nj as grade,
+    0 as candidate_type,
+    null, null,
+    a.ssxydm as department_id
+from zfxfzb.bjdmb a join zfxfzb.zydmb b on a.sszydm = b.zydm
+where a.ssxydm = 61
 order by id;
 
 /**
@@ -1097,10 +1106,10 @@ with task_base as ( -- 所有任务
   union
   select * from with_cross_direction
 )
-select course_class_id, include, condition_group, condition_name, condition_value
+select term_id, course_class_id, include, condition_group, condition_name, condition_value
 from condition_normal
 join ea.course_class_map on course_class_code = code
-order by 1, 2 desc, 3, 5;
+order by 1, 2, 3 desc, 4, 6;
 
 /**
  * 教学班-计划
