@@ -256,7 +256,7 @@ left join free_listen on (
 create or replace view tm.dva_valid_free_listen as
 select item.id as item_id,
        form.id as form_id,
-       course_class.term_id,
+       form.term_id,
        form.student_id,
        course_class.id as course_class_id,
        task.id as task_id,
@@ -270,7 +270,7 @@ where form.status = 'APPROVED'
 union
 select item.id as item_id,
        form.id as form_id,
-       course_class.term_id,
+       form.term_id,
        form.student_id,
        course_class.id as course_class_id,
        task.id as task_id,
