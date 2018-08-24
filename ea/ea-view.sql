@@ -22,7 +22,16 @@ order by display_order;
 -- 辅助视图
 -- 教学班
 create or replace view ea.av_course_class as
-select cc.term_id, cc.id, cc.code, c.name as course, d.name as department, p.name as property,
+select cc.term_id, cc.id, cc.code, c.name as course,
+  c.credit, d.name as department,
+  coalesce(p.name, array_to_string(array(
+    select distinct property.name
+    from ea.course_class_program ccp
+    join ea.program_course pc on pc.program_id = ccp.program_id
+    join ea.property on pc.property_id = property.id
+    where pc.course_id = c.id
+    and ccp.course_class_id = cc.id
+    ), ',')) as property,
   t.name as teacher,
   cc.start_week, cc.end_week,
   case cc.assess_type
@@ -35,7 +44,13 @@ select cc.term_id, cc.id, cc.code, c.name as course, d.name as department, p.nam
     when 1 then '集中'
     when 2 then '分散'
     else '其它'
-  end as test_type
+  end as test_type,
+  (
+    select count(distinct student_id)
+    from task_student
+    join task on task_student.task_id = task.id
+    where task.course_class_id = cc.id
+  ) as student_count
 from course_class cc
 join course c on c.id = cc.course_id
 join teacher t on t.id = cc.teacher_id
@@ -70,6 +85,7 @@ join course c on c.id = cc.course_id
 join teacher te on te.id = a.teacher_id
 left join course_item ci on ci.id = task.course_item_id;
 
+-- 学生课表
 create or replace view ea.av_student_schedule as
 select student.id as student_id, student.name as student_name, a.id as task_schedule_id, cc.term_id, c.id as course_id, c.name as course_name, ci.name as course_item,
     te.id as teacher_id, te.name as teacher_name, a.start_week, a.end_week,
@@ -95,3 +111,74 @@ join major m on m.id = student.major_id
 join subject s on s.id = m.subject_id
 left join teacher t1 on t1.id = ac.counsellor_id
 left join teacher t2 on t2.id = ac.supervisor_id;
+
+-- 教学工作量
+create or replace view ea.av_teacher_workload as
+with teacher_schedule as (
+  select term_id,
+    course_class.department_id as course_class_department_id,
+    teacher.id as teacher_id,
+    teacher.name as teacher_name,
+    teacher.department_id as teacher_department_id,
+    task.code || '|' || ea.fn_timetable_to_string(task_schedule.start_week, task_schedule.end_week, task_schedule.odd_even,
+      task_schedule.day_of_week, task_schedule.start_section, task_schedule.total_section) as task_code,
+    course_class.property_id,
+    ea.fn_weeks_to_integer(task_schedule.start_week, task_schedule.end_week, task_schedule.odd_even)::bit(32) weeks,
+    task_schedule.day_of_week,
+    ea.fn_sections_to_integer(task_schedule.start_section, task_schedule.total_section)::bit(16) sections,
+    case
+      when course_class.property_id is not null
+        then array[course_class.property_id]
+      else array(select distinct property_id
+        from ea.program_course pc
+        join ea.course_class_program ccp on pc.program_id = ccp.program_id
+        where pc.course_id = course_class.course_id
+        and ccp.course_class_id = course_class.id)
+    end as course_class_properties
+  from ea.course_class
+  join ea.task on task.course_class_id = course_class.id
+  join ea.task_schedule on task_schedule.task_id = task.id
+  join ea.teacher on task_schedule.teacher_id = teacher.id
+  join ea.department course_class_department on course_class_department.id = course_class.department_id
+  join ea.department teacher_department on teacher_department.id = teacher.department_id
+  where task_schedule.place_id not like 'B%'
+  and term_id >= (select id - 20 from ea.term where active = true)
+  and exists(select * from ea.task_student where task_student.task_id = task.id)
+), schedule_normal as (
+  select term_id, course_class_department_id, teacher_id, teacher_name, teacher_department_id, property_id, weeks, day_of_week, sections, course_class_properties,
+    array_agg(task_code order by task_code) as task_codes
+  from teacher_schedule
+  group by term_id, course_class_department_id, teacher_id, teacher_name, teacher_department_id, property_id, weeks, day_of_week, sections, course_class_properties
+)
+select term_id, course_class_department_id, teacher_id, teacher_name, teacher_department_id, course_class_properties,
+  length(replace(weeks::text, '0', '')) * length(replace(sections::text, '0', '')) as workload, task_codes
+from schedule_normal;
+
+-- 按开课单位查询教师工作量
+create or replace view ea.av_teacher_workload_by_course_class_department as
+select term_id, course_class_department.name as course_class_department,
+  t.id as teacher_id, t.name as teacher_name, teacher_department.name as teacher_department,
+  t.is_external or (course_class_department.name <> teacher_department.name) as is_external,
+  sum(workload) as workload,
+  sum(workload) filter (where tw.course_class_properties && array[1]) as public_compulsory_workload,
+  sum(workload) filter (where tw.course_class_properties && array[2,3]) as public_elective_workload
+from av_teacher_workload tw
+join teacher t on tw.teacher_id = t.id
+join department course_class_department on tw.course_class_department_id = course_class_department.id
+join department teacher_department on tw.teacher_department_id = teacher_department.id
+group by term_id, course_class_department.name, t.id, t.name, teacher_department.name;
+
+create or replace view ea.av_teacher_workload_by_teacher_department as
+select term_id, d.id as department_id, d.name as department, t.id as teacher_id, t.name as teacher_name, t.is_external,
+  count(*) as workload,
+  count(*) filter (where tw.properties && array[1]) as public_compulsory_workload,
+  count(*) filter (where tw.properties && array[2,3]) as public_elective_workload
+from av_teacher_workload tw
+join teacher t on tw.teacher_id = t.id
+join department d on tw.teacher_department_id = d.id
+group by term_id, d.id, d.name, t.id, t.name;
+
+with x as (
+
+)
+select department, term_id, sum(workload) from x group by department, term_id;
