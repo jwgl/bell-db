@@ -168,6 +168,7 @@ join department course_class_department on tw.course_class_department_id = cours
 join department teacher_department on tw.teacher_department_id = teacher_department.id
 group by term_id, course_class_department.name, t.id, t.name, teacher_department.name;
 
+-- 按教师所在单位查询教师工作量
 create or replace view ea.av_teacher_workload_by_teacher_department as
 select term_id, d.id as department_id, d.name as department, t.id as teacher_id, t.name as teacher_name, t.is_external,
   count(*) as workload,
@@ -177,8 +178,3 @@ from av_teacher_workload tw
 join teacher t on tw.teacher_id = t.id
 join department d on tw.teacher_department_id = d.id
 group by term_id, d.id, d.name, t.id, t.name;
-
-with x as (
-
-)
-select department, term_id, sum(workload) from x group by department, term_id;
