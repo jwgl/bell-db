@@ -1425,9 +1425,9 @@ end;
 $$ language plpgsql;
 
 /**
- * 构建用户菜单
+ * 获取用户菜单
  */
-create or replace function tm.sp_build_menu(
+create or replace function tm.sp_get_user_menu (
   p_roles text[] -- 角色数组
 ) returns text   -- 菜单
 as $$
@@ -1466,6 +1466,7 @@ begin
     join tm.permission b on a.permission_id = b.id
     join tm.role_permission c on c.permission_id = b.id
     where c.role_id = any(p_roles)
+    and a.enabled = true
   ), menu_with_items as ( -- 包含菜单项的菜单
     select menu.id, jsonb_agg(json_build_object(
         'id', menu_item.id,
@@ -1503,7 +1504,7 @@ $$ language plpgsql;
 /**
  * 更新菜单项状态
  */
-create or replace function tm.sp_update_menu_item_status(
+create or replace function tm.sp_update_menu_status (
   applications text[] -- 依赖的应用
 ) returns integer as $$
 begin
