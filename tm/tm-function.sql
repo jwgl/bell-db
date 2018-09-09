@@ -18,31 +18,19 @@ create or replace function tm.sp_find_available_place (
    count bigint            -- 预约次数
 ) as $$
 declare
-  p_start_section integer;
-  p_total_section integer;
   p_includes integer[];
-  p_term_start_week integer;
-  p_term_max_week integer;
+  p_weeks_integer integer;
+  p_section_integer integer;
 begin
-  select start, total, includes
-  into p_start_section, p_total_section, p_includes
+  select ea.fn_sections_to_integer(start, total), includes
+  into p_section_integer, p_includes
   from tm.booking_section bs
   where bs.id = p_section_id;
 
-  select start_week, max_week
-  into p_term_start_week, p_term_max_week
-  from ea.term
-  where term.id = p_term_id;
+  select ea.fn_weeks_to_integer(p_start_week, p_end_week, p_odd_even)
+  into p_weeks_integer;
 
-  return query
-  with series as ( -- 生成序列，用于判断周次是否相交
-    select i from generate_series(p_term_start_week, p_term_max_week) as s(i)
-  ), booking_weeks as (
-    select i from series
-    where i between p_start_week and p_end_week
-      and (p_odd_even = 0 or p_odd_even = 1 and i % 2 = 1 or p_odd_even = 2 and i % 2 = 0)
-  )
-  select p1.id, p1.name, p1.seat, (
+  return query select p1.id, p1.name, p1.seat, (
     select count(*)
     from booking_form bf
     join booking_item bi on bf.id = bi.form_id
@@ -51,13 +39,7 @@ begin
     and bf.status in ('SUBMITTED', 'CHECKED')
     and bi.day_of_week = p_day_of_week
     and bs.includes && p_includes
-    and exists (
-          select i from booking_weeks
-          intersect
-          select i from series
-          where i between start_week and end_week
-            and (odd_even = 0 or odd_even = 1 and i % 2 = 1 or odd_even = 2 and i % 2 = 0)
-    )
+    and (ea.fn_weeks_to_integer(start_week, end_week, odd_even) & p_weeks_integer) <> 0
     and bi.place_id = p1.id
   ) as count
   from ea.place p1
@@ -75,16 +57,10 @@ begin
     from tm.ev_place_usage pu
     where term_id = p_term_id
       and day_of_week = p_day_of_week
-      and int4range(p_start_section, p_start_section + p_total_section)
-       && int4range(start_section, start_section + total_section)
-      and exists (
-            select * from booking_weeks
-            intersect
-            select * from series
-            where i between start_week and end_week
-              and (odd_even = 0 or odd_even = 1 and i % 2 = 1 or odd_even = 2 and i % 2 = 0)
-      )
-  );
+      and (ea.fn_sections_to_integer(start_section, total_section) & p_section_integer) <> 0
+      and (ea.fn_weeks_to_integer(start_week, end_week, odd_even) & p_weeks_integer) <> 0
+  )
+  order by p1.id;
 end;
 $$ language plpgsql;
 
@@ -1439,22 +1415,17 @@ begin
     from menu_with_count
     where submenu_count = 0
     union all
-    select case when count(c) = (p).submenu_count then
-        -- 只有所有子节点聚齐时，才将子节点加入父节点
-        jsonb_set((p).jb, '{children}', (
-          select jsonb_agg(value order by value->'display_order')
-          from jsonb_array_elements((p).jb->'children' || jsonb_agg((c).jb - 'parent_id' - 'path_level'))
-        ))
-      else
-        -- 当所有子节点未聚齐时，将未连接的子节点重新加入worktable
-        unnest(array_agg((c).jb))
-      end
+    select jsonb_set((p).jb, '{children}', (
+        select jsonb_agg(value order by value->'display_order')
+        from jsonb_array_elements((p).jb->'children' || jsonb_agg((c).jb - 'parent_id' - 'path_level'))
+      ))
     from (
       select p, c
       from menu_with_count p
       join menu_tree c ON c.jb->'parent_id' = p.jb->'id'
     ) t
     group by p
+    having count(c) = (p).submenu_count -- 只有所有子节点聚齐时，才将子节点加入父节点
   ), menu_with_level as ( -- 菜单等级和父ID
     select id, label, display_order,
       length(id) - length(replace(id, '.', '')) as path_level,
