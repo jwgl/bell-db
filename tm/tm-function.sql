@@ -1484,3 +1484,19 @@ begin
   return 1;
 end;
 $$ language plpgsql;
+
+/**
+ * 同步用户密码
+ */
+create or replace function tm.sp_sync_user_password (
+  p_user_id text
+) returns integer as $$
+begin
+  update tm.system_user a
+  set password = b.password
+  from tm.sv_system_user b
+  where a.id = b.id
+  and a.id = p_user_id;
+  return 1;
+end;
+$$ language plpgsql;
