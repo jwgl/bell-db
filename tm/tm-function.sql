@@ -55,8 +55,8 @@ begin
     except
     select place_id
     from tm.ev_place_usage pu
-    where term_id = p_term_id
-      and day_of_week = p_day_of_week
+    where pu.term_id = p_term_id
+      and pu.day_of_week = p_day_of_week
       and (ea.fn_sections_to_integer(start_section, total_section) & p_section_integer) <> 0
       and (ea.fn_weeks_to_integer(start_week, end_week, odd_even) & p_weeks_integer) <> 0
   )
@@ -72,37 +72,32 @@ create or replace function tm.sp_find_booking_conflict (
 ) returns table (
   item_id bigint   -- 冲突的教室借用项ID
 ) as $$
+declare
+  p_term_id integer;
 begin
+  select term_id into p_term_id from booking_form where id = p_form_id;
+
   return query
-  with series as ( -- 生成序列，用于判断周次是否相交
-    select i from generate_series(1, 30) as s(i)
-  ), form_item as ( -- 备选教室借用项
-    select form.term_id, item.id item_id, item.place_id,
-           item.start_week, item.end_week, item.odd_even, item.day_of_week,
-           bs.start as start_section, bs.total as total_section
+  with form_item as ( -- 备选教室借用项
+    select item.id item_id, item.place_id,
+           ea.fn_weeks_to_integer(item.start_week, item.end_week, item.odd_even) as weeks,
+           item.day_of_week,
+           ea.fn_sections_to_integer(bs.start, bs.total) as sections
     from booking_form form
     join booking_item item on form.id = item.form_id
     join booking_section bs on item.section_id = bs.id
     where form.id = p_form_id
+  ), place_usage as (
+    select place_id, start_week, end_week, odd_even, day_of_week, start_section, total_section
+    from tm.ev_place_usage
+    where term_id = p_term_id
   )
-  select fi.item_id
+  select distinct fi.item_id
   from form_item fi
-  where exists (
-    select place_id
-    from tm.ev_place_usage pu
-    where pu.term_id = fi.term_id
-      and pu.place_id = fi.place_id
-      and pu.day_of_week = fi.day_of_week
-      and int4range(pu.start_section, pu.start_section + pu.total_section)
-       && int4range(fi.start_section, fi.start_section + fi.total_section)
-      and exists (
-        select * from series where i between pu.start_week and pu.end_week
-        and (pu.odd_even = 0 or pu.odd_even = 1 and i % 2 = 1 or pu.odd_even = 2 and i % 2 = 0)
-        intersect
-        select * from series where i between fi.start_week and fi.end_week
-        and (fi.odd_even = 0 or fi.odd_even = 1 and i % 2 = 1 or fi.odd_even = 2 and i % 2 = 0)
-      )
-  );
+  join place_usage pu on pu.place_id = fi.place_id
+   and pu.day_of_week = fi.day_of_week
+   and (ea.fn_sections_to_integer(pu.start_section, pu.total_section) & fi.sections) <> 0
+   and (ea.fn_weeks_to_integer(pu.start_week, pu.end_week, pu.odd_even) & fi.weeks) <> 0;
 end;
 $$ language plpgsql;
 
@@ -378,22 +373,18 @@ begin
     from attendance_settings
     join attendance_type_ratio on attendance_settings.id = attendance_type_ratio.attendance_settings_id
     where p_term_id between coalesce(start_term_id, 00000) and coalesce(end_term_id, 99999)
-  ), admin_class as (
-    select admin_class.id
-    from ea.admin_class
-    where admin_class.department_id = p_department_id
   ), free_listen as (
     select student_id, task_schedule_id
     from tm.dva_valid_free_listen
     join ea.student on student.id = student_id
-    join admin_class on student.admin_class_id = admin_class.id
     where term_id = p_term_id
+    and student.department_id = p_department_id
   ), student_leave as (
     select student_id, week, task_schedule_id, total_section, 4 as type
     from tm.dva_valid_student_leave
     join ea.student on student.id = student_id
-    join admin_class on student.admin_class_id = admin_class.id
     where term_id = p_term_id
+      and student.department_id = p_department_id
       and (student_id, task_schedule_id) not in (
         select student_id, task_schedule_id from free_listen
       )
@@ -401,8 +392,8 @@ begin
     select student_id, week, task_schedule_id, total_section, type
     from tm.dva_valid_rollcall
     join ea.student on student.id = student_id
-    join admin_class on student.admin_class_id = admin_class.id
     where term_id = p_term_id
+      and student.department_id = p_department_id
       and (student_id, week, task_schedule_id) not in (
         select student_id, week, task_schedule_id from student_leave
       )
@@ -432,7 +423,7 @@ begin
   from attendance
   join ea.student on attendance.student_id = student.id
   join ea.admin_class on student.admin_class_id = admin_class.id
-  order by total desc, leave desc
+  order by total desc, leave desc, absent desc, late desc, early desc
   limit p_limit;
 end;
 $$ language plpgsql;
@@ -918,55 +909,37 @@ create or replace function tm.sp_get_rollcall_details_by_student (
 #variable_conflict use_column
 begin
   return query
-  with attendance_schedule as ( -- 教学班覆盖的安排
-    select task_schedule.id
-    from ea.course_class
-    join ea.task on course_class.id = task.course_class_id
-    join ea.task_schedule on task.id = task_schedule.task_id
-    where course_class.term_id = p_term_id
-  ), free_listen as (
+  with free_listen as (
     select form_id, task_schedule_id
     from tm.dva_valid_free_listen
-    join attendance_schedule on task_schedule_id = attendance_schedule.id
-    where student_id = p_student_id
+    where term_id = p_term_id
+    and student_id = p_student_id
   ), student_leave as (
     select form_id, week, task_schedule_id
     from tm.dva_valid_student_leave
-    join attendance_schedule on task_schedule_id = attendance_schedule.id
-    where student_id = p_student_id
-  ), rollcall as (
-    select dva_valid_rollcall.rollcall_id,
-           dva_valid_rollcall.week,
-           dva_valid_rollcall.task_schedule_id,
-           dva_valid_rollcall.type,
-           dva_valid_rollcall.teacher_id,
-           student_leave.form_id as student_leave_form_id,
-           free_listen.form_id as free_listen_form_id
-    from tm.dva_valid_rollcall
-    join attendance_schedule on attendance_schedule.id = task_schedule_id
-    left join student_leave on dva_valid_rollcall.week = student_leave.week
-          and dva_valid_rollcall.task_schedule_id = student_leave.task_schedule_id
-    left join free_listen on dva_valid_rollcall.task_schedule_id = free_listen.task_schedule_id
-    where student_id = p_student_id
+    where term_id = p_term_id
+    and student_id = p_student_id
   )
-  select rollcall.rollcall_id,
-         rollcall.week,
-         task_schedule.day_of_week,
-         task_schedule.start_section,
-         task_schedule.total_section,
-         rollcall.type,
+  select vr.rollcall_id,
+         vr.week,
+         vr.day_of_week,
+         vr.start_section,
+         vr.total_section,
+         vr.type,
          course.name::text as course,
          course_item.name::text as course_item,
          teacher.name::text as teacher,
-         rollcall.student_leave_form_id,
-         rollcall.free_listen_form_id
-  from rollcall
-  join ea.task_schedule on rollcall.task_schedule_id = task_schedule.id
-  join ea.task on task_schedule.task_id = task.id
-  join ea.course_class on task.course_class_id = course_class.id
-  join ea.course on course_class.course_id = course.id
-  join ea.teacher on rollcall.teacher_id = teacher.id
-  left join ea.course_item on task.course_item_id = course_item.id
+         student_leave.form_id as student_leave_form_id,
+         free_listen.form_id as free_listen_form_id
+  from tm.dva_valid_rollcall vr
+  join ea.course on vr.course_id = course.id
+  join ea.teacher on vr.teacher_id = teacher.id
+  left join ea.course_item on vr.course_item_id = course_item.id
+  left join student_leave on vr.week = student_leave.week
+        and vr.task_schedule_id = student_leave.task_schedule_id
+  left join free_listen on vr.task_schedule_id = free_listen.task_schedule_id
+  where term_id = p_term_id
+  and student_id = p_student_id
   order by week, day_of_week, start_section;
 end;
 $$ language plpgsql;
@@ -993,49 +966,30 @@ create or replace function tm.sp_get_student_leave_details_by_student (
 #variable_conflict use_column
 begin
   return query
-  with attendance_schedule as ( -- 教学班覆盖的安排
-    select task_schedule.id
-    from ea.course_class
-    join ea.task on course_class.id = task.course_class_id
-    join ea.task_schedule on task.id = task_schedule.task_id
-    where course_class.term_id = p_term_id
-  ), free_listen as (
+  with free_listen as (
     select form_id, task_schedule_id
     from tm.dva_valid_free_listen
-    join attendance_schedule on task_schedule_id = attendance_schedule.id
-    where student_id = p_student_id
-  ), student_leave as (
-    select dva_valid_student_leave.item_id,
-           rank() over (partition by item_id order by dva_valid_student_leave.task_schedule_id) ordinal_id,
-           dva_valid_student_leave.week,
-           dva_valid_student_leave.task_schedule_id,
-           dva_valid_student_leave.teacher_id,
-           dva_valid_student_leave.type,
-           dva_valid_student_leave.form_id as student_leave_form_id,
-           free_listen.form_id as free_listen_form_id
-    from tm.dva_valid_student_leave
-    join attendance_schedule on dva_valid_student_leave.task_schedule_id = attendance_schedule.id
-    left join free_listen on dva_valid_student_leave.task_schedule_id = free_listen.task_schedule_id
-    where student_id = p_student_id
+    where term_id = p_term_id
+    and student_id = p_student_id
   )
-  select student_leave.item_id * 100 + ordinal_id,
-         student_leave.week,
-         task_schedule.day_of_week,
-         task_schedule.start_section,
-         task_schedule.total_section,
-         student_leave.type,
+  select vsl.item_id * 100 + rank() over (partition by item_id order by vsl.task_schedule_id),
+         vsl.week,
+         vsl.day_of_week,
+         vsl.start_section,
+         vsl.total_section,
+         vsl.type,
          course.name::text as course,
          course_item.name::text as course_item,
          teacher.name::text as teacher,
-         student_leave.student_leave_form_id,
-         student_leave.free_listen_form_id
-  from student_leave
-  join ea.task_schedule on student_leave.task_schedule_id = task_schedule.id
-  join ea.task on task_schedule.task_id = task.id
-  join ea.course_class on task.course_class_id = course_class.id
-  join ea.course on course_class.course_id = course.id
-  join ea.teacher on student_leave.teacher_id = teacher.id
-  left join ea.course_item on task.course_item_id = course_item.id
+         vsl.form_id as student_leave_form_id,
+         free_listen.form_id as free_listen_form_id
+  from tm.dva_valid_student_leave vsl
+  join ea.course on vsl.course_id = course.id
+  join ea.teacher on vsl.teacher_id = teacher.id
+  left join ea.course_item on vsl.course_item_id = course_item.id
+  left join free_listen on vsl.task_schedule_id = free_listen.task_schedule_id
+  where term_id = p_term_id
+  and student_id = p_student_id
   order by week, day_of_week, start_section;
 end;
 $$ language plpgsql;
