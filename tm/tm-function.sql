@@ -1369,17 +1369,25 @@ begin
     from menu_with_count
     where submenu_count = 0
     union all
-    select jsonb_set((p).jb, '{children}', (
-        select jsonb_agg(value order by value->'display_order')
-        from jsonb_array_elements((p).jb->'children' || jsonb_agg((c).jb - 'parent_id' - 'path_level'))
-      ))
+    select unnest(jb)
     from (
-      select p, c
-      from menu_with_count p
-      join menu_tree c ON c.jb->'parent_id' = p.jb->'id'
-    ) t
-    group by p
-    having count(c) = (p).submenu_count -- 只有所有子节点聚齐时，才将子节点加入父节点
+      select case when count(c) = (p).submenu_count then
+        -- 只有所有子节点聚齐时，才将子节点加入父节点
+        array[jsonb_set((p).jb, '{children}', (
+          select jsonb_agg(value order by value->'display_order')
+          from jsonb_array_elements((p).jb->'children' || jsonb_agg((c).jb - 'parent_id' - 'path_level'))
+        ))]
+      else
+        -- 当所有子节点未聚齐时，将未连接的子节点重新加入worktable
+        array_agg((c).jb)
+      end as jb
+      from (
+        select p, c
+        from menu_with_count p
+        join menu_tree c ON c.jb->'parent_id' = p.jb->'id'
+      ) t
+      group by p
+    ) x
   ), menu_with_level as ( -- 菜单等级和父ID
     select id, label, display_order,
       length(id) - length(replace(id, '.', '')) as path_level,
