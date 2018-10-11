@@ -76,14 +76,16 @@ group by term_id, task.id, c.id, c.name, ci.name, task.code;
 create or replace view ea.av_task_schedule as
 select a.id, cc.term_id, c.id as course_id, c.name as course_name, ci.name as course_item,
     te.id as teacher_id, te.name as teacher_name, a.start_week, a.end_week,
-    day_of_week, start_section, total_section, odd_even, place_id, task_id, task.code as task_code, course_class_id, d.name as department
+    day_of_week, start_section, total_section, odd_even, place_id, place.name as place
+    task_id, task.code as task_code, course_class_id, d.name as department
 from task_schedule a
 join task on a.task_id = task.id
 join course_class cc on cc.id = task.course_class_id
 join department d on d.id = cc.department_id
 join course c on c.id = cc.course_id
 join teacher te on te.id = a.teacher_id
-left join course_item ci on ci.id = task.course_item_id;
+left join course_item ci on ci.id = task.course_item_id
+left join place on place.id = a.place_id;
 
 -- 学生课表
 create or replace view ea.av_student_schedule as
@@ -178,3 +180,51 @@ from av_teacher_workload tw
 join teacher t on tw.teacher_id = t.id
 join department d on tw.teacher_department_id = d.id
 group by term_id, d.id, d.name, t.id, t.name;
+
+-- 教学计划执行情况
+create or replace view ea.av_program_execution as
+with active_program as (
+  select p.id, (select (id / 10 - m.grade) * 2 + id % 10 from term where active = true) as current_term
+  from program p
+  join major m on m.id = p.major_id
+  join subject s on s.id = m.subject_id
+  where m.grade + s.length_of_schooling > (select id / 10 from term where active = true)
+  and p.type = 0
+), program_course as (
+  select p.id as program_id, grade, s.name as subject, c.id as course_id, c.name as course_name, property.name as property,
+    ap.current_term, pc.suggested_term, pc.allowed_term::bit(16) as allowed_term
+  from active_program ap
+  join program p on p.id = ap.id
+  join program_course pc on p.id = pc.program_id
+  join course c on c.id = pc.course_id
+  join major m on m.id = p.major_id
+  join subject s on s.id = m.subject_id
+  join property on property.id = pc.property_id
+  where property.is_compulsory = true and property.name not in ('公共必修课')
+), program_student as (
+  select p.id as program_id, count(s.id) as student_count
+  from active_program ap
+  join program p on p.id = ap.id
+  join major m on m.id = p.major_id
+  join student s on s.major_id = m.id
+  where s.at_school is true
+  group by p.id
+), program_course_class as (
+  select cc.code, p.id as program_id, cc.course_id, count(distinct s.id) as course_student_count, count(distinct s.id ) filter (where s.major_id = m.id) as major_course_student_count
+  from course_class cc
+  join course_class_program ccp on ccp.course_class_id = cc.id
+  join program p on p.id = ccp.program_id
+  join active_program ap on p.id = ap.id
+  join program_course pc on pc.program_id = p.id and cc.course_id = pc.course_id
+  join major m on m.id = p.major_id
+  join task t on t.course_class_id = cc.id
+  join task_student ts on ts.task_id = t.id
+  join student s on s.id = ts.student_id
+  group by cc.code, p.id, cc.course_id
+)
+select pc.program_id, grade, subject, ps.student_count as major_student_count,
+  pc.course_id, pc.course_name, pc.property, current_term, suggested_term, allowed_term,
+  pcc.code as course_class_code, course_student_count, major_course_student_count
+from program_course pc
+join program_student ps on pc.program_id = ps.program_id
+left join program_course_class pcc on pc.program_id = pcc.program_id and pcc.course_id = pc.course_id;

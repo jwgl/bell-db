@@ -218,7 +218,7 @@ insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_o
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.affair.cardReissueApproval', 'main.affair', '补办学生证审批', '/card/approvers/${userId}/reissues', true, array['TM-CARD-API'], 41, 'PERM_CARD_REISSUE_APPROVE');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.affair.cardReissueOrder', 'main.affair', '补办学生证订单', '/card/approvers/${userId}/reissueOrders', true, array['TM-CARD-API'], 42, 'PERM_CARD_REISSUE_APPROVE');
+('main.affair.cardReissueOrder', 'main.affair', '补办学生证订单', '/card/reissueOrders', true, array['TM-CARD-API'], 42, 'PERM_CARD_REISSUE_APPROVE');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.affair.placeBookingForm', 'main.affair', '借用教室申请', '/place/users/${userId}/bookings', true, array['TM-PLACE-API'], 50, 'PERM_PLACE_BOOKING_WRITE');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
