@@ -36,7 +36,7 @@ begin
   join ea.admin_class on student.admin_class_id = admin_class.id
   where student.id = p_student_id;
 
-  return query 
+  return query
   select q.hash_id, u.name::text as pollster, 
     d.name::text as department,
     q.title, case
@@ -75,7 +75,8 @@ create or replace function tm_form.sp_find_available_questionnaire_by_teacher(
   pollster text,            -- 调查人
   department text,          -- 所在单位
   title text,               -- 标题
-  survey_scope int4,        -- 调查范围
+  prologue text,            -- 欢迎词
+  survey_type int4,         -- 调查类型
   anonymous boolean,        -- 是否匿名
   date_published timestamp, -- 发布时间
   date_expired timestamp,   -- 截止时间
@@ -95,10 +96,14 @@ begin
   join ea.department on teacher.department_id = department.id
   where teacher.id = p_teacher_id;
 
-  return query 
+  return query
   select q.hash_id, u.name::text as pollster, 
     d.name::text as department,
-    q.title, q.survey_scope, q.anonymous, q.date_published, q.date_expired,
+    q.title, case
+      when length(q.prologue) > 97 then substring(q.prologue, 1, 97) || '...'
+      else q.prologue
+    end as prologue,
+    q.survey_type, q.anonymous, q.date_published, q.date_expired,
     f.id as form_id
   from tm_form.questionnaire q
   join tm.system_user u on q.pollster_id = u.id
