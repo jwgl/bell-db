@@ -328,3 +328,18 @@ INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) 
 INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (-3, 11, '下午（5-9节）',   5,  5,  '{5,7,9}'::int[]);
 INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (-4, 12, '晚上（10-13节）', 10, 4,  '{10,12}'::int[]);
 INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (-5, 13, '全天',            1,  13, '{0,1,3,5,7,9,10,12}'::int[]);
+
+alter table tm.booking_section add column value integer;
+update booking_section set value = b'0000000000000011'::int where id = 1;
+update booking_section set value = b'0000000000001100'::int where id = 3;
+update booking_section set value = b'0000000000110000'::int where id = 5;
+update booking_section set value = b'0000000011000000'::int where id = 7;
+update booking_section set value = b'0000000100000000'::int where id = 9;
+update booking_section set value = b'0000011000000000'::int where id = 10;
+update booking_section set value = b'0001100000000000'::int where id = 12;
+update booking_section set value = b'1000000000000000'::int where id = 0;
+update booking_section set value = b'0000000111111111'::int where id = -1;
+update booking_section set value = b'0000000000001111'::int where id = -2;
+update booking_section set value = b'0000000111110000'::int where id = -3;
+update booking_section set value = b'0001111000000000'::int where id = -4;
+update booking_section set value = b'1001111111111111'::int where id = -5;
