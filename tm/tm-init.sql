@@ -27,6 +27,7 @@ INSERT INTO tm.role (id,name) VALUES ('ROLE_ROLLCALL_ADMIN',             '考勤
 INSERT INTO tm.role (id,name) VALUES ('ROLE_ROLLCALL_DEPT_ADMIN',        '考勤管理员-学院');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_OBSERVER',                   '现任督导员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_OBSERVATION_ADMIN',          '督导管理员');
+INSERT INTO tm.role (id,name) VALUES ('ROLE_PLACE_KEEPER',               '教室管理员');
 
 INSERT INTO tm.permission (id,name) VALUES ('PERM_WORK_ITEMS',                     '待办事项');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_SYSTEM_SETUP',                   '系统设置');
@@ -62,6 +63,9 @@ INSERT INTO tm.permission (id,name) VALUES ('PERM_FREE_LISTEN_APPROVE',         
 INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_BOOKING_WRITE',            '借教室-申请');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_BOOKING_CHECK',            '借教室-审核');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_BOOKING_APPROVE',          '借教室-审批');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_BOOKING_MISCONDUCT_WRITE',       '教室违规-记录');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_BOOKING_MISCONDUCT_CHECK',       '教室违规-核实');
+INSERT INTO tm.permission (id,name) VALUES ('PERM_BOOKING_MISCONDUCT_APPROVE',     '教室违规-处理');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_PLACE_USAGE_READ',               '教室使用情况');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_CARD_REISSUE_WRITE',             '补办学生证-编辑');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_CARD_REISSUE_APPROVE',           '补办学生证-审批');
@@ -127,7 +131,11 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_T
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',          'PERM_PLACE_BOOKING_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_BOOKING_ADV_USER',           'PERM_PLACE_BOOKING_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKING_CHECKER',      'PERM_PLACE_BOOKING_CHECK');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKING_CHECKER',      'PERM_BOOKING_MISCONDUCT_CHECK');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKING_ADMIN',        'PERM_PLACE_BOOKING_APPROVE');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKING_ADMIN',        'PERM_BOOKING_MISCONDUCT_WRITE');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKING_ADMIN',        'PERM_BOOKING_MISCONDUCT_APPROVE');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_KEEPER',               'PERM_BOOKING_MISCONDUCT_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_USER',                       'PERM_PLACE_USAGE_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',          'PERM_CARD_REISSUE_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_REGISTER_ADMIN',             'PERM_CARD_REISSUE_APPROVE');
@@ -230,6 +238,12 @@ insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_o
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.affair.placeUsage', 'main.affair', '教室使用情况', '/place/usages', true, array['TM-PLACE-API'], 54, 'PERM_PLACE_USAGE_READ');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+('main.affair.misconductRecord', 'main.affair', '教室违规记录', '/place/keepers/${userId}/bookings', true, array['TM-PLACE-API'], 55, 'PERM_BOOKING_MISCONDUCT_WRITE');
+insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+('main.affair.misconductCheck', 'main.affair', '教室违规核实', '/place/checkers/${userId}/misconducts', true, array['TM-PLACE-API'], 56, 'PERM_BOOKING_MISCONDUCT_CHECK');
+insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+('main.affair.misconductApprove', 'main.affair', '教室违规处理', '/place/approvers/${userId}/misconducts', true, array['TM-PLACE-API'], 57, 'PERM_BOOKING_MISCONDUCT_APPROVE');
+insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.settings.subject', 'main.settings', '校内专业', '/plan/settings/subjects', true, array['TM-PLAN-API'], 10, 'PERM_SUBJECT_SETUP');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.settings.program', 'main.settings', '教学计划', '/plan/settings/programs', true, array['TM-PLAN-API'], 11, 'PERM_PROGRAM_SETUP');
@@ -315,16 +329,16 @@ INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('schedule.fre
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('schedule.free','schedule.free.reject', '退回','/here/students/${userId}/freeListens/${id}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('schedule.free','schedule.free.view',   '查看','/here/students/${userId}/freeListens/${id}');
 
-INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (1,   1, '1-2节',           1,  2,  '{1}'::int[]);
-INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (3,   2, '3-4节',           3,  2,  '{3}'::int[]);
-INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (5,   3, '5-6节',           5,  2,  '{5}'::int[]);
-INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (7,   4, '7-8节',           7,  2,  '{7}'::int[]);
-INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (9,   5, '第9节',           9,  1,  '{9}'::int[]);
-INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (10,  6, '10-11节',         10, 2,  '{10}'::int[]);
-INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (12,  7, '12-13节',         12, 2,  '{12}'::int[]);
-INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (-1,  8, '白天（1-9节）',   1,  9,  '{1,3,5,7,9}'::int[]);
-INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (-2,  9, '上午（1-4节）',   1,  4,  '{1,3}'::int[]);
-INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (0,  10, '中午',            0,  1,  '{0}'::int[]);
-INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (-3, 11, '下午（5-9节）',   5,  5,  '{5,7,9}'::int[]);
-INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (-4, 12, '晚上（10-13节）', 10, 4,  '{10,12}'::int[]);
-INSERT INTO tm.booking_section(id, display_order, name, start, total, includes) VALUES (-5, 13, '全天',            1,  13, '{0,1,3,5,7,9,10,12}'::int[]);
+INSERT INTO tm.booking_section(id, display_order, name, start, total, includes, value) VALUES (1,   1, '1-2节',           1,  2,  '{1}'::int[],                 b'0000000000000011'::int);
+INSERT INTO tm.booking_section(id, display_order, name, start, total, includes, value) VALUES (3,   2, '3-4节',           3,  2,  '{3}'::int[],                 b'0000000000001100'::int);
+INSERT INTO tm.booking_section(id, display_order, name, start, total, includes, value) VALUES (5,   3, '5-6节',           5,  2,  '{5}'::int[],                 b'0000000000110000'::int);
+INSERT INTO tm.booking_section(id, display_order, name, start, total, includes, value) VALUES (7,   4, '7-8节',           7,  2,  '{7}'::int[],                 b'0000000011000000'::int);
+INSERT INTO tm.booking_section(id, display_order, name, start, total, includes, value) VALUES (9,   5, '第9节',           9,  1,  '{9}'::int[],                 b'0000000100000000'::int);
+INSERT INTO tm.booking_section(id, display_order, name, start, total, includes, value) VALUES (10,  6, '10-11节',         10, 2,  '{10}'::int[],                b'0000011000000000'::int);
+INSERT INTO tm.booking_section(id, display_order, name, start, total, includes, value) VALUES (12,  7, '12-13节',         12, 2,  '{12}'::int[],                b'0001100000000000'::int);
+INSERT INTO tm.booking_section(id, display_order, name, start, total, includes, value) VALUES (-1,  8, '白天（1-9节）',   1,  9,  '{1,3,5,7,9}'::int[],         b'0000000111111111'::int);
+INSERT INTO tm.booking_section(id, display_order, name, start, total, includes, value) VALUES (-2,  9, '上午（1-4节）',   1,  4,  '{1,3}'::int[],               b'0000000000001111'::int);
+INSERT INTO tm.booking_section(id, display_order, name, start, total, includes, value) VALUES (0,  10, '中午',            0,  1,  '{0}'::int[],                 b'1000000000000000'::int);
+INSERT INTO tm.booking_section(id, display_order, name, start, total, includes, value) VALUES (-3, 11, '下午（5-9节）',   5,  5,  '{5,7,9}'::int[],             b'0000000111110000'::int);
+INSERT INTO tm.booking_section(id, display_order, name, start, total, includes, value) VALUES (-4, 12, '晚上（10-13节）', 10, 4,  '{10,12}'::int[],             b'0001111000000000'::int);
+INSERT INTO tm.booking_section(id, display_order, name, start, total, includes, value) VALUES (-5, 13, '全天',            1,  13, '{0,1,3,5,7,9,10,12}'::int[], b'1001111111111111'::int);

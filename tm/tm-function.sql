@@ -101,6 +101,68 @@ begin
 end;
 $$ language plpgsql;
 
+/**
+ * 查询指定楼名的借用单
+ */
+create or replace function tm.sp_find_building_bookings(
+  p_term_id ea.term.id%type,          -- 学期
+  p_building ea.place.building%type,  -- 教学楼
+  p_place_id ea.place.id%type,        -- 不指定为''
+  p_week integer,                     -- 不指定为-1
+  p_day_of_week integer,              -- 不指定为-1
+  p_section integer                   -- 不指定为-1
+) returns table(
+  booking_item_id tm.booking_item.id%type,
+  booking_form_id tm.booking_form.id%type,
+  booking_type tm.booking_type.name%type,
+  place ea.place.name%type,
+  start_week integer,
+  end_week integer,
+  odd_even integer,
+  day_of_week integer,
+  booking_section tm.booking_section.name%type,
+  department ea.department.name%type,
+  user_name tm.system_user.name%type,
+  phone_number tm.system_user.long_phone%type,
+  reason tm.booking_form.reason%type
+) as $$
+declare
+begin
+  return query select
+    bi.id as booking_item_id,
+    bf.id as booking_form_id,
+    bt.name as booking_type,
+    place.name as place,
+    bi.start_week,
+    bi.end_week,
+    bi.odd_even,
+    bi.day_of_week,
+    bs.name as booking_section,
+    department.name as department,
+    system_user.name as userName,
+    system_user.long_phone as phone_number,
+    bf.reason
+  from tm.booking_form bf
+  join tm.booking_item bi on bf.id = bi.form_id
+  join tm.booking_section bs on bs.id = bi.section_id
+  join tm.booking_type bt on bt.id = bf.type_id
+  join ea.place on place.id = bi.place_id
+  join ea.department on department.id = bf.department_id
+  join tm.system_user on system_user.id = bf.user_id
+  where bf.term_id = p_term_id
+  and bf.status = 'APPROVED'
+  and place.building = p_building
+  and (p_place_id = '' or place.id = p_place_id)
+  and (p_week = -1 or ea.fn_weeks_to_integer(bi.start_week, bi.end_week, bi.odd_even) & (1 << (p_week - 1)) <> 0)
+  and (p_day_of_week = -1 or bi.day_of_week = p_day_of_week)
+  and (p_section = -1 or bs.value & (1 << (p_section - 1)) <> 0)
+  order by place.id, start_week, end_week, odd_even, day_of_week, bi.id;
+end;
+$$ language plpgsql;
+
+/**
+ * 判断时间槽是否相交
+ */
 create or replace function tm.timeslot_intersect (
   p_start_week_1 integer,
   p_end_week_1 integer,
