@@ -48,7 +48,6 @@ begin
   from tm_form.questionnaire q
   join tm.system_user u on q.pollster_id = u.id
   join ea.department d on q.department_id = d.id
-  join ea.admin_class ac on q.admin_class_id = ac.id
   left join tm_form.response_form f on f.questionnaire_id = q.id and f.respondent_id = p_student_id -- 已创建
   where q.respondent_type = 2 -- 面向学生 
   and q.status = 'APPROVED' -- 已批准
