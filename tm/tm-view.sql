@@ -82,7 +82,10 @@ select distinct s.teacher_id as user_id, 'ROLE_DUALDEGREE_MENTOR' as role_id
 from tm_dual.mentor s
 union all
 select distinct c.teacher_id as user_id, 'ROLE_HUNT_CHECKER' as role_id
-from tm_hunt.checker c;
+from tm_hunt.checker c
+union all
+select distinct e.teacher_id as user_id, 'ROLE_HUNT_EXPERT' as role_id
+from tm_hunt.expert e;
 
 -- 学生角色
 create or replace view tm.dv_student_role as
