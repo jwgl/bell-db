@@ -104,8 +104,9 @@ left join course_item ci on ci.id = task.course_item_id;
 
 -- 学生信息
 create or replace view ea.av_student as
-select student.id, student.name, d.id || '-' || d.name as department, m.grade || '-' || s.name as subject, ac.name as adimin_class,
-       t1.id || '-' || t1.name as counsellor, t1.id || '-' || t2.name supervisor
+select student.id, student.name, d.id as department_id, d.name as department_name, m.grade,
+  s.name as subject, ac.name as adimin_class,
+  t1.id || '-' || t1.name as counsellor, t1.id || '-' || t2.name supervisor, student.at_school
 from student
 join admin_class ac on ac.id = student.admin_class_id
 join department d on d.id = student.department_id
