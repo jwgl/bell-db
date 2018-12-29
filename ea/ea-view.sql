@@ -192,7 +192,8 @@ with active_program as (
   where m.grade + s.length_of_schooling > (select id / 10 from term where active = true)
   and p.type = 0
 ), program_course as (
-  select p.id as program_id, grade, s.name as subject, c.id as course_id, c.name as course_name, property.name as property,
+  select d.name as department, p.id as program_id, grade, s.name as subject,
+    c.id as course_id, c.name as course_name, property.name as property,
     ap.current_term, pc.suggested_term, pc.allowed_term::bit(16) as allowed_term
   from active_program ap
   join program p on p.id = ap.id
@@ -201,6 +202,7 @@ with active_program as (
   join major m on m.id = p.major_id
   join subject s on s.id = m.subject_id
   join property on property.id = pc.property_id
+  join department d on d.id = m.department_id
   where property.is_compulsory = true and property.name not in ('公共必修课')
 ), program_student as (
   select p.id as program_id, count(s.id) as student_count
@@ -223,7 +225,7 @@ with active_program as (
   join student s on s.id = ts.student_id
   group by cc.code, p.id, cc.course_id
 )
-select pc.program_id, grade, subject, ps.student_count as major_student_count,
+select pc.department, pc.program_id, grade, subject, ps.student_count as major_student_count,
   pc.course_id, pc.course_name, pc.property, current_term, suggested_term, allowed_term,
   pcc.code as course_class_code, course_student_count, major_course_student_count
 from program_course pc
