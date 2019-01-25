@@ -193,7 +193,8 @@ with active_program as (
   and p.type = 0
 ), program_course as (
   select d.name as department, p.id as program_id, grade, s.name as subject,
-    c.id as course_id, c.name as course_name, property.name as property,
+    c.id as course_id, c.name as course_name,
+    property.name as property, c.credit,
     ap.current_term, pc.suggested_term, pc.allowed_term::bit(16) as allowed_term
   from active_program ap
   join program p on p.id = ap.id
@@ -213,7 +214,9 @@ with active_program as (
   where s.at_school is true
   group by p.id
 ), program_course_class as (
-  select cc.code, p.id as program_id, cc.course_id, count(distinct s.id) as course_student_count, count(distinct s.id ) filter (where s.major_id = m.id) as major_course_student_count
+  select cc.code, p.id as program_id, cc.course_id, cc.term_id,
+    count(distinct s.id) as course_student_count,
+    count(distinct s.id ) filter (where s.major_id = m.id) as major_course_student_count
   from course_class cc
   join course_class_program ccp on ccp.course_class_id = cc.id
   join program p on p.id = ccp.program_id
@@ -223,11 +226,11 @@ with active_program as (
   join task t on t.course_class_id = cc.id
   join task_student ts on ts.task_id = t.id
   join student s on s.id = ts.student_id
-  group by cc.code, p.id, cc.course_id
+  group by cc.code, p.id, cc.course_id, cc.term_id
 )
 select pc.department, pc.program_id, grade, subject, ps.student_count as major_student_count,
-  pc.course_id, pc.course_name, pc.property, current_term, suggested_term, allowed_term,
-  pcc.code as course_class_code, course_student_count, major_course_student_count
+  pc.course_id, pc.course_name, pc.credit, pc.property, current_term, suggested_term, allowed_term,
+  pcc.term_id, pcc.code as course_class_code, course_student_count, major_course_student_count
 from program_course pc
 join program_student ps on pc.program_id = ps.program_id
 left join program_course_class pcc on pc.program_id = pcc.program_id and pcc.course_id = pc.course_id;
