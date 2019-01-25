@@ -1,18 +1,4 @@
-﻿-- 新建数据库
-> createdb -Upostgres bell
-
--- 使用psql登录
-> psql -Upostgres bell
-
--- 创建用户
-create user ea with password 'bell_ea_password';
-create user tm with password 'bell_tm_password';
-
--- 创建架构
-create schema ea authorization ea;
-create schema tm authorization tm;
-
--- 创建外部数据封装器
+﻿-- 创建外部数据封装器
 create extension oracle_fdw;
 
 -- 创建外部服务器
