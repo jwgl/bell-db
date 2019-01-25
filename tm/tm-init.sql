@@ -1,3 +1,9 @@
+-- 创建用户
+create user tm with password 'bell_tm_password';
+
+-- 创建架构
+create schema tm authorization tm;
+
 INSERT INTO tm.role (id,name) VALUES ('ROLE_SYSTEM_ADMIN',               '系统管理员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_DEPARTMENT_ADMIN',           '部门管理员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_USER',                       '用户');

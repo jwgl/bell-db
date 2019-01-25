@@ -1,6 +1,3 @@
--- 创建架构
-create schema tm_dual authorization tm;
-
 -- 创建外部服务器
 create server zf_print foreign data wrapper oracle_fdw options (dbserver '//localhost/zf_print');
 

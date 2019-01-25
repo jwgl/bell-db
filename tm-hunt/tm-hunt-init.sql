@@ -1,3 +1,6 @@
+-- 创建架构
+create schema tm_hunt authorization tm;
+
 INSERT INTO tm.role (id,name) VALUES ('ROLE_HUNT_ADMIN',           '质量工程管理员-教务处');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_HUNT_CHECKER',         '质量工程审核员-学院');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_HUNT_EXPERT',          '质量工程评审专家');

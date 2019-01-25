@@ -1,6 +1,6 @@
-CREATE USER sync WITH PASSWORD 'bell_sync_password';
+create user sync with password 'bell_sync_password';
 
-CREATE SCHEMA sync AUTHORIZATION sync;
+create schema sync authorization sync;
 
 create table sync.sync_config (
   id text primary key,
@@ -71,9 +71,9 @@ insert into sync.sync_config(id, basic_schema, basic_table, foreign_table) value
 ('tm.system_user',           'tm', 'system_user',           'sv_system_user'),
 ('tm.place_user_type',       'tm', 'place_user_type',       'sv_place_user_type')
 on conflict(id) do update set
-basic_schema  = EXCLUDED.basic_schema,
-basic_table   = EXCLUDED.basic_table,
-foreign_table = EXCLUDED.foreign_table;
+basic_schema  = excluded.basic_schema,
+basic_table   = excluded.basic_table,
+foreign_table = excluded.foreign_table;
 
 update sync.sync_config
 set delete_condition = $$id > 2015000000$$
