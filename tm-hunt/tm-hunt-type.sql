@@ -27,3 +27,15 @@ create type tm_hunt.conclusion as enum (
     'DELAY'
 );
 alter type tm_hunt.conclusion owner to tm;
+
+create type tm_hunt.change_type as enum (
+    'PRINCIPAL',
+    'DELAY',
+    'NAME',
+    'CONTENT',
+    'TERMINATION',
+    'ACHIEVEMENTS',
+    'MEMBERS',
+    'OTHER'
+);
+alter type tm_hunt.change_type owner to tm;
