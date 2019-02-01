@@ -104,8 +104,9 @@ left join course_item ci on ci.id = task.course_item_id;
 
 -- 学生信息
 create or replace view ea.av_student as
-select student.id, student.name, d.id || '-' || d.name as department, m.grade || '-' || s.name as subject, ac.name as adimin_class,
-       t1.id || '-' || t1.name as counsellor, t1.id || '-' || t2.name supervisor
+select student.id, student.name, d.id as department_id, d.name as department_name, m.grade,
+  s.name as subject, ac.name as adimin_class,
+  t1.id || '-' || t1.name as counsellor, t1.id || '-' || t2.name supervisor, student.at_school
 from student
 join admin_class ac on ac.id = student.admin_class_id
 join department d on d.id = student.department_id
@@ -191,7 +192,9 @@ with active_program as (
   where m.grade + s.length_of_schooling > (select id / 10 from term where active = true)
   and p.type = 0
 ), program_course as (
-  select p.id as program_id, grade, s.name as subject, c.id as course_id, c.name as course_name, property.name as property,
+  select d.name as department, p.id as program_id, grade, s.name as subject,
+    c.id as course_id, c.name as course_name,
+    property.name as property, c.credit,
     ap.current_term, pc.suggested_term, pc.allowed_term::bit(16) as allowed_term
   from active_program ap
   join program p on p.id = ap.id
@@ -200,6 +203,7 @@ with active_program as (
   join major m on m.id = p.major_id
   join subject s on s.id = m.subject_id
   join property on property.id = pc.property_id
+  join department d on d.id = m.department_id
   where property.is_compulsory = true and property.name not in ('公共必修课')
 ), program_student as (
   select p.id as program_id, count(s.id) as student_count
@@ -210,7 +214,9 @@ with active_program as (
   where s.at_school is true
   group by p.id
 ), program_course_class as (
-  select cc.code, p.id as program_id, cc.course_id, count(distinct s.id) as course_student_count, count(distinct s.id ) filter (where s.major_id = m.id) as major_course_student_count
+  select cc.code, p.id as program_id, cc.course_id, cc.term_id,
+    count(distinct s.id) as course_student_count,
+    count(distinct s.id ) filter (where s.major_id = m.id) as major_course_student_count
   from course_class cc
   join course_class_program ccp on ccp.course_class_id = cc.id
   join program p on p.id = ccp.program_id
@@ -220,11 +226,11 @@ with active_program as (
   join task t on t.course_class_id = cc.id
   join task_student ts on ts.task_id = t.id
   join student s on s.id = ts.student_id
-  group by cc.code, p.id, cc.course_id
+  group by cc.code, p.id, cc.course_id, cc.term_id
 )
-select pc.program_id, grade, subject, ps.student_count as major_student_count,
-  pc.course_id, pc.course_name, pc.property, current_term, suggested_term, allowed_term,
-  pcc.code as course_class_code, course_student_count, major_course_student_count
+select pc.department, pc.program_id, grade, subject, ps.student_count as major_student_count,
+  pc.course_id, pc.course_name, pc.credit, pc.property, current_term, suggested_term, allowed_term,
+  pcc.term_id, pcc.code as course_class_code, course_student_count, major_course_student_count
 from program_course pc
 join program_student ps on pc.program_id = ps.program_id
 left join program_course_class pcc on pc.program_id = pcc.program_id and pcc.course_id = pc.course_id;

@@ -94,17 +94,17 @@ create or replace view tm_form.dv_questionnaire_response_stats(
 ) as
 select questionnaire_id as id, response_count, question_stats
 from (
+  select rf.questionnaire_id, count(*) as response_count
+  from tm_form.response_form rf
+  where rf.date_submitted is not null
+  group by rf.questionnaire_id
+) questionnaire_response_stats left join (
   select questionnaire_id, jsonb_object_agg(question_id, jsonb_build_object(
       'response_count', response_count,
       'question_option_stats', question_option_stats)) as question_stats
   from tm_form.dva_question_response_stats 
   group by questionnaire_id
-) a join (
-  select rf.questionnaire_id, count(*) as response_count
-  from tm_form.response_form rf
-  where rf.date_submitted is not null
-  group by rf.questionnaire_id
-) b using(questionnaire_id);
+) question_response_stats using(questionnaire_id);
 
 /**
  * 数据视图-问题开放响应统计

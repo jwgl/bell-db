@@ -1,3 +1,6 @@
+-- 创建架构
+create schema tm_dual authorization tm;
+
 INSERT INTO tm.role (id,name) VALUES ('ROLE_DUALDEGREE_AGREEMENT_ADMIN', '2+2合作协议管理员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_DUALDEGREE_ADMIN',           '2+2管理员-教务处');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_DUALDEGREE_ADMIN_DEPT',      '2+2管理员-学院');
