@@ -388,6 +388,7 @@ with active_term as (
     select distinct courseteacher.id as teacher_id,
           courseteacher.name as teacher_name,
           courseteacher.academic_title,
+          courseteacher.is_external as is_external,
           department.name as department_name,
           array_to_string(array_agg(distinct course_1.name), ',', '*') as course_name,
           course_dept.name as course_dept_name,
@@ -420,14 +421,15 @@ with active_term as (
 select active.teacher_id,
     active.teacher_name,
     active.department_name,
-    active.academic_title,
+    active.academic_title,    
     a.teacher_id as isnew,
     inspect4.teacher_id as has_supervisor,
-    array_to_string(array_agg(distinct concat(active.course_dept_name,': ',active.course_name)), ';') as course_name
+    array_to_string(array_agg(distinct concat(active.course_dept_name,': ',active.course_name)), ';') as course_name,
+    active.is_external
 from active_teacher active
 left join new_teacher a on active.teacher_id = a.teacher_id
 left join inspect4 on active.teacher_id = inspect4.teacher_id
-group by active.teacher_id,active.teacher_name,active.department_name,active.academic_title,a.teacher_id,inspect4.teacher_id;
+group by active.teacher_id,active.teacher_name,active.department_name,active.academic_title,active.is_external,a.teacher_id,inspect4.teacher_id;
 
 -- JOIN课表，抽取最全常用字段
 create or replace view tm.dv_observation_view as
