@@ -468,7 +468,8 @@ select distinct form.id,
     courseteacher.name as teacher_name,
     department.name as department_name,
     cp.property_name as property,
-    courseclass.term_id as term_id
+    courseclass.term_id as term_id,
+    form.recommend as recommend
    from tm.observation_form form
      join ea.teacher supervisor on form.observer_id = supervisor.id
      join ea.task_schedule schedule on (form.teacher_id = schedule.teacher_id
@@ -683,3 +684,9 @@ join program_property c on a.program_id = c.program_id and a.property = c.proper
 left join program_info b on a.program_id = b.program_id and a.property = b.property
   and a.direction is not distinct from b.direction
 order by 1, 3;
+
+--当前学期领导
+create or replace view tm.dv_leaders as
+select o.teacher_id
+from tm.observer o join ea.term on o.term_id = term.id
+where o.observer_type = 3 and term.active;
