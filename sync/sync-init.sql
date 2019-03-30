@@ -194,7 +194,5 @@ after_sync = $$update tm.system_user
 set enabled = false
 where id not in (
 	select id from tm.sv_system_user
-	union
-	select '61500'
-)$$
+) and user_type in (1, 2)$$
 where id = 'tm.system_user';
