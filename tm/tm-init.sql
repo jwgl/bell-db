@@ -34,6 +34,7 @@ INSERT INTO tm.role (id,name) VALUES ('ROLE_ROLLCALL_DEPT_ADMIN',        '考勤
 INSERT INTO tm.role (id,name) VALUES ('ROLE_OBSERVER',                   '现任督导员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_OBSERVATION_ADMIN',          '督导管理员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_PLACE_KEEPER',               '教室管理员');
+INSERT INTO tm.role (id,name) VALUES ('ROLE_BUILDING_KEEPER',            '教学楼管理员');
 
 INSERT INTO tm.permission (id,name) VALUES ('PERM_WORK_ITEMS',                     '待办事项');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_SYSTEM_SETUP',                   '系统设置');
@@ -142,6 +143,7 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKI
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKING_ADMIN',        'PERM_BOOKING_MISCONDUCT_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_BOOKING_ADMIN',        'PERM_BOOKING_MISCONDUCT_APPROVE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_PLACE_KEEPER',               'PERM_BOOKING_MISCONDUCT_WRITE');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_BUILDING_KEEPER',            'PERM_BOOKING_MISCONDUCT_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_USER',                       'PERM_PLACE_USAGE_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',          'PERM_CARD_REISSUE_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_REGISTER_ADMIN',             'PERM_CARD_REISSUE_APPROVE');
