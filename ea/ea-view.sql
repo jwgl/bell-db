@@ -32,7 +32,19 @@ select cc.term_id, cc.id, cc.code, c.name as course,
     where pc.course_id = c.id
     and ccp.course_class_id = cc.id
     ), ',')) as property,
-  t.name as teacher,
+  array_to_string(array(
+    select distinct major.grade || '级' || subject.short_name
+    from ea.course_class_program ccp
+    join ea.program_course pc on pc.program_id = ccp.program_id
+    join ea.property on pc.property_id = property.id
+    join ea.program on pc.program_id = program.id
+    join ea.major on program.major_id = major.id
+    join ea.subject on major.subject_id = subject.id
+    where pc.course_id = c.id
+    and ccp.course_class_id = cc.id
+  ), ',') as major,
+  t.id as teacher_id,
+  t.name as teacher_name,
   cc.start_week, cc.end_week,
   case cc.assess_type
     when 1 then '考试'
@@ -76,8 +88,8 @@ group by term_id, task.id, c.id, c.name, ci.name, task.code;
 create or replace view ea.av_task_schedule as
 select a.id, cc.term_id, c.id as course_id, c.name as course_name, ci.name as course_item,
     te.id as teacher_id, te.name as teacher_name, a.start_week, a.end_week,
-    day_of_week, start_section, total_section, odd_even, place_id, place.name as place
-    task_id, task.code as task_code, course_class_id, d.name as department
+    day_of_week, start_section, total_section, odd_even, place_id, place.name as place,
+    task_id, task.code as task_code, course_class_id, d.name as department, week_bits, section_bits
 from task_schedule a
 join task on a.task_id = task.id
 join course_class cc on cc.id = task.course_class_id
