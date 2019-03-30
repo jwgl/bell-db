@@ -723,6 +723,13 @@ left join ea.sv_direction on zyfx = sv_direction.name and (dqszj || zydm || '0')
 order by id;
 
 /**
+ * 学生类别
+ */
+create or replace view ea.sv_student_category as
+select xslbdm as id, xslbmc as name
+from zfxfzb.xslbdmb;
+
+/**
  * 学生-等级
  */
 create or replace view ea.sv_student_level as
@@ -1115,11 +1122,25 @@ order by 1, 2, 3 desc, 4, 6;
  * 教学班-计划
  */
 create or replace view ea.sv_course_class_program as
+with x as (
+  select a.xn, a.xq, a.kcdm, a.kcmc, a.xkkh, a.kcxz, d.jxjhh, count(*) as student_count,
+    rank() over(partition by a.xkkh order by count(*) desc) as rank
+  from zfxfzb.cfbjxrwb a
+  join zfxfzb.cjb b on a.xkkh = b.xkkh
+  join zfxfzb.xsjbxxb c on b.xh = c.xh
+  join zfxfzb.jxjhkcxxb d on d.zydm = c.zydm and d.kcdm = a.kcdm and c.dqszj = d.nj
+  where a.kcxz <> '公共必修课'
+  group by a.xn, a.xq, a.kcdm, a.kcmc, a.xkkh, a.kcxz, d.jxjhh
+)
 select distinct b.term_id, b.course_class_id, to_number(a.program_id) as program_id
 from ea.sva_task_base a
 join ea.course_class_map b on b.course_class_code = a.xkkh
 where program_id is not null
-order by course_class_id, program_id;
+union all
+select to_number(substr(xn, 1, 4) || xq) as term_id, course_class_id, to_number(jxjhh || 0) as program_id
+from x
+join ea.course_class_map y on y.course_class_code = x.xkkh
+where rank = 1 or student_count > 5;
 
 /**
  * 辅助视图 - 所有教学任务
@@ -1482,7 +1503,8 @@ select term_id,
     decode(bz,
         null,       0,
         '取消资格', 1,
-        '缓考',     2
+        '缓考',     2,
+        '作弊',     3
     ) as exam_flag
 from zfxfzb.xsxkb
 join ea.task_map on task_code = xkkh;
