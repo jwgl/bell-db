@@ -163,7 +163,14 @@ delete_condition = $$task_id in (
     from ea.task
     join ea.course_class on course_class.id = task.course_class_id
     where course_class.term_id = ${term_id}
-)$$
+)$$,
+after_sync = $$update task_schedule ts set
+week_bits = ea.fn_weeks_to_integer(ts.start_week, ts.end_week, ts.odd_even),
+section_bits = ea.fn_sections_to_integer(ts.start_section, ts.total_section)
+from task t
+join course_class cc on cc.id = t.course_class_id
+where ts.task_id = t.id
+and cc.term_id = ${term_id}$$
 where id = 'ea.task_schedule';
 
 update sync.sync_config set
