@@ -316,6 +316,13 @@ major_id               = EXCLUDED.major_id,
 direction_id           = EXCLUDED.direction_id,
 admission_id           = EXCLUDED.admission_id;
 
+-- 学生类别
+insert into ea.student_category(id, name)
+select id, name
+from ea.sv_student_category
+on conflict(id) do update set
+name = EXCLUDED.name;
+
 -- 学生-等级
 insert into ea.student_level(student_id, type, level)
 select student_id, type, level
@@ -461,11 +468,16 @@ start_section  = EXCLUDED.start_section,
 total_section  = EXCLUDED.total_section,
 root_id        = EXCLUDED.root_id;
 
+-- 更新标志位
+update ea.task_schedule ts set
+week_bits = ea.fn_weeks_to_integer(ts.start_week, ts.end_week, ts.odd_even),
+section_bits = ea.fn_sections_to_integer(ts.start_section, ts.total_section);
+
 -- 学生选课
 insert into ea.task_student(task_id, student_id, date_created, register_type, repeat_type, exam_flag)
 select task_id, student_id, date_created, register_type, repeat_type, exam_flag
 from ea.sv_task_student
-where term_id = 20172
+where term_id = 20182
 on conflict(task_id, student_id) do update set
 date_created     = EXCLUDED.date_created,
 register_type    = EXCLUDED.register_type,
@@ -480,12 +492,12 @@ delete from ea.task_student
 where (task_id, student_id) not in (
     select task_id, student_id
     from ea.sv_task_student
-    where term_id = 20172
+    where term_id = 20182
 ) and task_id in (
     select task.id
     from ea.task
     join ea.course_class on course_class.id = task.course_class_id
-    where course_class.term_id = 20172
+    where course_class.term_id = 20182
 );
 
 delete from ea.task_teacher

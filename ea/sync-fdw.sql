@@ -319,6 +319,13 @@ create foreign table ea.sv_student (
     admission_id bigint
 ) server zf options (schema 'EA', table 'SV_STUDENT', readonly 'true');
 
+-- 学生类别
+drop foreign table if exists ea.sv_student_category;
+create foreign table ea.sv_student_category (
+    id integer,
+    name text
+) server zf options (schema 'EA', table 'SV_STUDENT_CATEGORY', readonly 'true');
+
 -- 学生-等级
 drop foreign table if exists ea.sv_student_level;
 create foreign table ea.sv_student_level (
