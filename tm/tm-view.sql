@@ -27,6 +27,21 @@ with admin_class_at_school as (
     join ea.major m on ac.major_id = m.id
     join ea.subject s on m.subject_id = s.id
     where current_date < make_date(grade + length_of_schooling, 7, 1)
+    union all
+    select ac.supervisor_id, ac.counsellor_id
+    from ea.admin_class ac
+    join ea.major m on ac.major_id = m.id
+    join ea.subject s on m.subject_id = s.id
+    where current_date >= make_date(grade + length_of_schooling, 7, 1)
+    and exists (
+      select 1
+      from ea.course_class
+      join ea.task on course_class.id = task.course_class_id
+      join ea.task_student on task_student.task_id = task.id
+      join ea.student on task_student.student_id = task_student.student_id
+      where student.admin_class_id = ac.id
+      and ea.course_class.term_id = (select id from ea.term where active = true)
+    )
 )
 select t.id as user_id, 'ROLE_IN_SCHOOL_TEACHER' as role_id
 from ea.teacher t
@@ -62,13 +77,11 @@ select t.id as user_id, 'ROLE_PLACE_BOOKING_CHECKER' as role_id
 from ea.teacher t
 join booking_auth ba on ba.checker_id = t.id
 union all
-select t.id as user_id, 'ROLE_CLASS_SUPERVISOR' as role_id
-from ea.teacher t
-where exists(select * from admin_class_at_school where supervisor_id = t.id)
+select distinct supervisor_id as user_id, 'ROLE_CLASS_SUPERVISOR' as role_id
+from admin_class_at_school
 union all
-select t.id as user_id, 'ROLE_STUDENT_COUNSELLOR' as role_id
-from ea.teacher t
-where exists(select * from admin_class_at_school where counsellor_id = t.id)
+select distinct counsellor_id as user_id, 'ROLE_STUDENT_COUNSELLOR' as role_id
+from admin_class_at_school
 union all
 select distinct s.teacher_id as user_id, 'ROLE_OBSERVER' as role_id
 from tm.observer s
@@ -111,7 +124,9 @@ from tm_dual.student_abroad s;
 
 -- 外部用户角色
 create or replace view tm.dv_external_role as
-select '' as userId, '' as role_id where 1 = 2;
+select id as user_id, 'ROLE_BUILDING_KEEPER' as role_id
+from tm.system_user
+where user_type = 9 and name like '%楼管理员%';
 
 -- 计划-课程
 create or replace view tm.dv_scheme_course as
