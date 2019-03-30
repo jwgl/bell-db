@@ -128,6 +128,31 @@ end
 $$ language plpgsql;
 
 /*
+ * 星期几转字符串
+ */
+create or replace function ea.fn_day_of_week_to_string(
+  day_of_week integer
+) returns text immutable
+returns null on null input as $$
+begin
+  return '星期' || substring('一二三四五六日', day_of_week, 1);
+end;
+$$ language plpgsql;
+
+/*
+ * 节次转字符串
+ */
+create or replace function ea.fn_sections_to_string(
+  start_section integer,
+  total_section integer
+) returns text immutable
+returns null on null input as $$
+begin
+  return start_section || '-' || start_section + total_section - 1 || '节';
+end;
+$$ language plpgsql;
+
+/*
  * 上课时间
  */
 create or replace function ea.fn_timetable_to_string(
