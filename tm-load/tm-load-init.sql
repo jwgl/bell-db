@@ -76,7 +76,7 @@ from ea.course
 where id like '93%'
 and id in (
 	select course_id
-	from ea.course_class 
+	from ea.course_class
   where term_id between 20161 and 20192
 ) order by 1;
 
@@ -176,12 +176,12 @@ union all
 select distinct course_class.department_id, course.id, 4, '毕业论文或设计', 9999,
   case course_class.department_id
     when '13' then 0.7 -- 设计学院
-    else 0.5 
+    else 0.5
   end as ratio
 from ea.course_class
 join ea.course on course_class.course_id = course.id
 where course_class.term_id >= 20161
-and (course.name like '毕业论文%' or course.name like '毕业设计%' or course.name like '辅修毕业论文%' or 
+and (course.name like '毕业论文%' or course.name like '毕业设计%' or course.name like '辅修毕业论文%' or
   course.name like '毕业创作' or course.name like '毕业作品%')
 union all
 select distinct course_class.department_id, course.id, 4, '分散实习', 30, 0.2
@@ -197,7 +197,7 @@ upper_bound = excluded.upper_bound,
 ratio = excluded.ratio;
 
 -- 课程项目设定
-select course_class.department_id, course.id as course_id, course.name as course_name, 
+select course_class.department_id, course.id as course_id, course.name as course_name,
   course_item.id as course_item_id, course_item.name as course_item_name,
   array_to_string(array_agg(distinct task.code order by task.code desc), ',') as task_codes
 from ea.course_class

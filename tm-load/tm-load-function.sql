@@ -39,7 +39,7 @@ begin
     select status into v_form_status
     from tm_load.workload_form
     where id = old.form_id;
-    
+
     -- 如果正在审批过程中，则报错
     if v_form_status in ('SUBMITTED', 'CHECKED', 'APPROVED') then
       raise exception 'Should not update item task_id=% when it in workflow.', old.task_id;
@@ -74,7 +74,7 @@ begin
     end if;
 
     -- 如果未提交且为软删除，则报错
-    if old.flag = 'D' then  
+    if old.flag = 'D' then
       raise exception 'Can not update this row when it soft deleted.'
       using hint = 'Please delete to restore the item.';
     end if;
@@ -128,13 +128,13 @@ begin
     select status into v_form_status
     from tm_load.workload_form
     where id = old.form_id;
-    
+
     -- 如果正在审批过程中，则报错
     if v_form_status in ('SUBMITTED', 'CHECKED', 'APPROVED') then
       raise exception 'Should not delete this row when it in workflow.';
     end if;
 
-    -- 如果已提交，则保存历史   
+    -- 如果已提交，则保存历史
     -- v_history = jsonb_build_object('a', old.a, 'b', old.b, ..., 'effective_to', localtimestamp);
     execute 'select jsonb_build_object(' || (
       select string_agg('''' || field || ''', $1.' || field, ', ') from unnest(v_history_fields) t(field)
@@ -177,7 +177,7 @@ begin
       -- 重要，使v_history_values获取当前表的类型
       v_history_values = old;
       v_history_values = jsonb_populate_record(v_history_values, v_history);
-      
+
       -- update table_name set
       -- (a,b,c) = (y.a,y.b,y.c)
       -- where row(x.m,x.n) = (m,n)

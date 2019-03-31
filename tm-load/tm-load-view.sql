@@ -4,7 +4,7 @@
  * 2. 计算排课时间的hash值，用于后面合并；
  * 3. 提前计算选课学生数，用于后面消除错误数据。
  */
-create or replace view tm_load.dva_task_schedule_base as 
+create or replace view tm_load.dva_task_schedule_base as
 select course_class.term_id,
   course_class.department_id,
   task_schedule.teacher_id,
@@ -40,7 +40,7 @@ and (course_item_workload_settings.course_item_id is null or course_item_workloa
 
 /**
  * 辅助视图-按上课时间合并教学任务
- * 1. 注意处理错误数据：存在同一时间不同开课单位的开课, 
+ * 1. 注意处理错误数据：存在同一时间不同开课单位的开课,
  *    也存在同一时间同一开课单位不同课程的情况，后面处理时，需要取最终工作量的最大值。
  * 2. 存在多计划合班情况，计算课程性质；
  * 3. 提前处理专业班型规模类型。
@@ -58,7 +58,7 @@ select term_id, department_id, teacher_id, course_id, course_name, course_item_i
     when task_workload_settings.note is not null then
       jsonb_build_object('taskWorkloadSettings', task_workload_settings.note)
     else
-      '{}'::jsonb 
+      '{}'::jsonb
   end as note
 from ( -- 合并同一时间上课的教学任务
   select term_id, department_id, teacher_id, course_id, course_name, course_item_id, course_item_name, course_credit, course_properties,
@@ -103,7 +103,7 @@ where (task_workload_settings.task_id is null or task_workload_settings.type in 
 /**
  * 辅助视图-未排课任务基础表（不包括按学生计的任务）
  */
-create or replace view tm_load.dva_task_without_timetable_base as 
+create or replace view tm_load.dva_task_without_timetable_base as
 select course_class.term_id,
   course_class.department_id,
   course_class.teacher_id,
@@ -181,18 +181,18 @@ select term_id, department_id, teacher_id, ts.course_id, course_name, course_ite
     when class_size_type is null and department_id = '50' then 5 -- 慈善特殊课
     else class_size_type -- 按专业
  end as class_size_type,
- course_workload_type, task_workload_type, 
+ course_workload_type, task_workload_type,
  workload_source, note
 from (
   -- 排课任务按任务合并教学安排
   select term_id, department_id, x.teacher_id, course_id, course_name, course_item_id, course_item_name, course_credit, course_properties,
     x.task_id, course_tasks, course_class_ordinal, student_count,
-    coalesce(sum(ea.fn_weeks_count(start_week, end_week, odd_even) * total_section), 0) as schedule_workload, 
+    coalesce(sum(ea.fn_weeks_count(start_week, end_week, odd_even) * total_section), 0) as schedule_workload,
     coalesce(y.value, 0) as workload_correction,
     instructional_mode_type, instructional_mode_ratio, class_size_type,
-    course_workload_type, task_workload_type, 
+    course_workload_type, task_workload_type,
     jsonb_build_object(
-      'type', 'H', 
+      'type', 'H',
       'assigned', false,
       'timetable', jsonb_agg(jsonb_build_object(
         'startWeek', start_week,
@@ -216,7 +216,7 @@ from (
     0 as schedule_workload,
     y.value as workload_correction,
     instructional_mode_type, instructional_mode_ratio, class_size_type,
-    course_workload_type, y.type as task_workload_type, 
+    course_workload_type, y.type as task_workload_type,
     jsonb_build_object('type', 'H', 'assigned', true) as workload_source,
     x.note || jsonb_build_object('workloadCorrection', y.note) as note
   from tm_load.dva_task_schedule x
@@ -230,7 +230,7 @@ from (
       'ordinal', task_ordinal
     )) as course_tasks, task_ordinal as course_class_ordinal, student_count, 0 as schedule_workload, workload_correction,
     instructional_mode_type, instructional_mode_ratio, class_size_type,
-    course_workload_type, task_workload_type, 
+    course_workload_type, task_workload_type,
     jsonb_build_object('type', 'H', 'assigned', false) as workload_source,
     note
   from tm_load.dva_task_without_timetable x
@@ -243,7 +243,7 @@ from (
       'ordinal', task_ordinal
     )) as course_tasks, task_ordinal as course_class_ordinal, student_count, 0 as schedule_workload, y.value as workload_correction,
     instructional_mode_type, instructional_mode_ratio, class_size_type,
-    course_workload_type, y.type as task_workload_type, 
+    course_workload_type, y.type as task_workload_type,
     jsonb_build_object('type', 'H', 'assigned', true) as workload_source,
     x.note || jsonb_build_object('workloadCorrection', y.note) as note
   from tm_load.dva_task_without_timetable x
@@ -261,7 +261,7 @@ select term_id, department_id, teacher_id, a.course_id, course_name, course_item
     when course_workload_type = 1 or task_workload_type = 1 then 0
     else schedule_workload
   end as original_workload,
-  workload_correction, 
+  workload_correction,
   instructional_mode_type, instructional_mode_ratio,
   coalesce(b.ratio, 1.0)::numeric(2,1) as class_size_ratio,
   case
@@ -287,7 +287,7 @@ left join tm_load.course_parallel_ratio c on a.course_id = c.course_id;
 /**
  * 辅助视图-按学生数计工作量的任务
  */
-create or replace view tm_load.dva_task_by_student as 
+create or replace view tm_load.dva_task_by_student as
 select course_class.term_id,
   course_class.department_id,
   course_class.teacher_id,
@@ -367,7 +367,7 @@ select term_id, department_id, y.teacher_id, course_id, course_name, course_item
   least(y.value, x.student_upper_bound) * course_credit::integer as workload_correction,
   instructional_mode_type, instructional_mode_ratio,
   1.0 as class_size_ratio, 1.0 as class_parallel_ratio,
-  course_workload_type, y.type as task_workload_type, 
+  course_workload_type, y.type as task_workload_type,
   jsonb_build_object('type', 'S', 'assigned', true)as workload_source,
   x.note || jsonb_build_object('workloadCorrection', y.note) as note
 from tm_load.dva_task_by_student x
@@ -401,12 +401,12 @@ select dva_workload_item.term_id, dva_workload_item.department_id, teacher.id as
   department.name as teacher_department, teacher.is_external as is_external_teacher, case teacher.is_external
     when true then
       coalesce(teacher_workload_type.type, 3) -- 外聘教师默认按原始工作量
-    else 
+    else
       coalesce(teacher_workload_type.type, 2) -- 专职教师默认按标准工作量
   end as teacher_workload_type,
   coalesce(teacher_admin_workload.value, 0) as teacher_admin_workload,
   course_id, course_name, course_item_id, course_item_name, course_credit, course_properties,
-  task_id, course_tasks, student_count, original_workload, workload_correction, 
+  task_id, course_tasks, student_count, original_workload, workload_correction,
   instructional_mode_type, instructional_mode_ratio, class_size_ratio, class_parallel_ratio,
   normalized_workload, workload_source, course_workload_type, task_workload_type,
   note
