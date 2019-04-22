@@ -50,10 +50,18 @@ with teacher as (
     where xjzt =  '有' -- 有学籍
     and dqszj > (select max(dqszj) - 8 from zfxfzb.xsjbxxb)
     order by xh
+), staff as (
+    select id, name, null as login_name, password, email, long_phone,
+        1 as enabled,
+        9 as user_type,
+        department_id
+    from ea.external_staff 
 )
 select * from teacher
 union all
-select * from student;
+select * from student
+union all
+select * from staff;
 
 /**
  * 教学场地-允许借用用户类型
