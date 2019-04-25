@@ -334,6 +334,14 @@ create foreign table ea.sv_student_level (
     level integer
 ) server zf options (schema 'EA', table 'SV_STUDENT_LEVEL');
 
+-- 行政班干部
+drop foreign table if exists ea.sv_admin_class_cadre;
+create foreign table ea.sv_admin_class_cadre (
+    admin_class_id bigint,
+    student_id char(10),
+    post text
+) server zf options (schema 'EA', table 'SV_ADMIN_CLASS_CADRE');
+
 -- 板块课程
 drop foreign table if exists ea.sv_timeplate_course;
 create foreign table ea.sv_timeplate_course (

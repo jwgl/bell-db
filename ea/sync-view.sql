@@ -753,6 +753,15 @@ where dj is not null
 order by xh;
 
 /**
+ * 行政班干部
+ */
+create or replace view ea.sv_admin_class_cadre as
+select c.id as admin_class_id, a.xh as student_id, a.zw as post
+from zfxfzb.xszwb a
+join zfxfzb.xsjbxxb b on a.xh = b.xh
+join ea.sv_admin_class c on a.xzb = c.name;
+
+/**
  * 排课板块（辅助视图）
  */
 create or replace view ea.sva_timeplate_base as
