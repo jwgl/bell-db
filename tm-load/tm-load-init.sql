@@ -2,6 +2,7 @@
 create schema tm_load authorization tm;
 
 insert into tm_load.department_settings(department_id, creator_id, checker_id) values ('01', '01035', '01039');
+insert into tm_load.department_settings(department_id, creator_id, checker_id) values ('11', '11103', '11103');
 
 -- 教学形式类别
 insert into tm_load.task_instructional_type(name, ratio, editable) values('全外语课', 1.5, false);
@@ -138,7 +139,7 @@ on conflict(task_id) do update set
 type = excluded.type,
 value = excluded.value;
 
-insert into tm_load.task_workload_correction(task_id, teacher_id, type, value, note)
+insert into tm_load.workload_correction(task_id, teacher_id, type, value, note)
 select id, teacher_id, 4 as type, student_count as value, '测试学生分配' || teacher_id as note
 from ea.task
 cross join (values
@@ -213,7 +214,7 @@ and (course_class.department_id, course_item.id) not in (
 and course.name <> course_item.name
 group by course_class.department_id, course.id, course.name, course_item.id, course_item.name;
 
-insert into course_item_workload_settings(department_id, course_item_id, type, category, upper_bound, ratio)
+insert into tm_load.course_item_workload_settings(department_id, course_item_id, type, category, upper_bound, ratio)
 select distinct course_class.department_id, course_item.id as course_item_id, 1 as type, '体育俱乐部' as category, 0 as upper_bound, 1.0 as ratio
 from ea.course_class
 join ea.task on task.course_class_id = course_class.id
