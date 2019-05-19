@@ -38,7 +38,7 @@ with admin_class_at_school as (
       from ea.course_class
       join ea.task on course_class.id = task.course_class_id
       join ea.task_student on task_student.task_id = task.id
-      join ea.student on task_student.student_id = task_student.student_id
+      join ea.student on student.id = task_student.student_id
       where student.admin_class_id = ac.id
       and ea.course_class.term_id = (select id from ea.term where active = true)
     )
@@ -61,7 +61,7 @@ select distinct course_class.teacher_id as user_id, case term.active
   end as role_id
 from ea.course_class
 join ea.term on course_class.term_id = term.id
-where term.id >= (select value::integer from system_config where key='rollcall.start_term')
+where term.id >= (select value::integer from tm.system_config where key='rollcall.start_term')
 union all
 select distinct task_schedule.teacher_id as user_id, case term.active
     when true then 'ROLE_TASK_SCHEDULE_TEACHER'
@@ -71,11 +71,11 @@ from ea.course_class
 join ea.task on task.course_class_id = course_class.id
 join ea.task_schedule on task_schedule.task_id = task.id
 join ea.term on course_class.term_id = term.id
-where term.id >= (select value::integer from system_config where key='rollcall.start_term')
+where term.id >= (select value::integer from tm.system_config where key='rollcall.start_term')
 union all
 select t.id as user_id, 'ROLE_PLACE_BOOKING_CHECKER' as role_id
 from ea.teacher t
-join booking_auth ba on ba.checker_id = t.id
+join tm.booking_auth ba on ba.checker_id = t.id
 union all
 select distinct supervisor_id as user_id, 'ROLE_CLASS_SUPERVISOR' as role_id
 from admin_class_at_school
