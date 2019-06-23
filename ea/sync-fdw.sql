@@ -248,7 +248,8 @@ create foreign table ea.sv_teacher (
     at_school boolean,
     can_guidance_graduate boolean,
     department_id char(2),
-    resume varchar(3000)
+    resume varchar(3000),
+    identity_number text
 ) server zf options (schema 'EA', table 'SV_TEACHER', readonly 'true');
 
 -- 行政班

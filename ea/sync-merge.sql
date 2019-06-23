@@ -212,11 +212,11 @@ department_id     = EXCLUDED.department_id;
 insert into ea.teacher(id, name, sex, birthday, political_status, nationality, academic_title,
     academic_level, academic_degree, educational_background, graduate_school, graduate_major,
     date_graduated, post_type, has_qualification, is_lab_technician, is_external,
-    at_school, can_guidance_graduate, department_id, resume)
+    at_school, can_guidance_graduate, department_id, resume, identity_number)
 select id, name, sex, birthday, political_status, nationality, academic_title,
     academic_level, academic_degree, educational_background, graduate_school, graduate_major,
     date_graduated, post_type, has_qualification, is_lab_technician, is_external,
-    at_school, can_guidance_graduate, department_id, resume
+    at_school, can_guidance_graduate, department_id, resume, identity_number
 from ea.sv_teacher
 on conflict(id) do update set
 name                   = EXCLUDED.name,
@@ -238,7 +238,8 @@ is_external            = EXCLUDED.is_external,
 at_school              = EXCLUDED.at_school,
 can_guidance_graduate  = EXCLUDED.can_guidance_graduate,
 department_id          = EXCLUDED.department_id,
-resume                 = EXCLUDED.resume;
+resume                 = EXCLUDED.resume,
+identity_number        = EXCLUDED.identity_number;
 
 -- 行政班
 insert into ea.admin_class(id, name, major_id, department_id, supervisor_id, counsellor_id)
