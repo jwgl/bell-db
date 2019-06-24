@@ -32,7 +32,7 @@ insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_o
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.settings.huntChecker', 'main.settings', '学院审核员', '/hunt/settings/checkers', true, array['TM-HUNT-API'], 33, 'PERM_HUNT_ADMIN');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.hunt.projectApplication', 'main.hunt', '项目填报', '/hunt/teachers/${userId}/applications', true, array['TM-HUNT-API'], 10, 'PERM_HUNT_WRITE');
+('main.hunt.projectApplication', 'main.hunt', '项目填报', '/hunt/teachers/${userId}/tasks', true, array['TM-HUNT-API'], 10, 'PERM_HUNT_WRITE');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.hunt.check', 'main.hunt', '项目审核', '/hunt/checkers/${userId}/tasks', true, array['TM-HUNT-API'], 20, 'PERM_HUNT_CHECK');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
