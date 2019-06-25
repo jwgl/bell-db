@@ -39,3 +39,9 @@ create type tm_hunt.change_type as enum (
     'OTHER'
 );
 alter type tm_hunt.change_type owner to tm;
+
+create type tm_hunt.fund_type as enum (
+    'TRANSFER',
+    'ARRANGEMENT'
+);
+alter type tm_hunt.fund_type owner to tm;

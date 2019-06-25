@@ -31,8 +31,6 @@ INSERT INTO tm.role (id,name) VALUES ('ROLE_COURSE_REGISTER_STUDENT',    '可选
 INSERT INTO tm.role (id,name) VALUES ('ROLE_FREE_LISTEN_ADMIN',          '免听管理员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_ROLLCALL_ADMIN',             '考勤管理员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_ROLLCALL_DEPT_ADMIN',        '考勤管理员-学院');
-INSERT INTO tm.role (id,name) VALUES ('ROLE_OBSERVER',                   '现任督导员');
-INSERT INTO tm.role (id,name) VALUES ('ROLE_OBSERVATION_ADMIN',          '督导管理员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_PLACE_KEEPER',               '教室管理员');
 INSERT INTO tm.role (id,name) VALUES ('ROLE_BUILDING_KEEPER',            '教学楼管理员');
 
@@ -82,11 +80,6 @@ INSERT INTO tm.permission (id,name) VALUES ('PERM_COURSE_CLASS_READ',           
 INSERT INTO tm.permission (id,name) VALUES ('PERM_COURSE_CLASS_EXECUTE',           '教学班-执行');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_EXAM_DISQUAL_DEPT_ADMIN',        '取消考试资格-管理');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_EXAM_DISQUAL_WRITE',             '取消考试资格-编辑');
-INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_WRITE',              '督导听课-编辑');
-INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_READ',               '督导听课-查看');
-INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_DEPT_APPROVE',       '督导听课-院督导听课发布');
-INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVER_ADMIN',                 '督导管理');
-INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVER_DEPT_ADMIN',            '督导管理-院督导员管理');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_STUDENT_SCHEDULES_READ',         '学生个人课表-查看');
       
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_SYSTEM_ADMIN',               'PERM_SYSTEM_SETUP');
@@ -151,16 +144,8 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_USER',     
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ACADEMIC_SECRETARY',         'PERM_COURSE_CLASS_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ACADEMIC_SECRETARY',         'PERM_EXAM_DISQUAL_DEPT_ADMIN');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_COURSE_CLASS_TEACHER',       'PERM_EXAM_DISQUAL_WRITE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_OBSERVER',                   'PERM_OBSERVATION_WRITE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_OBSERVATION_ADMIN',          'PERM_OBSERVATION_WRITE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_OBSERVATION_ADMIN',          'PERM_OBSERVER_ADMIN');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_OBSERVATION_ADMIN',          'PERM_OBSERVATION_DEPT_APPROVE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_DEAN_OF_TEACHING',           'PERM_OBSERVATION_DEPT_APPROVE');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ACADEMIC_SECRETARY',         'PERM_OBSERVER_DEPT_ADMIN');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',          'PERM_STUDENT_SCHEDULES_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_POSTPONED_STUDENT',          'PERM_STUDENT_SCHEDULES_READ');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_COURSE_CLASS_TEACHER',       'PERM_OBSERVATION_READ');
-INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ONCE_COURSE_CLASS_TEACHER',  'PERM_OBSERVATION_READ');
 
 insert into tm.menu(id, label, display_order) values ('main',               '主菜单',       01);
 insert into tm.menu(id, label, display_order) values ('main.program',       '教学计划',     10);
@@ -218,16 +203,6 @@ insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_o
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.process.studentAttendances', 'main.process', '我的考勤', '/here/students/${userId}/attendances', true, array['TM-HERE-API'], 54, 'PERM_ATTENDANCE_ITEM');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.process.observationView', 'main.process', '督导听课反馈', '/steer/teachers/${userId}/observations', true, array['TM-STEER-API'], 60, 'PERM_TASK_SCHEDULE_EXECUTE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.steer.observationForm', 'main.steer', '督导听课记录', '/steer/obervers/${userId}/observations', true, array['TM-STEER-API'], 10, 'PERM_OBSERVATION_WRITE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.steer.observationApproval', 'main.steer', '听课记录发布', '/steer/approvers/${userId}/observations', true, array['TM-STEER-API'], 11, 'PERM_OBSERVATION_APPROVE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.steer.observationReport', 'main.steer', '督导听课统计', '/steer/reports', true, array['TM-STEER-API'], 12, 'PERM_OBSERVATION_WRITE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.steer.observationLegacy', 'main.steer', '督导听课历史数据', '/steer/legacies', true, array['TM-STEER-API'], 13, 'PERM_OBSERVER_ADMIN');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.affair.workitems', 'main.affair', '待办事项', '/core/users/${userId}/works', true, array['TM-CORE-API'], 10, 'PERM_WORK_ITEMS');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.affair.cardReissueForm', 'main.affair', '补办学生证申请', '/card/students/${userId}/reissues', true, array['TM-CARD-API'], 40, 'PERM_CARD_REISSUE_WRITE');
@@ -256,41 +231,11 @@ insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_o
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.settings.program', 'main.settings', '教学计划', '/plan/settings/programs', true, array['TM-PLAN-API'], 11, 'PERM_PROGRAM_SETUP');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.settings.dualDegreeUser', 'main.settings', '联合培养用户', '/dual/settings/users', true, array['TM-DUAL-API'], 20, 'PERM_DUALDEGREE_ADMIN');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.settings.placeBookingAuth', 'main.settings', '借用教室审核人', '/place/settings/bookingAuths', true, array['TM-PLACE-API'], 30, 'PERM_PLACE_BOOKING_APPROVE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.settings.observer', 'main.settings', '校级督导', '/steer/settings/observers', true, array['TM-STEER-API'], 40, 'PERM_OBSERVER_ADMIN');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.settings.deptObserver', 'main.settings', '院级督导', '/steer/departments/${departmentId}/observers', true, array['TM-STEER-API'], 41, 'PERM_OBSERVER_DEPT_ADMIN');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('user.profile.modify', 'user.profile', '修改个人信息', '/core/users/${userId}/profile', true, array['TM-CORE-API'], 10, 'PERM_PROFILE_SETUP');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('user.profile.password', 'user.profile', '修改密码', '/core/users/${userId}/password', true, array['TM-CORE-API'], 20, 'PERM_PROFILE_SETUP');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.dual.universityAdmin', 'main.dual', '合作大学管理', '/dual/users/${userId}/universities', true, array['TM-DUAL-API'], 10, 'PERM_DUALDEGREE_ADMIN');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.dual.agreementAdmin', 'main.dual', '协议管理', '/dual/users/${userId}/agreements', true, array['TM-DUAL-API'], 11, 'PERM_DUALDEGREE_AGREEMENT_WRITE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.dual.agreements', 'main.dual', '协议列表', '/dual/agreements', true, array['TM-DUAL-API'], 12, 'PERM_DUALDEGREE_AGREEMENT_READ');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.dual.agreementsDept', 'main.dual', '协议列表', '/dual/departments/${departmentId}/agreements', true, array['TM-DUAL-API'], 12, 'PERM_DUALDEGREE_DEPT_ADMIN');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.dual.award', 'main.dual', '学位申请管理', '/dual/departments/${departmentId}/awards', true, array['TM-DUAL-API'], 13, 'PERM_DUALDEGREE_DEPT_ADMIN');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.dual.apply', 'main.dual', '在线申请', '/dual/students/${userId}/applications', true, array['TM-DUAL-API'], 14, 'PERM_DUALDEGREE_WRITE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.dual.applicationCheck', 'main.dual.workflow', '材料审核', '/dual/checkers/${userId}/applications', true, array['TM-DUAL-API'], 15, 'PERM_DUALDEGREE_DEPT_ADMIN');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.dual.paperMentor', 'main.dual.workflow', '论文导师设置', '/dual/checkers/${userId}/papers', true, array['TM-DUAL-API'], 16, 'PERM_DUALDEGREE_DEPT_ADMIN');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.dual.paperApproval', 'main.dual.workflow', '论文审核', '/dual/mentors/${userId}/papers', true, array['TM-DUAL-API'], 17, 'PERM_DUALDEGREE_PAPER_APPROVE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.dual.studentAbroad', 'main.dual', '学生管理', '/dual/departments/${departmentId}/students', true, array['TM-DUAL-API'], 11, 'PERM_DUALDEGREE_DEPT_ADMIN');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.dual.mentor', 'main.dual', '导师管理', '/dual/departments/${departmentId}/mentors', true, array['TM-DUAL-API'], 14, 'PERM_DUALDEGREE_DEPT_ADMIN');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.dual.applicationAdmin', 'main.dual', '申请单管理', '/dual/admin/applications', true, array['TM-DUAL-API'], 14, 'PERM_DUALDEGREE_ADMIN');
 
 INSERT INTO tm.workflow (id,name) VALUES ('scheme.create',  '教学计划编制');
 INSERT INTO tm.workflow (id,name) VALUES ('scheme.revise',  '教学计划变更');
