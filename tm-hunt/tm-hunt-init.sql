@@ -51,6 +51,8 @@ insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_o
 ('main.hunt.changeReview', 'main.hunt', '处长加签', '/hunt/directors/${userId}/info-changes', true, array['TM-HUNT-API'], 20, 'PERM_HUNT_DIRECT');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.hunt.projects', 'main.hunt', '项目汇总', '/hunt/users/${userId}/projects', true, array['TM-HUNT-API'], 70, 'PERM_HUNT_OVERVIEW');
+insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+('main.hunt.fund', 'main.hunt', '经费管理', '/hunt/approvers/${userId}/funds', true, array['TM-HUNT-API'], 60, 'PERM_HUNT_ADMIN');
 
 INSERT INTO tm.workflow (id,name) VALUES ('hunt.review', 		'教学项目项目审核');
 INSERT INTO tm.workflow (id,name) VALUES ('hunt.info-change', 		'教学项目项目变更审核');
