@@ -39,8 +39,4 @@ insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_o
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.settings.deptObserver', 'main.settings', '院级督导', '/steer/departments/${departmentId}/observers', true, array['TM-STEER-API'], 41, 'PERM_OBSERVER_DEPT_ADMIN');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-<<<<<<< HEAD
 ('main.steer.dean', 'main.steer', '本学院被听课', '/steer/obervers/${userId}/deans', true, array['TM-STEER-API'], 14, 'PERM_OBSERVATION_APPROVE');
-=======
-('main.steer.dean', 'main.steer', '本学院被听课', '/steer/obervers/${userId}/deans', true, array['TM-STEER-API'], 14, 'PERM_OBSERVATION_DEPT_APPROVE');
->>>>>>> upstream/master
