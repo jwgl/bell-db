@@ -5,7 +5,11 @@ INSERT INTO tm.role (id,name) VALUES ('ROLE_OBSERVATION_ADMIN',          '督导
 --创建权限
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_WRITE',              '督导听课-编辑');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_READ',               '督导听课-查看');
+<<<<<<< HEAD
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_APPROVE',       	   '督导听课-院督导听课发布');
+=======
+INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_DEPT_APPROVE',       '督导听课-院督导听课发布');
+>>>>>>> upstream/master
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVER_ADMIN',                 '督导管理');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVER_DEPT_ADMIN',            '督导管理-院督导员管理');
 
@@ -35,4 +39,8 @@ insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_o
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.settings.deptObserver', 'main.settings', '院级督导', '/steer/departments/${departmentId}/observers', true, array['TM-STEER-API'], 41, 'PERM_OBSERVER_DEPT_ADMIN');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+<<<<<<< HEAD
 ('main.steer.dean', 'main.steer', '本学院被听课', '/steer/obervers/${userId}/deans', true, array['TM-STEER-API'], 14, 'PERM_OBSERVATION_APPROVE');
+=======
+('main.steer.dean', 'main.steer', '本学院被听课', '/steer/obervers/${userId}/deans', true, array['TM-STEER-API'], 14, 'PERM_OBSERVATION_DEPT_APPROVE');
+>>>>>>> upstream/master
