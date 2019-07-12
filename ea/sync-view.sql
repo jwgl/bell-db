@@ -89,7 +89,7 @@ select xydm as id,
             and exists (select 1 from zfxfzb.xsjbxxb xs where xs.dqszj >= 2010 and xs.xy = xymc)
             then 1
         else 0
-    end as enabled 
+    end as enabled -- 近四年没有学生则禁用
 from zfxfzb.xydmb
 order by id;
 
