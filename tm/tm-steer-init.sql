@@ -5,11 +5,7 @@ INSERT INTO tm.role (id,name) VALUES ('ROLE_OBSERVATION_ADMIN',          '督导
 --创建权限
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_WRITE',              '督导听课-编辑');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_READ',               '督导听课-查看');
-<<<<<<< HEAD
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_APPROVE',       	   '督导听课-院督导听课发布');
-=======
-INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVATION_DEPT_APPROVE',       '督导听课-院督导听课发布');
->>>>>>> upstream/master
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVER_ADMIN',                 '督导管理');
 INSERT INTO tm.permission (id,name) VALUES ('PERM_OBSERVER_DEPT_ADMIN',            '督导管理-院督导员管理');
 
