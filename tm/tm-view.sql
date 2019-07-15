@@ -615,7 +615,9 @@ with latest_scheme as (
   where status = 'APPROVED'
   group by program_id
 )
-select p.id as program_id,
+select department.name as department,
+    p.id as program_id,
+    m.grade as grade,
     s.name as subject,
     d.name as direction,
     property.name as property,
@@ -635,12 +637,15 @@ join ea.major m on m.id = p.major_id
 join ea.subject s on s.id = m.subject_id
 join latest_scheme on latest_scheme.program_id = scheme.program_id
 join ea.property on property.id = sc.property_id
+join ea.department on m.department_id = department.id
 left join ea.direction d on d.id = sc.direction_id
 where m.grade >= 2016
 and scheme.version_number <= latest_scheme.version_number
 and (sc.revise_version is null or sc.revise_version > latest_scheme.version_number)
 union all
-select p.id as program_id,
+select department.name as department,
+    p.id as program_id,
+    m.grade as grade,
     s.name as subject,
     d.name as direction,
     property.name as property,
@@ -660,6 +665,7 @@ join ea.major m on m.id = p.major_id
 join ea.subject s on s.id = m.subject_id
 join latest_scheme on latest_scheme.program_id = scheme.program_id
 join ea.property on property.id = sc.property_id
+join ea.department on m.department_id = department.id
 left join ea.direction d on d.id = sc.direction_id
 where m.grade >=2016
 and scheme.version_number <= latest_scheme.version_number
