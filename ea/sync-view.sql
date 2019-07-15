@@ -977,16 +977,26 @@ with task_base as ( -- 所有任务
   select distinct code, include, min(condition_group) as condition_group, condition
   from condition_base
   group by code, include, condition
+), with_level as ( -- 层次
+  select code, include, condition_group,
+    '层次'  as condition_name, substr(condition, 1, 2) as condition_value
+  from condition_all
+  where substr(condition, 1, 2) in ('本科', '硕士', '博士')
+), without_level as ( -- 排除层次
+  select code, include, condition_group, condition,
+    regexp_replace(condition, '(本科|硕士|博士)(.*)$', '\2') as replaced
+  from condition_all
+  where condition not in ('本科', '硕士', '博士')
 ), with_sex as ( -- 包含性别
   select code, include, condition_group,
-    '性别'  as condition_name, substr(condition, -2, 1) as condition_value
-  from condition_all
-  where condition like '%男生' or condition like '%女生'
+    '性别'  as condition_name, substr(replaced, -2, 1) as condition_value
+  from without_level
+  where replaced like '%男生' or replaced like '%女生'
 ), without_sex as ( -- 排除性别
   select code, include, condition_group, condition,
-    regexp_replace(condition, '(.*)[男女]生$', '\1') as replaced
-  from condition_all
-  where condition not in ('男生', '女生')
+    regexp_replace(replaced, '(.*)[男女]生$', '\1') as replaced
+  from without_level
+  where replaced not in ('男生', '女生')
 ), with_major as ( -- 包含年级专业
   select code, include, condition_group,
     '年级专业'  as condition_name, nj || zydm  as condition_value
