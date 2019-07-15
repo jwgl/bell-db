@@ -84,7 +84,7 @@ select xydm as id,
     end as has_students, -- 是否有学生
     case
         when xylx is null
-            or not exists (select 1 from zfxfzb.xsjbxxb xs where xs.xy = xymc)
+            or not exists (select 1 from zfxfzb.xsjbxxb xs where xs.xy = xymc and xjzt = '有')
             or xylx = '教学单位'
             and exists (select 1 from zfxfzb.xsjbxxb xs where xs.dqszj >= 2010 and xs.xy = xymc)
             then 1
