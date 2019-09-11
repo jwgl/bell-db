@@ -369,7 +369,7 @@ create or replace function tm.sp_get_student_attendance_details_by_administrator
   total_section integer, -- 上课长度
   type text,             -- 类型
   course text,           -- 课程名称
-  teacher text           -- 早退节数
+  teacher text           -- 教师
 ) as $$
 begin
   return query
@@ -578,7 +578,7 @@ $$ language plpgsql;
 /**
  * 查询指定学院的学生考勤明细
  */
-create or replace function tm.sp_get_student_attendance_detailss_by_department (
+create or replace function tm.sp_get_student_attendance_details_by_department (
   p_term_id integer,    -- 学期
   p_department_id text  -- 学院ID
 ) returns table (
@@ -591,7 +591,7 @@ create or replace function tm.sp_get_student_attendance_detailss_by_department (
   total_section integer, -- 上课长度
   type text,             -- 类型
   course text,           -- 课程名称
-  teacher text           -- 早退节数
+  teacher text           -- 教师
 ) as $$
 begin
   return query
