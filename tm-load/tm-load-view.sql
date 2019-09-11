@@ -419,3 +419,31 @@ left join tm_load.teacher_workload_type on dva_workload_item.department_id = tea
 left join tm_load.teacher_admin_workload on dva_workload_item.teacher_id = teacher_admin_workload.teacher_id
   and dva_workload_item.term_id = teacher_admin_workload.term_id
 where teacher_workload_type.type is null or teacher_workload_type.type > 0;
+
+/**
+ * 辅助视图-输出
+ */
+create or replace view tm_load.av_workload_item as
+select a.term_id as 学期, b.name as 开课单位, teacher_id as 教师编号, teacher_name as 教师姓名, teacher_department as 教师单位, 
+    case when is_external_teacher then '是' else '否' end as 是否外聘,
+    course_id as 课程编号, course_name || coalesce('(' || course_item_name || ')', '') as 课程名称, course_credit as 学分,
+    course_properties as 课程性质, student_count as 选课人数, 
+    original_workload as 原始工作量, workload_correction 工作量调整,
+    instructional_mode_ratio as 教学形式系统, class_size_ratio as 班级规模系统, class_parallel_ratio as 平行班系统,
+    normalized_workload as 标准工作量,
+    array_to_string(array((
+        select obj.val->>'code'
+        from jsonb_array_elements(course_tasks) obj(val)
+    )), ',') as 选课课号, array_to_string(array((
+        select ea.fn_timetable_to_string(
+            (obj.val->>'startWeek')::integer,
+            (obj.val->>'endWeek')::integer,
+            (obj.val->>'oddEven')::integer,
+            (obj.val->>'dayOfWeek')::integer,
+            (obj.val->>'startSection')::integer,
+            (obj.val->>'totalSection')::integer
+        )
+        from jsonb_array_elements(workload_source->'timetable') obj(val)
+    )), ',') as 教学安排
+from tm_load.dv_workload_item a
+join ea.department b on a.department_id = b.id;
