@@ -354,6 +354,91 @@ end;
 $$ language plpgsql;
 
 /**
+ * 查询指定管理员（班主任/辅导员）的学生考勤明细
+ */
+create or replace function tm.sp_get_student_attendance_details_by_administrator (
+  p_term_id integer,     -- 学期
+  p_user_id text         -- 用户ID
+) returns table (
+  id text,               -- 学号
+  name text,             -- 姓名
+  admin_class text,      -- 行政班
+  week integer,          -- 周次
+  day_of_week integer,   -- 星期几
+  start_section integer, -- 起始节
+  total_section integer, -- 上课长度
+  type text,             -- 类型
+  course text,           -- 课程名称
+  teacher text           -- 早退节数
+) as $$
+begin
+  return query
+  with admin_class as (
+    select admin_class.id
+    from ea.admin_class
+    where admin_class.counsellor_id = p_user_id or admin_class.supervisor_id = p_user_id
+  ), free_listen as (
+    select student_id, task_schedule_id
+    from tm.dva_valid_free_listen
+    join ea.student on student.id = student_id
+    join admin_class on student.admin_class_id = admin_class.id
+    where term_id = p_term_id
+  ), student_leave as (
+    select student_id, a.week, task_schedule_id, teacher_id, 4 as type
+    from tm.dva_valid_student_leave a
+    join ea.student on student.id = a.student_id
+    join admin_class on student.admin_class_id = admin_class.id
+    where a.term_id = p_term_id
+      and (a.student_id, a.task_schedule_id) not in (
+        select b.student_id, b.task_schedule_id from free_listen b
+      )
+  ), rollcall as (
+    select student_id, a.week, task_schedule_id, teacher_id, a.type
+    from tm.dva_valid_rollcall a
+    join ea.student on student.id = a.student_id
+    join admin_class on student.admin_class_id = admin_class.id
+    where a.term_id = p_term_id
+      and (a.student_id, a.week, a.task_schedule_id) not in (
+        select b.student_id, b.week, b.task_schedule_id from student_leave b
+      )
+      and (a.student_id, a.task_schedule_id) not in (
+        select b.student_id, b.task_schedule_id from free_listen b
+      )
+  ), attendance as (
+    select * from rollcall
+    union
+    select * from student_leave
+  )
+  select s.id::text as id,
+    s.name::text as name,
+    ac.name::text as adminClass,
+    sa.week as week,
+    ts.day_of_week as dayOfWeek,
+    ts.start_section as startSection,
+    ts.total_section as totalSection,
+    case sa.type
+      when 1 then '旷课'
+      when 2 then '迟到'
+      when 3 then '早退'
+      when 4 then '请假'
+      when 5 then '迟到+早退'
+    end as type,
+    c.name::text as course,
+    teacher.name::text as teacher
+  from attendance sa
+  join ea.student s on sa.student_id = s.id
+  join ea.admin_class ac on s.admin_class_id = ac.id
+  join ea.task_schedule ts on sa.task_schedule_id = ts.id
+  join ea.task task on ts.task_id = task.id
+  join ea.course_class cc on task.course_class_id = cc.id
+  join ea.course c on cc.course_id = c.id
+  join ea.teacher teacher on sa.teacher_id = teacher.id
+  and sa.type <> 6
+  order by s.id, sa.week, ts.day_of_week, ts.start_section desc;
+end;
+$$ language plpgsql;
+
+/**
  * 查询指定管理员（班主任/辅导员）按行政班统计存在考勤数据的学生数
  */
 create or replace function tm.sp_get_admin_class_attendance_stats_by_administrator (
@@ -487,6 +572,87 @@ begin
   join ea.admin_class on student.admin_class_id = admin_class.id
   order by total desc, leave desc, absent desc, late desc, early desc
   limit p_limit;
+end;
+$$ language plpgsql;
+
+/**
+ * 查询指定学院的学生考勤明细
+ */
+create or replace function tm.sp_get_student_attendance_detailss_by_department (
+  p_term_id integer,    -- 学期
+  p_department_id text  -- 学院ID
+) returns table (
+  id text,               -- 学号
+  name text,             -- 姓名
+  admin_class text,      -- 行政班
+  week integer,          -- 周次
+  day_of_week integer,   -- 星期几
+  start_section integer, -- 起始节
+  total_section integer, -- 上课长度
+  type text,             -- 类型
+  course text,           -- 课程名称
+  teacher text           -- 早退节数
+) as $$
+begin
+  return query
+  with free_listen as (
+    select student_id, task_schedule_id
+    from tm.dva_valid_free_listen
+    join ea.student on student.id = student_id
+    where term_id = p_term_id
+    and student.department_id = p_department_id
+  ), student_leave as (
+    select student_id, a.week, task_schedule_id, teacher_id, 4 as type
+    from tm.dva_valid_student_leave a
+    join ea.student on student.id = a.student_id
+    where term_id = p_term_id
+      and student.department_id = p_department_id
+      and (a.student_id, a.task_schedule_id) not in (
+        select b.student_id, b.task_schedule_id from free_listen b
+      )
+  ), rollcall as (
+    select student_id, a.week, task_schedule_id, teacher_id, a.type
+    from tm.dva_valid_rollcall a
+    join ea.student on student.id = a.student_id
+    where term_id = p_term_id
+      and student.department_id = p_department_id
+      and (a.student_id, a.week, a.task_schedule_id) not in (
+        select b.student_id, b.week, b.task_schedule_id from student_leave b
+      )
+      and (a.student_id, a.task_schedule_id) not in (
+        select b.student_id, b.task_schedule_id from free_listen b
+      )
+  ), attendance as (
+    select * from rollcall
+    union
+    select * from student_leave
+  )
+  select s.id::text as id,
+    s.name::text as name,
+    ac.name::text as adminClass,
+    sa.week as week,
+    ts.day_of_week as dayOfWeek,
+    ts.start_section as startSection,
+    ts.total_section as totalSection,
+    case sa.type
+      when 1 then '旷课'
+      when 2 then '迟到'
+      when 3 then '早退'
+      when 4 then '请假'
+      when 5 then '迟到+早退'
+    end as type,
+    c.name::text as course,
+    teacher.name::text as teacher
+  from attendance sa
+  join ea.student s on sa.student_id = s.id
+  join ea.admin_class ac on s.admin_class_id = ac.id
+  join ea.task_schedule ts on sa.task_schedule_id = ts.id
+  join ea.task task on ts.task_id = task.id
+  join ea.course_class cc on task.course_class_id = cc.id
+  join ea.course c on cc.course_id = c.id
+  join ea.teacher teacher on sa.teacher_id = teacher.id
+  and sa.type <> 6
+  order by s.id, sa.week, ts.day_of_week, ts.start_section desc;
 end;
 $$ language plpgsql;
 
