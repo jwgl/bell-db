@@ -406,7 +406,7 @@ begin
       )
   ), attendance as (
     select * from rollcall
-    union
+    union all
     select * from student_leave
   )
   select s.id::text as id,
@@ -624,7 +624,7 @@ begin
       )
   ), attendance as (
     select * from rollcall
-    union
+    union all
     select * from student_leave
   )
   select s.id::text as id,
