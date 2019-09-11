@@ -56,6 +56,7 @@ insert into sync.sync_config(id, basic_schema, basic_table, foreign_table) value
 ('ea.admission',             'ea', 'admission',             'sv_admission'),
 ('ea.student',               'ea', 'student',               'sv_student'),
 ('ea.student_level',         'ea', 'student_level',         'sv_student_level'),
+('ea.admin_class_cadre',     'ea', 'admin_class_cadre',     'sv_admin_class_cadre'),
 ('ea.timeplate_course',      'ea', 'timeplate_course',      'sv_timeplate_course'),
 ('ea.timeplate',             'ea', 'timeplate',             'sv_timeplate'),
 ('ea.timeplate_slot',        'ea', 'timeplate_slot',        'sv_timeplate_slot'),

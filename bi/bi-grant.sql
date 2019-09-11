@@ -11,4 +11,7 @@ grant usage on schema tm to bi;
 grant select on tm_bi.user       to bi;    ----用户表
 grant select on tm_bi.department to bi;    ----部门表
 grant select on tm_bi.user_role  to bi;    ----角色表
-grant select on tm_bi.student    to bi;    ----学生表	
+grant select on tm_bi.student    to bi;    ----学生表
+grant select on tm.observation_form    to bi;    ----督导听课表
+grant select on tm.observation_item    to bi;    ----督导评价
+grant select on tm.observation_criteria_item  to bi;  ----评分细则

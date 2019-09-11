@@ -138,8 +138,11 @@ with teacher_schedule as (
     teacher.id as teacher_id,
     teacher.name as teacher_name,
     teacher.department_id as teacher_department_id,
-    task.code || '|' || ea.fn_timetable_to_string(task_schedule.start_week, task_schedule.end_week, task_schedule.odd_even,
-      task_schedule.day_of_week, task_schedule.start_section, task_schedule.total_section) as task_code,
+    course.name as course_name,
+    course_item.name as course_item,
+    task.code as task_code,
+    ea.fn_timetable_to_string(task_schedule.start_week, task_schedule.end_week, task_schedule.odd_even,
+      task_schedule.day_of_week, task_schedule.start_section, task_schedule.total_section) as timetable,
     course_class.property_id,
     ea.fn_weeks_to_integer(task_schedule.start_week, task_schedule.end_week, task_schedule.odd_even)::bit(32) weeks,
     task_schedule.day_of_week,
@@ -152,24 +155,46 @@ with teacher_schedule as (
         join ea.course_class_program ccp on pc.program_id = ccp.program_id
         where pc.course_id = course_class.course_id
         and ccp.course_class_id = course_class.id)
-    end as course_class_properties
+    end as course_class_properties,
+    array (
+      select grade || s.short_name
+      from ea.program_course pc
+        join ea.course_class_program ccp on pc.program_id = ccp.program_id
+        join ea.program on program.id = pc.program_id
+        join ea.major m on program.major_id = m.id
+        join ea.subject s on m.subject_id = s.id
+        where pc.course_id = course_class.course_id
+        and ccp.course_class_id = course_class.id
+    ) as majors,
+    (select max(grade + (select max(grade) from ea.major) - (select max(grade) from ea.major where subject_id = m.subject_id))
+        from ea.program_course pc
+        join ea.course_class_program ccp on pc.program_id = ccp.program_id
+        join ea.program on program.id = pc.program_id
+        join ea.major m on program.major_id = m.id
+        where pc.course_id = course_class.course_id
+        and ccp.course_class_id = course_class.id) as max_grade
   from ea.course_class
   join ea.task on task.course_class_id = course_class.id
   join ea.task_schedule on task_schedule.task_id = task.id
   join ea.teacher on task_schedule.teacher_id = teacher.id
   join ea.department course_class_department on course_class_department.id = course_class.department_id
   join ea.department teacher_department on teacher_department.id = teacher.department_id
+  join ea.course on course_class.course_id = course.id
+  left join ea.course_item on task.course_item_id = course_item.id
   where task_schedule.place_id not like 'B%'
-  and term_id >= (select id - 20 from ea.term where active = true)
-  and exists(select * from ea.task_student where task_student.task_id = task.id)
+  and term_id >= (select id - 30 from ea.term where active = true)
+  and (
+    (select id from ea.term where schedule = true) <> (select id from ea.term where active = true) and exists(select * from ea.task_student where task_student.task_id = task.id)
+    or term_id = (select id from ea.term where schedule = true)
+  )
 ), schedule_normal as (
-  select term_id, course_class_department_id, teacher_id, teacher_name, teacher_department_id, property_id, weeks, day_of_week, sections, course_class_properties,
-    array_agg(task_code order by task_code) as task_codes
+  select term_id, course_class_department_id, course_name, course_item, teacher_id, teacher_name, teacher_department_id, property_id, weeks, day_of_week, sections, course_class_properties,
+    array_agg(task_code order by task_code) as task_codes, max(max_grade) as max_grade
   from teacher_schedule
-  group by term_id, course_class_department_id, teacher_id, teacher_name, teacher_department_id, property_id, weeks, day_of_week, sections, course_class_properties
+  group by term_id, course_class_department_id, course_name, course_item, teacher_id, teacher_name, teacher_department_id, property_id, weeks, day_of_week, sections, course_class_properties
 )
-select term_id, course_class_department_id, teacher_id, teacher_name, teacher_department_id, course_class_properties,
-  length(replace(weeks::text, '0', '')) * length(replace(sections::text, '0', '')) as workload, task_codes
+select term_id, course_class_department_id, course_name, course_item, teacher_id, teacher_name, teacher_department_id, course_class_properties,
+  length(replace(weeks::text, '0', '')) * length(replace(sections::text, '0', '')) as workload, task_codes, max_grade
 from schedule_normal;
 
 -- 按开课单位查询教师工作量
@@ -190,8 +215,8 @@ group by term_id, course_class_department.name, t.id, t.name, teacher_department
 create or replace view ea.av_teacher_workload_by_teacher_department as
 select term_id, d.id as department_id, d.name as department, t.id as teacher_id, t.name as teacher_name, t.is_external,
   count(*) as workload,
-  count(*) filter (where tw.properties && array[1]) as public_compulsory_workload,
-  count(*) filter (where tw.properties && array[2,3]) as public_elective_workload
+  count(*) filter (where tw.course_class_properties && array[1]) as public_compulsory_workload,
+  count(*) filter (where tw.course_class_properties && array[2,3]) as public_elective_workload
 from av_teacher_workload tw
 join teacher t on tw.teacher_id = t.id
 join department d on tw.teacher_department_id = d.id
@@ -200,16 +225,16 @@ group by term_id, d.id, d.name, t.id, t.name;
 -- 教学计划执行情况
 create or replace view ea.av_program_execution as
 with active_program as (
-  select p.id, (select (id / 10 - m.grade) * 2 + id % 10 from term where active = true) as current_term
+  select p.id, (select (id / 10 - m.grade) * 2 + id % 10 from term where schedule = true) as current_term
   from program p
   join major m on m.id = p.major_id
   join subject s on s.id = m.subject_id
-  where m.grade + s.length_of_schooling > (select id / 10 from term where active = true)
+  where m.grade + s.length_of_schooling > (select id / 10 from term where schedule = true)
   and p.type = 0
 ), program_course as (
   select d.name as department, p.id as program_id, grade, s.name as subject,
     c.id as course_id, c.name as course_name,
-    property.name as property, c.credit,
+    property.name as property, coalesce(pc.direction_id, 0) as direction_id, c.credit,
     ap.current_term, pc.suggested_term, pc.allowed_term::bit(16) as allowed_term
   from active_program ap
   join program p on p.id = ap.id
@@ -221,13 +246,22 @@ with active_program as (
   join department d on d.id = m.department_id
   where property.is_compulsory = true and property.name not in ('公共必修课')
 ), program_student as (
-  select p.id as program_id, count(s.id) as student_count
+  select p.id as program_id, 0 as direction_id, count(s.id) as student_count
   from active_program ap
   join program p on p.id = ap.id
   join major m on m.id = p.major_id
   join student s on s.major_id = m.id
   where s.at_school is true
   group by p.id
+  union all
+  select p.id as program_id, d.id as direction_id, count(s.id) as student_count
+  from active_program ap
+  join program p on p.id = ap.id
+  join direction d on d.program_id = p.id
+  join major m on m.id = p.major_id
+  join student s on s.major_id = m.id and s.direction_id = d.id
+  where s.at_school is true
+  group by p.id, d.id
 ), program_course_class as (
   select cc.code, p.id as program_id, cc.course_id, cc.term_id,
     count(distinct s.id) as course_student_count,
@@ -239,13 +273,32 @@ with active_program as (
   join program_course pc on pc.program_id = p.id and cc.course_id = pc.course_id
   join major m on m.id = p.major_id
   join task t on t.course_class_id = cc.id
-  join task_student ts on ts.task_id = t.id
-  join student s on s.id = ts.student_id
+  left join task_student ts on ts.task_id = t.id
+  left join student s on s.id = ts.student_id
   group by cc.code, p.id, cc.course_id, cc.term_id
 )
 select pc.department, pc.program_id, grade, subject, ps.student_count as major_student_count,
   pc.course_id, pc.course_name, pc.credit, pc.property, current_term, suggested_term, allowed_term,
   pcc.term_id, pcc.code as course_class_code, course_student_count, major_course_student_count
 from program_course pc
-join program_student ps on pc.program_id = ps.program_id
+join program_student ps on pc.program_id = ps.program_id and pc.direction_id = ps.direction_id
 left join program_course_class pcc on pc.program_id = pcc.program_id and pcc.course_id = pc.course_id;
+
+-- 未落实的教学计划
+create or replace view ea.cv_unexecuted_program_course as
+select department, program_id, grade, subject,
+  course_id, course_name, credit, property, current_term, suggested_term,
+  major_student_count, (select count(distinct student.id) 
+  from ea.task_student
+  join ea.task on task_student.task_id = task.id
+  join ea.course_class on task.course_class_id = course_class.id
+  join ea.student on task_student.student_id = student.id
+  where student.major_id * 10 = a.program_id
+  and student.at_school = true
+  and course_class.course_id = a.course_id ) as excuted_student_count
+from ea.av_program_execution a
+where course_class_code is null
+and suggested_term <= current_term
+and course_name not like '毕业%'
+and course_name <> '专业实习'
+order by 1, 2;

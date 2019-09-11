@@ -38,7 +38,7 @@ with admin_class_at_school as (
       from ea.course_class
       join ea.task on course_class.id = task.course_class_id
       join ea.task_student on task_student.task_id = task.id
-      join ea.student on task_student.student_id = task_student.student_id
+      join ea.student on student.id = task_student.student_id
       where student.admin_class_id = ac.id
       and ea.course_class.term_id = (select id from ea.term where active = true)
     )
@@ -61,7 +61,7 @@ select distinct course_class.teacher_id as user_id, case term.active
   end as role_id
 from ea.course_class
 join ea.term on course_class.term_id = term.id
-where term.id >= (select value::integer from system_config where key='rollcall.start_term')
+where term.id >= (select value::integer from tm.system_config where key='rollcall.start_term')
 union all
 select distinct task_schedule.teacher_id as user_id, case term.active
     when true then 'ROLE_TASK_SCHEDULE_TEACHER'
@@ -71,11 +71,11 @@ from ea.course_class
 join ea.task on task.course_class_id = course_class.id
 join ea.task_schedule on task_schedule.task_id = task.id
 join ea.term on course_class.term_id = term.id
-where term.id >= (select value::integer from system_config where key='rollcall.start_term')
+where term.id >= (select value::integer from tm.system_config where key='rollcall.start_term')
 union all
 select t.id as user_id, 'ROLE_PLACE_BOOKING_CHECKER' as role_id
 from ea.teacher t
-join booking_auth ba on ba.checker_id = t.id
+join tm.booking_auth ba on ba.checker_id = t.id
 union all
 select distinct supervisor_id as user_id, 'ROLE_CLASS_SUPERVISOR' as role_id
 from admin_class_at_school
@@ -189,51 +189,6 @@ from ea.sv_program_course;
 
 -- 学生出勤情况视图
 create or replace view tm.dv_student_attendance as
-with free_listen as (
-  select item.id as item_id,
-         form.id as form_id,
-         course_class.term_id,
-         form.student_id,
-         task_schedule.id as task_schedule_id
-  from tm.free_listen_form form
-  join tm.free_listen_item item on item.form_id = form.id
-  join ea.task_schedule on item.task_schedule_id = task_schedule.id
-  join ea.task on task_schedule.task_id = task.id
-  join ea.course_class on task.course_class_id = course_class.id
-  where form.status = 'APPROVED'
-  union
-  select item.id as item_id,
-         form.id as form_id,
-         course_class.term_id,
-         form.student_id,
-         task_schedule.id as task_schedule_id
-  from tm.free_listen_form form
-  join tm.free_listen_item item on item.form_id = form.id
-  join ea.task_schedule on item.task_schedule_id = task_schedule.root_id
-  join ea.task on task_schedule.task_id = task.id
-  join ea.course_class on task.course_class_id = course_class.id
-  where form.status = 'APPROVED'
-), student_leave as (
-  select form.id as form_id, form.term_id, form.approver_id, form.student_id, item.week, task_schedule.id as task_schedule_id
-  from tm.student_leave_form form
-  join tm.student_leave_item item on form.id = item.form_id
-  join ea.task_student on form.student_id = task_student.student_id
-  join ea.task on task_student.task_id = task.id
-  join ea.course_class on task.course_class_id = course_class.id and form.term_id = course_class.term_id
-  join ea.task_schedule on task_schedule.task_id = task.id
-   and (
-     item.task_schedule_id = task_schedule.id or
-     item.day_of_week = task_schedule.day_of_week or
-     item.day_of_week is null and item.task_schedule_id is null
-   )
-   and item.week between task_schedule.start_week and task_schedule.end_week
-   and case task_schedule.odd_even
-     when 0 then true
-     when 1 then item.week % 2 = 1
-     when 2 then item.week % 2 = 0
-   end
-  where form.status in ('APPROVED', 'FINISHED')
-)
 select course_class.term_id,
        rollcall.student_id,
        rollcall.week,
@@ -248,12 +203,12 @@ join ea.task_schedule on rollcall.task_schedule_id = task_schedule.id
 join ea.task on task_schedule.task_id = task.id
 join ea.task_student on task.id = task_student.task_id and rollcall.student_id = task_student.student_id
 join ea.course_class on task.course_class_id = course_class.id
-left join student_leave on (
+left join tm.dva_valid_student_leave student_leave on (
   rollcall.student_id       = student_leave.student_id and
   rollcall.week             = student_leave.week and
   rollcall.task_schedule_id = student_leave.task_schedule_id
 )
-left join free_listen on (
+left join tm.dva_valid_free_listen free_listen on (
   rollcall.student_id       = free_listen.student_id and
   rollcall.task_schedule_id = free_listen.task_schedule_id
 )
@@ -266,9 +221,9 @@ select student_leave.term_id,
        student_leave.form_id, -- student-leave id
        free_listen.form_id, -- free-listen id
        free_listen.form_id is null as valid, -- valid
-       student_leave.approver_id --teacher_id
-from student_leave
-left join free_listen on (
+       student_leave.teacher_id --approver_id
+from tm.dva_valid_student_leave student_leave
+left join tm.dva_valid_free_listen free_listen on (
   student_leave.student_id       = free_listen.student_id and
   student_leave.task_schedule_id = free_listen.task_schedule_id
 );
@@ -615,7 +570,9 @@ with latest_scheme as (
   where status = 'APPROVED'
   group by program_id
 )
-select p.id as program_id,
+select department.name as department,
+    p.id as program_id,
+    m.grade as grade,
     s.name as subject,
     d.name as direction,
     property.name as property,
@@ -635,12 +592,15 @@ join ea.major m on m.id = p.major_id
 join ea.subject s on s.id = m.subject_id
 join latest_scheme on latest_scheme.program_id = scheme.program_id
 join ea.property on property.id = sc.property_id
+join ea.department on m.department_id = department.id
 left join ea.direction d on d.id = sc.direction_id
 where m.grade >= 2016
 and scheme.version_number <= latest_scheme.version_number
 and (sc.revise_version is null or sc.revise_version > latest_scheme.version_number)
 union all
-select p.id as program_id,
+select department.name as department,
+    p.id as program_id,
+    m.grade as grade,
     s.name as subject,
     d.name as direction,
     property.name as property,
@@ -660,6 +620,7 @@ join ea.major m on m.id = p.major_id
 join ea.subject s on s.id = m.subject_id
 join latest_scheme on latest_scheme.program_id = scheme.program_id
 join ea.property on property.id = sc.property_id
+join ea.department on m.department_id = department.id
 left join ea.direction d on d.id = sc.direction_id
 where m.grade >=2016
 and scheme.version_number <= latest_scheme.version_number

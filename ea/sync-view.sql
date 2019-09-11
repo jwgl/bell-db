@@ -77,14 +77,18 @@ select xydm as id,
     xymc as name,
     xyywmc as english_name,
     xyjc as short_name,
-    decode(xylx, '教学单位', 1, 0) is_teaching,
+    case
+        when xqdm = 2 then 0 -- 其他校区单位不是教学单位
+        when xylx = '教学单位' then 1
+        else 0
+    end as is_teaching,
     case
         when exists (select 1 from zfxfzb.xsjbxxb xs where xs.xy = xymc) then 1
             else 0
     end as has_students, -- 是否有学生
     case
         when xylx is null
-            or not exists (select 1 from zfxfzb.xsjbxxb xs where xs.xy = xymc)
+            or not exists (select 1 from zfxfzb.xsjbxxb xs where xs.xy = xymc and xjzt = '有')
             or xylx = '教学单位'
             and exists (select 1 from zfxfzb.xsjbxxb xs where xs.dqszj >= 2010 and xs.xy = xymc)
             then 1
@@ -605,12 +609,13 @@ select
                     substr(zgh, 1, 2)
             end
     end as department_id,
-    jsjj as resume
+    jsjj as resume,
+    sfzh as identity_number
 from zfxfzb.jsxxb
 union all
 select id, name, sex, birthday, political_status, nationality, academic_title, academic_level, academic_degree,
     educational_background, graduate_school, graduate_major, date_graduated, post_type,
-    has_qualification, is_lab_technician, is_external, at_school, can_guidance_graduate, department_id, resume 
+    has_qualification, is_lab_technician, is_external, at_school, can_guidance_graduate, department_id, resume, null
 from ea.external_staff
 order by id;
 
@@ -751,6 +756,15 @@ select xh as student_id, '英语' as type, dj as "level"
 from student_level
 where dj is not null
 order by xh;
+
+/**
+ * 行政班干部
+ */
+create or replace view ea.sv_admin_class_cadre as
+select c.id as admin_class_id, a.xh as student_id, a.zw as post
+from zfxfzb.xszwb a
+join zfxfzb.xsjbxxb b on a.xh = b.xh
+join ea.sv_admin_class c on a.xzb = c.name;
 
 /**
  * 排课板块（辅助视图）
@@ -967,16 +981,26 @@ with task_base as ( -- 所有任务
   select distinct code, include, min(condition_group) as condition_group, condition
   from condition_base
   group by code, include, condition
+), with_level as ( -- 层次
+  select code, include, condition_group,
+    '层次'  as condition_name, substr(condition, 1, 2) as condition_value
+  from condition_all
+  where substr(condition, 1, 2) in ('本科', '硕士', '博士')
+), without_level as ( -- 排除层次
+  select code, include, condition_group, condition,
+    regexp_replace(condition, '(本科|硕士|博士)(.*)$', '\2') as replaced
+  from condition_all
+  where condition not in ('本科', '硕士', '博士')
 ), with_sex as ( -- 包含性别
   select code, include, condition_group,
-    '性别'  as condition_name, substr(condition, -2, 1) as condition_value
-  from condition_all
-  where condition like '%男生' or condition like '%女生'
+    '性别'  as condition_name, substr(replaced, -2, 1) as condition_value
+  from without_level
+  where replaced like '%男生' or replaced like '%女生'
 ), without_sex as ( -- 排除性别
   select code, include, condition_group, condition,
-    regexp_replace(condition, '(.*)[男女]生$', '\1') as replaced
-  from condition_all
-  where condition not in ('男生', '女生')
+    regexp_replace(replaced, '(.*)[男女]生$', '\1') as replaced
+  from without_level
+  where replaced not in ('男生', '女生')
 ), with_major as ( -- 包含年级专业
   select code, include, condition_group,
     '年级专业'  as condition_name, nj || zydm  as condition_value
