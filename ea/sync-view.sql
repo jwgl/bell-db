@@ -77,7 +77,11 @@ select xydm as id,
     xymc as name,
     xyywmc as english_name,
     xyjc as short_name,
-    decode(xylx, '教学单位', 1, 0) is_teaching,
+    case
+        when xqdm = 2 then 0 -- 其他校区单位不是教学单位
+        when xylx = '教学单位' then 1
+        else 0
+    end as is_teaching,
     case
         when exists (select 1 from zfxfzb.xsjbxxb xs where xs.xy = xymc) then 1
             else 0
