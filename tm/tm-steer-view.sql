@@ -128,6 +128,7 @@ select distinct form.id,
           and form.teacher_id = schedule.teacher_id
           and schedule.week_bits & (1 << form.lecture_week - 1) <> 0)
         and form.term_id = schedule.term_id
+    where not form.is_schedule_temp is true
   union all
   select distinct form.id,
     form.attendant_stds,
@@ -164,7 +165,8 @@ select distinct form.id,
     courseteacher.name as teacher_name,
     department.name as department_name,
     cp.property_name as property,
-    courseclass.term_id as term_id
+    courseclass.term_id as term_id,
+    form.recommend as recommend
    from tm.observation_form form
      join ea.teacher supervisor on form.observer_id = supervisor.id
      join tm.task_schedule_temp schedule on (form.teacher_id = schedule.teacher_id
