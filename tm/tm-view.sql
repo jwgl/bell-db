@@ -415,3 +415,45 @@ join program_property c on a.program_id = c.program_id and a.property = c.proper
 left join program_info b on a.program_id = b.program_id and a.property = b.property
   and a.direction is not distinct from b.direction
 order by 1, 3;
+
+-- 当前学期领导
+create or replace view tm.dv_leaders as
+select o.teacher_id
+from tm.observer o join ea.term on o.term_id = term.id
+where o.observer_type = 3 and term.active;
+
+-- 辅修视图-免听申请
+create or replace view av_free_listen as
+select free_listen_form.id form_id, free_listen_form.term_id,
+    student.id as student_id, student.name as student_name, student.at_school,
+    course.id as course_id, course.name as course_name,
+    teacher.id as teacher_id, teacher.name as teacher_name,
+    free_listen_form.date_approved, free_listen_form.status
+from tm.free_listen_form
+join tm.free_listen_item on free_listen_form.id = free_listen_item.form_id
+join ea.task_schedule on task_schedule.id = free_listen_item.task_schedule_id
+join ea.task on task.id = task_schedule.task_id
+join ea.course_class on course_class.id = task.course_class_id
+join ea.course on course.id = course_class.course_id
+join ea.student on student.id = free_listen_form.student_id
+join ea.teacher on teacher.id = free_listen_form.checker_id;
+
+-- 检查视图-免听申请在校生每学期不超过两门
+create or replace view cv_free_listen as
+select form_id, term_id, student_id, student_name,
+  rank() over (partition by term_id, student_id order by date_approved) as rank,
+  course_id, course_name, teacher_id, teacher_name, date_approved, status
+from (
+  select distinct form_id, term_id, student_id, student_name,
+    course_id, course_name, teacher_id, teacher_name, date_approved, status
+  from av_free_listen
+  where status = 'APPROVED'
+  and (term_id, student_id) in (
+      select term_id, student_id
+      from av_free_listen
+      where status = 'APPROVED'
+      and at_school = true
+      group by term_id, student_id
+      having count(distinct course_id) > 2
+  )
+) a order by student_id, date_approved;
