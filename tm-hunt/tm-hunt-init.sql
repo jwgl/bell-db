@@ -57,10 +57,10 @@ insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_o
 INSERT INTO tm.workflow (id,name) VALUES ('hunt.review', 		'教学项目项目审核');
 INSERT INTO tm.workflow (id,name) VALUES ('hunt.info-change', 		'教学项目项目变更审核');
 
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.review', 'hunt.review.check',       '审核',     '/hunt/checkers/${userId}/projects/${todo}/${id};wi=${workitem}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.review', 'hunt.review.reject',      '退回',     '/hunt/teachers/${userId}/projects/${id}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.review', 'hunt.review.view', 		 '查看',     '/hunt/teachers/${userId}/projects/${id}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.review', 'hunt.review.approve',	 '审批',     '/hunt/approvers/${userId}/projects/${todo}/${id};wi=${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.review', 'hunt.review.check',       '审核',     '/hunt/checkers/${userId}/tasks/0/0/${todo}/applications/${id};wi=${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.review', 'hunt.review.reject',      '退回',     '/hunt/teachers/${userId}/tasks/0/applications/${id}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.review', 'hunt.review.view', 		 '查看',     '/hunt/teachers/${userId}/tasks/0/applications/${id}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.review', 'hunt.review.approve',	 '审批',     '/hunt/approvers/${userId}/tasks/0/${todo}/applications/${id};wi=${workitem}');
 
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-change', 'hunt.info-change.check',       '审核',     '/hunt/checkers/${userId}/infoChanges/${todo}/${id};wi=${workitem}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-change', 'hunt.info-change.reject',      '退回',     '/hunt/teachers/${userId}/infoChanges/${id}');
