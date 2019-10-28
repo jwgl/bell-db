@@ -30,7 +30,7 @@ select course_class.term_id,
     from ea.task_student
     where task_id = task.id
   ), 0) as student_count,
-  coalesce(course_item_workload_settings.type, course_workload_settings.type, 2) as course_workload_type
+  coalesce(course_item_workload_settings.workload_type, course_workload_settings.workload_type, 2) as workload_type
 from ea.course_class
 join ea.course on course_class.course_id = course.id
 join ea.task on task.course_class_id = course_class.id
@@ -39,8 +39,8 @@ left join ea.course_item on task.course_item_id = course_item.id
 left join tm_load.course_workload_settings on course_workload_settings.course_id = course_class.course_id and course_workload_settings.department_id = course_class.department_id
 left join tm_load.course_item_workload_settings on course_item_workload_settings.course_item_id = task.course_item_id and course_item_workload_settings.department_id = course_class.department_id
 where term_id >= 20161
-and (course_workload_settings.course_id is null or course_workload_settings.type in (1, 2))
-and (course_item_workload_settings.course_item_id is null or course_item_workload_settings.type in (1, 2));
+and (course_workload_settings.course_id is null or course_workload_settings.workload_type in (1, 2))
+and (course_item_workload_settings.course_item_id is null or course_item_workload_settings.workload_type in (1, 2));
 
 /**
  * 辅助视图-按上课时间合并教学任务

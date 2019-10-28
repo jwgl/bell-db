@@ -209,9 +209,10 @@ where term_id >= 20161
 and course_class.department_id not in ('15')
 and (course_class.department_id, course_item.id) not in (
   select department_id, course_item_id
-  from course_item_workload_settings
+  from tm_load.course_item_workload_settings
 )
 and course.name <> course_item.name
+and course_item.name <> '理论'
 group by course_class.department_id, course.id, course.name, course_item.id, course_item.name;
 
 insert into tm_load.course_item_workload_settings(department_id, course_item_id, type, category, upper_bound, ratio)
