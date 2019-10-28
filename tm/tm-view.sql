@@ -325,12 +325,16 @@ with latest_scheme as (
   where status = 'APPROVED'
   group by program_id
 )
-select department.name as department,
+select department.id as department_id,
+    department.name as department_name,
     p.id as program_id,
     m.grade as grade,
-    s.name as subject,
-    d.name as direction,
-    property.name as property,
+    s.id as subject_id,
+    s.name as subject_name,
+    d.id as direction_id,
+    d.name as direction_name,
+    property.id as property_id,
+    property.name as property_name,
     course.id::text as course_id,
     course.name as course_name,
     course.credit,
@@ -353,12 +357,16 @@ where m.grade >= 2016
 and scheme.version_number <= latest_scheme.version_number
 and (sc.revise_version is null or sc.revise_version > latest_scheme.version_number)
 union all
-select department.name as department,
+select department.id as department_id,
+    department.name as department_name,
     p.id as program_id,
     m.grade as grade,
-    s.name as subject,
-    d.name as direction,
-    property.name as property,
+    s.id as subject_id,
+    s.name as subject_name,
+    d.id as direction_id,
+    d.name as direction_name,
+    property.id as property_id,
+    property.name as property_name,
     'T' || course.id :: text as course_id,
     course.name as course_name,
     course.credit,
@@ -383,9 +391,10 @@ and (sc.revise_version is null or sc.revise_version > latest_scheme.version_numb
 
 -- 辅助视图：最新培养方案学分统计
 create or replace view av_latest_scheme_credit as
-select program_id, subject, direction, property, sum(credit) as credit, sum(practice_credit) as practice_credit
+select program_id, subject_name as subject, direction_name as direction,
+  property_name as property, sum(credit) as credit, sum(practice_credit) as practice_credit
 from av_latest_scheme_course
-group by program_id, subject, direction, property
+group by program_id, subject_name, direction_name, property_name
 order by 1, 2, 3, 4;
 
 -- 检查视图：培养方案与执行计划学分比较
