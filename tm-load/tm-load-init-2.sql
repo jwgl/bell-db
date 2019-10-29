@@ -149,21 +149,42 @@ select distinct course_class.department_id, course.id, '毕业论文（设计）
 from ea.course_class
 join ea.course on course_class.course_id = course.id
 where course_class.term_id >= 20161
-and (course.name like '毕业论文%' or course.name like '毕业设计%' or course.name like '辅修毕业论文%' or
-  course.name like '毕业创作' or course.name like '毕业作品%')
+and (course.name like '毕业论文%'
+  or course.name like '毕业设计%'
+  or course.name like '辅修毕业论文%'
+  or course.name like '毕业创作'
+  or course.name like '毕业作品%')
+union all -- 其他论文
+select distinct course_class.department_id, course.id, '其他论文', null::numeric(3,2), 4 /*学生*/, 9 /*常量*/, 50
+from ea.course_class
+join ea.course on course_class.course_id = course.id
+where course_class.term_id >= 20161
+and course.name in ('学年论文')
 union all -- 排除-研究生选定课程
 select '77', '77100000', '研究生排除', null, 0 /*排除*/, 9 /*常量*/, 10 /*理论课*/
+union all -- 排除-研究生选定课程
+select '15', '77100000', '研究生排除', null, 0 /*排除*/, 9 /*常量*/, 10 /*理论课*/
 union all -- 排除-军事教育
 select '94', course.id, '军事教育', null, 0 /*排除*/, 9, 10
 from ea.course
 where department_id = '94' and id like '9411%'
 union all
-select distinct course_class.department_id, course.id, '分散实习', null::numeric(3,2), 4 /*学生*/, 9 /*常量*/, 40 /*分散实习*/
+select distinct course_class.department_id, course.id, '分散实习', null::numeric(3,2), 4 /*学生*/, 9 /*常量*/,
+  case course.name
+    when '境外实习' then 44 /*分散实习*/
+    else 40
+  end
 from ea.course_class
 join ea.course on course_class.course_id = course.id
 where course_class.term_id >= 20161
-and (course.name = '毕业实习' or course.name='专业实习' or course.name like '专业创新作品%' or course.name like '专业素质养成%'
-  or course.name like '导师工作坊')
+and (course.name like '%实习%'
+  or course.name like '%见习%'
+  or course.name like '%工作坊%'
+  or course.name like '专业创新作品%'
+  or course.name like '专业素质养成%'
+  or course.name like '专业素质拓展%'
+  or course.name like '专业拓展%'
+  or course.name like '%专业专题研习%')
 order by 1, 2
 on conflict(department_id, course_id) do update set
 category = excluded.category,
@@ -243,3 +264,13 @@ where code in (
 on conflict(task_id) do update set
 type = excluded.type,
 value = excluded.value;
+
+
+select term_id, task_schedule.start_week, task_schedule.end_week, odd_even, day_of_week, start_section, total_section, task_schedule.teacher_id,
+  count(distinct course.name), array_agg(distinct course.name)
+from ea.task_schedule
+join ea.task on task.id = task_schedule.task_id
+join ea.course_class on course_class.id = task.course_class_id
+join ea.course on course.id = course_class.course_id
+group by term_id, task_schedule.start_week, task_schedule.end_week, odd_even, day_of_week, start_section, total_section, task_schedule.teacher_id
+having count(distinct task_schedule.id) > 1;
