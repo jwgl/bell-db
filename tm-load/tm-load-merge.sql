@@ -12,11 +12,11 @@ course_item = excluded.course_item,
 workload_type = excluded.workload_type,
 workload_mode = excluded.workload_mode;
 
--- 删除workload_task
-delete from tm_load.workload_task
-where task_ids not in (
-  select task_ids from tm_load.dva_workload_task
-);
+-- 更新workload_task的主讲教师
+update tm_load.workload_task workload_task set
+primary_teacher_id = dvu.primary_teacher_id
+from tm_load.dvu_task_primary_teacher dvu
+where dvu.id = workload_task.id;
 
 -- 更新workload_task的选课人数
 update tm_load.workload_task wt set
@@ -63,14 +63,6 @@ start_section = excluded.start_section,
 total_section = excluded.total_section,
 teacher_id = excluded.teacher_id;
 
--- 删除workload_task_schedule
-delete from tm_load.workload_task_schedule
-where (task_schedule_ids) not in (
-  select task_schedule_ids
-  from tm_load.dva_task_schedule_base a
-  join tm_load.workload_task b on a.task_ids = b.task_ids
-);
-
 -- 合并workload_task_teacher
 insert into tm_load.workload_task_teacher(workload_task_id, teacher_id, original_workload, correction, parallel_ratio)
 select workload_task_id, teacher_id, original_workload, correction, parallel_ratio
@@ -81,3 +73,40 @@ parallel_ratio = excluded.parallel_ratio
 where workload_task_teacher.original_workload <> excluded.original_workload
    or workload_task_teacher.parallel_ratio <> excluded.parallel_ratio;
 
+-- 更新workload_task_teacher的标准工作量和任务顺序
+update tm_load.workload_task_teacher workload_task_teacher set
+standard_workload = dvu.standard_workload,
+task_ordinal = dvu.task_ordinal
+from tm_load.workload_task_teacher_standard_workload dvu
+where dvu.workload_task_id = workload_task_teacher.workload_task_id
+and dvu.teacher_id = workload_task_teacher.teacher_id;
+
+-- 删除workload_task_schedule
+delete from tm_load.workload_task_schedule
+where task_schedule_ids not in (
+  select task_schedule_ids
+  from tm_load.dva_task_schedule_base a
+  join tm_load.workload_task b on a.task_ids = b.task_ids
+);
+
+-- 删除workload_task_teacher
+delete from tm_load.workload_task_teacher
+where workload_task_id in (
+  select id from tm_load.workload_task
+  where task_ids not in (
+    select task_ids from tm_load.dvm_workload_task
+  )
+);
+
+-- 删除workload_task_teacher
+delete from tm_load.workload_task_teacher
+where (workload_task_id, teacher_id) not in (
+  select workload_task_id, teacher_id
+  from tm_load.dvm_workload_task_teacher
+);
+
+-- 删除workload_task
+delete from tm_load.workload_task
+where task_ids not in (
+  select task_ids from tm_load.dvm_workload_task
+);
