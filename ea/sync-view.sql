@@ -1439,7 +1439,7 @@ from task_normal_info a
 join arr_normal c on a.xkkh = c.xkkh and a.jszgh=c.jszgh
 union all
 select distinct -- 外语
-    a.xn,a.xq,d.course_id,b.xkkh, b.jszgh, b.jsbh, b.qsz, b.jsz, decode(a.dsz, '单', 1, '双', 2, 0) as dsz,
+    a.xn,a.xq,d.course_id,b.xkkh, coalesce(dg.jszgh, b.jszgh), b.jsbh, b.qsz, b.jsz, decode(a.dsz, '单', 1, '双', 2, 0) as dsz,
     a.xqj, a.qssjd, a.skcd, b.guid, d.id as course_item_id, 'en' as tab,'5' sknr
 from zfxfzb.bksjapb a
 join zfxfzb.bkdjjsfpb b on b.bkdm = a.bkdm and b.bkkcmc = a.bkkcmc and
@@ -1449,6 +1449,7 @@ join zfxfzb.bkdjjsfpb b on b.bkdm = a.bkdm and b.bkkcmc = a.bkkcmc and
 join ea.sv_course_item d on d.course_id = substr(b.xkkh, 15, 8) and d.name = b.bz
 join task_en e on e.xkkh = b.xkkh
 join zfxfzb.jsxxb g on g.zgh = b.jszgh -- 有不存在的教师
+left join zfxfzb.dgjsskxxb dg on b.xkkh = dg.xkkh and a.xh = dg.xh_bksj
 union all
 select distinct -- 其它课
     a.xn, to_number(a.xq), a.kcdm ,a.xkkh, a.jszgh,
