@@ -66,7 +66,7 @@ left join ea.task_schedule on task_schedule.task_id = task.id
 left join tm_load.course_workload_settings on course_workload_settings.course_id = course_class.course_id and course_workload_settings.department_id = course_class.department_id
 left join tm_load.course_item_workload_settings on course_item_workload_settings.course_item_id = task.course_item_id and course_item_workload_settings.department_id = course_class.department_id
 where term_id >= 20171
-and task_schedule.id is null; /*未排课*/
+and task_schedule.id is null; -- 未排课
 
 /*
  * 合并视图：工作量教学任务
@@ -121,21 +121,21 @@ with task as (
   select workload_task.id as workload_task_id, workload_task.student_count,
     case
       when coalesce(p1.id, p2.id) in (1, 2)
-        then 5 -- /*通识课*/
+        then 5 -- 通识课
       else
         coalesce(
           course_item_workload_settings.class_size_type_id,
           course_workload_settings.class_size_type_id,
           subject_workload_settings.class_size_type_id,
-          9 /*常量班型*/
+          9 -- 常量班型
         )
     end as class_size_type_id,
     case
-      when coalesce(p1.id, p2.id) in (1, 2) then 4
-      when course_item_workload_settings.class_size_type_id is not null then 3
-      when course_workload_settings.class_size_type_id is not null then 2
-      when subject_workload_settings.class_size_type_id is not null then 1
-      else 0
+      when coalesce(p1.id, p2.id) in (1, 2) then 4 -- 按课程性质
+      when course_item_workload_settings.class_size_type_id is not null then 3 -- 按课程项
+      when course_workload_settings.class_size_type_id is not null then 2 -- 按课程
+      when subject_workload_settings.class_size_type_id is not null then 1 -- 按专业
+      else 0  -- 缺省
     end as class_size_source
   from tm_load.workload_task
   join ea.task on task.id = any(workload_task.task_ids)
@@ -171,7 +171,7 @@ with task as (
     coalesce(
       course_item_workload_settings.instructional_mode_id,
       course_workload_settings.instructional_mode_id,
-      10 /*理论课*/
+      10 -- 理论课
     ) as instructional_mode_id,
     case
       when course_item_workload_settings.instructional_mode_id is not null then 2
@@ -324,7 +324,50 @@ join ea.department d1 on d1.id = teacher.department_id
 join ea.department d2 on d2.id = workload_task.department_id
 order by term_id desc, task_ordinal;
 
-select term_id, teacher_id, teacher_name, sum(standard_workload)
-from tm_load.av_teacher_workload_by_task where teacher_department = '信息技术学院'
-group by term_id, teacher_id, teacher_name
-order by term_id desc, teacher_id;
+/**
+ * 合并视图：教师学期工作量
+ */
+create or replace view tm_load.dvm_workload as
+with teacher_task_workload as (
+  select workload_task.term_id, case coalesce(teacher_workload_settings.declaration_type, 2)
+      when 1 then workload_task.department_id -- 按开课单位申报
+      when 2 then teacher.department_id -- 按教师单位申报
+    end as department_id, workload_task_teacher.teacher_id,
+    workload_mode, standard_workload
+  from tm_load.workload_task
+  join tm_load.workload_task_teacher on workload_task_teacher.workload_task_id = workload_task.id
+  join ea.teacher on workload_task_teacher.teacher_id = teacher.id
+  join ea.term on workload_task.term_id = term.id
+  left join tm_load.teacher_workload_settings on workload_task_teacher.teacher_id = teacher_workload_settings.teacher_id
+  where (teacher_workload_settings.workload_type is null or teacher_workload_settings.workload_type <> 0)
+), teacher_term_workload_base as (
+  select term_id, department_id, teacher_id,
+    sum(standard_workload) filter(where workload_mode = 1) as teaching_workload,
+    sum(standard_workload) filter(where workload_mode = 2) as practice_workload
+  from teacher_task_workload
+  group by term_id, department_id, teacher_id
+), teacher_term_workload as (
+  select term_id, department_id, teacher_term_workload_base.teacher_id,
+    coalesce(teaching_workload, 0.00) as teaching_workload,
+    coalesce(practice_workload, 0.00) as practice_workload,
+    coalesce(teacher_workload_settings.supplement, coalesce(teacher_workload_settings.employment_mode, '外聘') = '在编') as need_supplement,
+    coalesce(executive_weekly_workload, 0.00) as executive_weekly_workload
+  from teacher_term_workload_base
+  left join tm_load.teacher_workload_settings on teacher_term_workload_base.teacher_id = teacher_workload_settings.teacher_id
+)
+select term_id, department_id, teacher_id, teaching_workload,
+  case need_supplement when true then round(teaching_workload / 17.0, 2) else 0.00 end as adjustment_workload,
+  case need_supplement when true then round(least(20.00, teaching_workload / 17.0 * 2), 2) else 0.00 end as supplement_workload,
+  practice_workload,
+  executive_weekly_workload * 20 as executive_workload
+from teacher_term_workload
+order by term_id, department_id, teacher_id;
+
+create or replace view tm_load.av_teacher_workload_by_term as
+select term_id, workload.department_id, department.name as department_name, 
+  workload.teacher_id, teacher.name as teacher_name,
+  teaching_workload, adjustment_workload, supplement_workload, practice_workload, executive_workload,
+  correction, total_workload
+from tm_load.workload
+join ea.teacher on workload.teacher_id = teacher.id
+join ea.department on workload.department_id = department.id;

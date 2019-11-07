@@ -81,6 +81,40 @@ from tm_load.workload_task_teacher_standard_workload dvu
 where dvu.workload_task_id = workload_task_teacher.workload_task_id
 and dvu.teacher_id = workload_task_teacher.teacher_id;
 
+-- 合并teacher_workload_settings
+insert into tm_load.teacher_workload_settings(teacher_id, human_resource_id, teacher_type, employment_mode, service_type)
+select teacher_id, human_resource_id, teacher_type, employment_mode, service_type
+from tm_temp.dvm_teacher_workload_settings
+on conflict(teacher_id) do update set
+human_resource_id = excluded.human_resource_id,
+teacher_type = excluded.teacher_type,
+employment_mode = excluded.employment_mode,
+service_type = excluded.service_type;
+
+-- 合并workload
+insert into tm_load.workload(term_id, department_id, teacher_id,
+  teaching_workload, adjustment_workload, supplement_workload, practice_workload, executive_workload)
+select term_id, department_id, teacher_id,
+  teaching_workload, adjustment_workload, supplement_workload, practice_workload, executive_workload
+from tm_load.dvm_workload
+on conflict(term_id, department_id, teacher_id) do update set
+teaching_workload = excluded.teaching_workload,
+adjustment_workload = excluded.adjustment_workload,
+supplement_workload = excluded.supplement_workload,
+practice_workload = excluded.practice_workload,
+executive_workload = excluded.executive_workload;
+
+update tm_load.workload set
+total_workload = teaching_workload + adjustment_workload + supplement_workload
+               + practice_workload + executive_workload + correction;
+
+-- 删除workload
+delete from tm_load.workload
+where (term_id, department_id, teacher_id) not in (
+  select term_id, department_id, teacher_id
+  from tm_load.dvm_workload
+);
+
 -- 删除workload_task_schedule
 delete from tm_load.workload_task_schedule
 where task_schedule_ids not in (
@@ -110,3 +144,4 @@ delete from tm_load.workload_task
 where task_ids not in (
   select task_ids from tm_load.dvm_workload_task
 );
+
