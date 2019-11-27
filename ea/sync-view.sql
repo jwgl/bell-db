@@ -610,12 +610,15 @@ select
             end
     end as department_id,
     jsjj as resume,
-    sfzh as identity_number
+    sfzh as identity_number,
+    rszgh as human_resource_number,
+    jwzgh as opposite_number
 from zfxfzb.jsxxb
 union all
 select id, name, sex, birthday, political_status, nationality, academic_title, academic_level, academic_degree,
     educational_background, graduate_school, graduate_major, date_graduated, post_type,
-    has_qualification, is_lab_technician, is_external, at_school, can_guidance_graduate, department_id, resume, null
+    has_qualification, is_lab_technician, is_external, at_school, can_guidance_graduate, department_id, resume,
+    null, null, null
 from ea.external_staff
 order by id;
 
