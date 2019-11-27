@@ -339,6 +339,7 @@ select department.id as department_id,
     course.name as course_name,
     course.credit,
     sc.practice_credit,
+    allowed_term,
     suggested_term,
     sc.revise_version,
     sc.id as scheme_course_id,
@@ -371,6 +372,7 @@ select department.id as department_id,
     course.name as course_name,
     course.credit,
     sc.practice_credit,
+    allowed_term,
     suggested_term,
     sc.revise_version,
     sc.id as scheme_course_id,
@@ -400,9 +402,9 @@ order by 1, 2, 3, 4;
 -- 检查视图：培养方案与执行计划学分比较
 create or replace view tm.cv_scheme_program_credit as
 with scheme_info as (
-  select program_id, subject, property, direction, sum(credit) as credit
+  select program_id, subject_name as subject, property_name as property, direction_name direction, sum(credit) as credit
   from tm.av_latest_scheme_course
-  group by program_id, subject, property, direction
+  group by program_id, subject_name, property, direction
 ), program_info as (
   select pc.program_id, p.name as property, d.name as direction, sum(credit) as credit
   from ea.program_course pc
