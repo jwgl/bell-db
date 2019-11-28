@@ -37,6 +37,9 @@ create table sync.sync_log(
 );
 
 insert into sync.sync_config(id, basic_schema, basic_table, foreign_table) values
+('ea.discipline',            'ea', 'discipline',            'sv_discipline'),
+('ea.field_class',           'ea', 'field_class',           'sv_field_class'),
+('ea.field',                 'ea', 'field',                 'sv_field'),
 ('ea.department',            'ea', 'department',            'sv_department'),
 ('ea.place',                 'ea', 'place',                 'sv_place'),
 ('ea.place_department',      'ea', 'place_department',      'sv_place_department'),
@@ -157,7 +160,8 @@ select_sql = $$with task_schedule as (
   from formal
   group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, root_id
 )
-select * from schedule where (root_id is null or root_id in (select id from schedule))$$,
+select id, day_of_week, end_week, odd_even, start_section, start_week, total_section, place_id, root_id, task_id, teacher_id
+from schedule where (root_id is null or root_id in (select id from schedule))$$,
 upsert_condition = $$term_id = ${term_id}$$,
 delete_condition = $$task_id in (
     select task.id
