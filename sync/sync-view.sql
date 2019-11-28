@@ -11,6 +11,7 @@ join sync.sync_config c1 on ccu.table_schema = c1.basic_schema and ccu.table_nam
 left join sync.sync_config c2 on tc.table_schema = c2.basic_schema and tc.table_name = c2.basic_table
 where constraint_type = 'FOREIGN KEY'
 and c1.id <> c2.id;
+
 /**
  * 基本表间接依赖
  */
@@ -53,6 +54,9 @@ union all
 select id, 0
 from sync.sync_config
 where id not in (select id from traverse)
+and (basic_table, basic_table) in (
+  select table_schema, table_name from information_schema.tables
+)
 order by 2;
 
 /**

@@ -151,10 +151,10 @@ is_weighted = EXCLUDED.is_weighted;
 
 -- 课程
 insert into ea.course(id, name, english_name, credit, period_theory, period_experiment, period_weeks,
-    is_compulsory, is_practical, property_id, education_level, assess_type,
+    is_compulsory, is_practical, property_id, category, education_level, assess_type,
     schedule_type, introduction, enabled, department_id)
 select id, name, english_name, credit, period_theory, period_experiment, period_weeks,
-    is_compulsory, is_practical, property_id, education_level, assess_type,
+    is_compulsory, is_practical, property_id, category, education_level, assess_type,
     schedule_type, introduction, enabled, department_id
 from ea.sv_course
 on conflict(id) do update set
@@ -166,6 +166,7 @@ period_weeks      = EXCLUDED.period_weeks,
 is_compulsory     = EXCLUDED.is_compulsory,
 is_practical      = EXCLUDED.is_practical,
 property_id       = EXCLUDED.property_id,
+category          = EXCLUDED.category,
 education_level   = EXCLUDED.education_level,
 assess_type       = EXCLUDED.assess_type,
 schedule_type     = EXCLUDED.schedule_type,

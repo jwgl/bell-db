@@ -112,7 +112,7 @@ select jsbh as id,
     decode(kskyf, 'T', 1, 0) as can_test,
     to_number(substr(jykyxq, 1, 4) || substr(jykyxq, 11, 1)) as booking_term,
     decode(jyjsdx, '01', 1, '10', 2, '11', 3, 0) as booking_user,
-    decode(xqdm, 0, 1, 1, 0) as is_external,
+    decode(xqdm, 0, 1, 1, 0, 2, 0) as is_external,
     regexp_replace(translate(bz, chr(10)||chr(11)||chr(13), '   '), '\s+', ' ') as note
 from zfxfzb.jxcdxxb
 order by id;
@@ -427,6 +427,7 @@ select kcdm as id,
     case when regexp_like(a.zxs, '-\d+\.\d?$') then to_number(regexp_substr(a.zxs, '\d+\.\d?$')) else 0 end as period_experiment,
     case when regexp_like(a.zxs, '^\+\d+$')    then to_number(regexp_substr(a.zxs, '\d+'))       else 0 end as period_weeks,
     to_number(kcxzdm) as property_id,
+    kcgs as category,
     decode(kclb, '必修课', 1, '选修课', 0, '实践环节', 1, 1) as is_compulsory,
     case when regexp_like(a.zxs, '^\+\d+$') then 1 else 0 end as is_practical,
     decode(xlcc,'本科', 1, '本科毕业生', 1, '硕士研究生', 2, /*其它或空*/ 9) as education_level,

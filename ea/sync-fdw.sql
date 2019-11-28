@@ -182,6 +182,7 @@ create foreign table ea.sv_course (
     period_experiment numeric(3, 1),
     period_weeks integer,
     property_id integer,
+    category text,
     is_compulsory boolean,
     is_practical boolean,
     education_level integer,
