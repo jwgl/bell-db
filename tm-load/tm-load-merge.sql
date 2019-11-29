@@ -51,9 +51,8 @@ where dvu.workload_task_id = workload_task.id;
 
 -- 合并workload_task_schedule
 insert into tm_load.workload_task_schedule(workload_task_id, task_schedule_ids, start_week, end_week, odd_even, day_of_week, start_section, total_section, teacher_id)
-select b.id as workload_task_id, task_schedule_ids, start_week, end_week, odd_even, day_of_week, start_section, total_section, teacher_id
-from tm_load.dva_task_schedule_base a
-join tm_load.workload_task b on a.task_ids = b.task_ids
+select workload_task_id, task_schedule_ids, start_week, end_week, odd_even, day_of_week, start_section, total_section, teacher_id
+from tm_load.dvm_task_schedule
 on conflict(task_schedule_ids) do update set
 start_week = excluded.start_week,
 end_week = excluded.end_week,
@@ -77,19 +76,18 @@ where workload_task_teacher.original_workload <> excluded.original_workload
 update tm_load.workload_task_teacher workload_task_teacher set
 standard_workload = dvu.standard_workload,
 task_ordinal = dvu.task_ordinal
-from tm_load.workload_task_teacher_standard_workload dvu
+from tm_load.dvu_workload_task_teacher_standard_workload dvu
 where dvu.workload_task_id = workload_task_teacher.workload_task_id
 and dvu.teacher_id = workload_task_teacher.teacher_id;
 
 -- 合并teacher_workload_settings
-insert into tm_load.teacher_workload_settings(teacher_id, human_resource_id, teacher_type, employment_mode, service_type)
-select teacher_id, human_resource_id, teacher_type, employment_mode, service_type
-from tm_temp.dvm_teacher_workload_settings
+insert into tm_load.teacher_workload_settings(teacher_id, post_type, employment_mode, employment_status)
+select teacher_id, post_type, employment_mode, employment_status
+from tm_load.dvm_teacher_workload_settings
 on conflict(teacher_id) do update set
-human_resource_id = excluded.human_resource_id,
-teacher_type = excluded.teacher_type,
+post_type = excluded.post_type,
 employment_mode = excluded.employment_mode,
-service_type = excluded.service_type;
+employment_status = excluded.employment_status;
 
 -- 合并workload
 insert into tm_load.workload(term_id, department_id, teacher_id,
@@ -115,21 +113,18 @@ where (term_id, department_id, teacher_id) not in (
   from tm_load.dvm_workload
 );
 
+-- 删除workload_task_teacher
+delete from tm_load.teacher_workload_settings
+where teacher_id not in (
+  select teacher_id
+  from tm_load.dvm_teacher_workload_settings
+);
+
 -- 删除workload_task_schedule
 delete from tm_load.workload_task_schedule
 where task_schedule_ids not in (
   select task_schedule_ids
-  from tm_load.dva_task_schedule_base a
-  join tm_load.workload_task b on a.task_ids = b.task_ids
-);
-
--- 删除workload_task_teacher
-delete from tm_load.workload_task_teacher
-where workload_task_id in (
-  select id from tm_load.workload_task
-  where task_ids not in (
-    select task_ids from tm_load.dvm_workload_task
-  )
+  from tm_load.dvm_task_schedule
 );
 
 -- 删除workload_task_teacher

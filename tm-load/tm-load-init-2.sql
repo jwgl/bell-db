@@ -1,6 +1,9 @@
 -- 创建架构
 create schema tm_load authorization tm;
 
+create type tm_load.t_tuple_2 as (p1 text, p2 text);
+create type tm_load.t_tuple_3 as (p1 text, p2 text, p3 text);
+
 insert into tm_load.department_settings(department_id, creator_id, checker_id) values ('01', '01035', '01039');
 insert into tm_load.department_settings(department_id, creator_id, checker_id) values ('11', '11103', '11103');
 
@@ -58,7 +61,7 @@ insert into tm_load.class_size_ratio(id, type_id, lower_bound, upper_bound, rati
 (35, 3, 81,  95,   1.3),
 (36, 3, 96,  9999, 1.4);
 
--- 艺术小班课
+-- 艺体小班课
 insert into tm_load.class_size_ratio(id, type_id, lower_bound, upper_bound, ratio) values
 (40, 4, 1,   5,    0.5),
 (41, 4, 6,   15,   0.8),
@@ -119,7 +122,7 @@ from ea.course_class cc
 join ea.course c on c.id = cc.course_id
 where cc.property_id = 1
 and substring(course_id, 1, 4) = '1511'
-and term_id >= 20161
+and term_id >= 20191
 union all -- 商学部大学外语
 select '20', id, '大学外语', 0.72, 2 /*正常*/, 1 /*课时*/, 5 /*通识课*/, 10 /*理论课*/
 from ea.course where id like '031100_1'
@@ -129,7 +132,7 @@ from ea.course_class cc
 join ea.course c on c.id = cc.course_id
 where cc.property_id = 1
 and substring(course_id, 1, 4) = '9211'
-and term_id >= 20161
+and term_id >= 20191
 union all -- 政治理论课
 select '93', id, '政治理论课', null, 2 /*正常*/, 1 /*课时*/, 5 /*政治理论课*/, 10 /*理论课*/
 from ea.course
@@ -137,7 +140,7 @@ where id like '93%'
 and id in (
 	select course_id
 	from ea.course_class
-  where term_id between 20161 and 20192
+  where term_id >= 20191
 ) and name not in ('思想道德修养与法律基础（实践）', '形势与政策')
 union all -- 不计-政治理论课
 select '93', course.id, '政治理论课', null, 1 /*不计*/, 1 /*课时*/, 9 /*常量*/, 10 /*理论课*/
@@ -159,7 +162,7 @@ select distinct course_class.department_id, course.id, '毕业论文（设计）
   end
 from ea.course_class
 join ea.course on course_class.course_id = course.id
-where course_class.term_id >= 20161
+where course_class.term_id >= 20191
 and (course.name like '毕业论文%'
   or course.name like '毕业设计%'
   or course.name like '辅修毕业论文%'
@@ -169,7 +172,7 @@ union all -- 其他论文
 select distinct course_class.department_id, course.id, '其他论文', null::numeric(3,2), 2 /*正常*/, 2 /*学生*/, 9 /*常量*/, 50
 from ea.course_class
 join ea.course on course_class.course_id = course.id
-where course_class.term_id >= 20161
+where course_class.term_id >= 20191
 and course.name in ('学年论文')
 union all -- 实习
 select distinct course_class.department_id, course.id, '分散实习', null::numeric(3,2), 2 /*正常*/, 2 /*学生*/, 9 /*常量*/,
@@ -179,7 +182,7 @@ select distinct course_class.department_id, course.id, '分散实习', null::num
   end
 from ea.course_class
 join ea.course on course_class.course_id = course.id
-where course_class.term_id >= 20161
+where course_class.term_id >= 20191
 and (course.name like '%实习%'
   or course.name like '%见习%'
   or course.name like '%工作坊%'
@@ -203,28 +206,28 @@ select distinct course_class.department_id, course_item.id, '实验', 2 /*正常
 from ea.course_class
 join ea.task on task.course_class_id = course_class.id
 join ea.course_item on task.course_item_id = course_item.id
-where term_id >= 20161
+where term_id >= 20191
 and course_item.name like '实验'
 union all
 select distinct course_class.department_id, course_item.id, '体育俱乐部', 1 /*不计*/, 1 /*课时*/, 9 /*常量*/, 99 /*其他*/
 from ea.course_class
 join ea.task on task.course_class_id = course_class.id
 join ea.course_item on task.course_item_id = course_item.id
-where term_id >= 20161
+where term_id >= 20191
 and department_id = '92' and course_item.name like '%俱乐部%'
 union all
 select distinct course_class.department_id, course_item.id, '校体育队', 1 /*不计*/, 1 /*课时*/, 9 /*常量*/, 99 /*其他*/
 from ea.course_class
 join ea.task on task.course_class_id = course_class.id
 join ea.course_item on task.course_item_id = course_item.id
-where term_id >= 20161
+where term_id >= 20191
 and department_id = '92' and course_item.name like '%队%'
 union all
 select distinct course_class.department_id, course_item.id, '阳光长跑', 1 /*不计*/, 1 /*课时*/, 9 /*常量*/, 99 /*其他*/
 from ea.course_class
 join ea.task on task.course_class_id = course_class.id
 join ea.course_item on task.course_item_id = course_item.id
-where term_id >= 20161
+where term_id >= 20191
 and department_id = '92' and course_item.name like '阳光长跑%'
 order by 1, 2
 on conflict(department_id, course_item_id) do update set
@@ -242,7 +245,7 @@ from ea.course_class
 join ea.task on task.course_class_id = course_class.id
 join ea.course_item on task.course_item_id = course_item.id
 join ea.course on course_item.course_id = course.id
-where term_id >= 20161
+where term_id >= 20191
 and course_class.department_id not in ('15')
 and (course_class.department_id, course_item.id) not in (
   select department_id, course_item_id
@@ -255,27 +258,3 @@ and (course_class.department_id, course_item.id) not in (
 and course.name <> course_item.name
 and course_item.name <> '理论'
 group by course_class.department_id, course.id, course.name, course_item.id, course_item.name;
-
-
-insert into tm_load.task_workload_settings(task_id, type, value, note)
-select id, 0 as type, 0 as value, '错误任务' as note
-from ea.task
-where code in (
-  '(2016-2017-1)-15110012-15065-2',
-  '(2016-2017-1)-15110012-15065-3',
-  '(2016-2017-2)-15112220-15004-2',
-  '(2017-2018-2)-93110091-93067-1'
-)
-on conflict(task_id) do update set
-type = excluded.type,
-value = excluded.value;
-
-
-select term_id, task_schedule.start_week, task_schedule.end_week, odd_even, day_of_week, start_section, total_section, task_schedule.teacher_id,
-  count(distinct course.name), array_agg(distinct course.name)
-from ea.task_schedule
-join ea.task on task.id = task_schedule.task_id
-join ea.course_class on course_class.id = task.course_class_id
-join ea.course on course.id = course_class.course_id
-group by term_id, task_schedule.start_week, task_schedule.end_week, odd_even, day_of_week, start_section, total_section, task_schedule.teacher_id
-having count(distinct task_schedule.id) > 1;

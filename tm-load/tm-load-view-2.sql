@@ -3,16 +3,16 @@
  */
 create or replace view tm_load.dva_task_schedule_base as
 select term_id, department_id, start_week, end_week, odd_even, day_of_week, start_section, total_section, teacher_id, workload_type, workload_mode,
-  array_agg(distinct (course_id, course_name)::tm_load.t_text_pair order by (course_id, course_name)::tm_load.t_text_pair) as courses,
+  array_agg(distinct (task_ordinal, task_id, task_code)::tm_load.t_tuple_3 order by (task_ordinal, task_id, task_code)::tm_load.t_tuple_3) as tasks,
+  array_agg(distinct (course_id, course_name)::tm_load.t_tuple_2 order by (course_id, course_name)::tm_load.t_tuple_2) as courses,
   max(course_credit) as course_credit,
+  max(education_level) as education_level,
   string_agg(distinct course_item_name, ',' order by course_item_name) as course_item,
-  string_agg(task_code, ',' order by task_ordinal) as task_codes,
   min(task_ordinal) as task_ordinal,
-  array_agg(task_id order by task_ordinal) as task_ids,
-  array_agg(task_schedule_id order by task_schedule_id) as task_schedule_ids
+  array_agg(distinct task_schedule_id order by task_schedule_id) as task_schedule_ids
 from (
     select term_id, course_class.department_id, course_class.course_id, task.id as task_id, task.code as task_code,
-    task_schedule.id as task_schedule_id, course.name as course_name, course.credit as course_credit, course_item.name as course_item_name,
+    task_schedule.id as task_schedule_id, course.name as course_name, course.credit as course_credit, course.education_level, course_item.name as course_item_name,
     task_schedule.start_week, task_schedule.end_week, odd_even, day_of_week, start_section, total_section, task_schedule.teacher_id,
     case
       when substring(task.code, 24, 5) = task_schedule.teacher_id then 1000
@@ -30,7 +30,7 @@ from (
   left join ea.course_item on course_item.id = task.course_item_id
   left join tm_load.course_workload_settings on course_workload_settings.course_id = course_class.course_id and course_workload_settings.department_id = course_class.department_id
   left join tm_load.course_item_workload_settings on course_item_workload_settings.course_item_id = task.course_item_id and course_item_workload_settings.department_id = course_class.department_id
-  where term_id >= 20171
+  where term_id >= 20191
 ) x
 group by term_id, department_id, start_week, end_week, odd_even, day_of_week, start_section, total_section, teacher_id, workload_type, workload_mode;
 
@@ -38,7 +38,9 @@ group by term_id, department_id, start_week, end_week, odd_even, day_of_week, st
  * 辅助视图：已排课教学任务
  */
 create or replace view tm_load.dva_task_with_timetable as
-select distinct term_id, department_id, task_codes as code, task_ids,
+select distinct term_id, department_id,
+  array_to_string(array(select p3 from unnest(tasks) group by p3 order by min(p1)), ',') code,
+  array(select p2::uuid from unnest(tasks) group by p2 order by min(p1)) task_ids,
   array_to_string(array(select p1 from unnest(courses) group by p1 order by p1), ',') course_id,
   array_to_string(array(select p2 from unnest(courses) group by p2 order by min(p1)), ',') course_name,
   course_credit, course_item, workload_type, workload_mode
@@ -62,11 +64,10 @@ from ea.course_class
 join ea.course on course_class.course_id = course.id
 join ea.task on task.course_class_id = course_class.id
 left join ea.course_item on task.course_item_id = course_item.id
-left join ea.task_schedule on task_schedule.task_id = task.id
 left join tm_load.course_workload_settings on course_workload_settings.course_id = course_class.course_id and course_workload_settings.department_id = course_class.department_id
 left join tm_load.course_item_workload_settings on course_item_workload_settings.course_item_id = task.course_item_id and course_item_workload_settings.department_id = course_class.department_id
-where term_id >= 20171
-and task_schedule.id is null; -- 未排课
+where term_id >= 20191
+and task.id not in (select task_id from ea.task_schedule);
 
 /*
  * 合并视图：工作量教学任务
@@ -193,6 +194,18 @@ select distinct on (workload_task_id) workload_task_id,
 from task
 join tm_load.instructional_mode on instructional_mode.id = task.instructional_mode_id;
 
+/**
+ * 合并视图：教学安排
+ */
+create or replace view tm_load.dvm_task_schedule as
+select b.id as workload_task_id, task_schedule_ids, start_week, end_week, odd_even, day_of_week, start_section, total_section, teacher_id
+from (
+  select array(select p2::uuid from unnest(tasks) group by p2 order by min(p1)) as task_ids,
+    task_schedule_ids, start_week, end_week, odd_even, day_of_week, start_section, total_section, teacher_id
+  from tm_load.dva_task_schedule_base
+) a
+join tm_load.workload_task b on a.task_ids = b.task_ids;
+
 /*
  * 合并视图：工作量教师表
  */
@@ -288,7 +301,7 @@ from workload_by_student;
 /*
  * 更新视图：工作量教学任务-标准工作量和任务顺序
  */
-create or replace view tm_load.workload_task_teacher_standard_workload as
+create or replace view tm_load.dvu_workload_task_teacher_standard_workload as
 select workload_task.id as workload_task_id, workload_task_teacher.teacher_id, rank() over(
     partition by term_id, workload_task_teacher.teacher_id
     order by
@@ -323,6 +336,24 @@ join ea.teacher on workload_task_teacher.teacher_id = teacher.id
 join ea.department d1 on d1.id = teacher.department_id
 join ea.department d2 on d2.id = workload_task.department_id
 order by term_id desc, task_ordinal;
+
+/**
+ * 合并视图：教师工作量设置
+ */
+create or replace view tm_load.dvm_teacher_workload_settings as
+select a.id as teacher_id,
+  coalesce(b.post_type, '教师岗') as post_type,
+  case
+    when b.employment_mode = '在编人员' then '在编'
+    when b.employment_mode = '外籍教师人员' then '外籍'
+    else '外聘'
+  end as employment_mode,
+  coalesce(b.employment_status, '在岗') as employment_status
+from ea.teacher a
+left join tm_load.et_human_resource_teacher b on a.opposite_number = b.teacher_id
+where a.id in (
+  select teacher_id from tm_load.workload_task_teacher
+);
 
 /**
  * 合并视图：教师学期工作量
@@ -363,11 +394,25 @@ select term_id, department_id, teacher_id, teaching_workload,
 from teacher_term_workload
 order by term_id, department_id, teacher_id;
 
+/**
+ * 辅助视图：教师学期工作量
+ */
 create or replace view tm_load.av_teacher_workload_by_term as
-select term_id, workload.department_id, department.name as department_name, 
+select term_id, workload.department_id, department.name as department_name,
   workload.teacher_id, teacher.name as teacher_name,
   teaching_workload, adjustment_workload, supplement_workload, practice_workload, executive_workload,
   correction, total_workload
 from tm_load.workload
 join ea.teacher on workload.teacher_id = teacher.id
 join ea.department on workload.department_id = department.id;
+
+/**
+ * 外部视图：为bnuz提供教师学期工作量
+ */
+create or replace view tm_load.ev_workload as
+select term_id, opposite_number as teacher_id, teacher.name as teacher_name,
+  teaching_workload, practice_workload, executive_workload, correction, teacher.id as opposite_number
+from tm_load.workload
+join ea.teacher on workload.teacher_id = teacher.id
+where teacher.department_id = '201'
+and opposite_number is not null;
