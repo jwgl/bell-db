@@ -307,7 +307,7 @@ select workload_task.id as workload_task_id, workload_task_teacher.teacher_id, r
     order by
       course_id,
       case when workload_task.primary_teacher_id = workload_task_teacher.teacher_id then 1 else 2 end,
-      translate(substring(workload_task.code from '-(\d+[A-Z]?)$'), 'ABCDEFG', '1234567')::integer * case when workload_task.course_item = '理论' then 10 else 1 end
+      translate(substring(workload_task.code from '-(\d+[A-Z]?)(,|$)'), 'ABCDEFG', '1234567')::integer * case when workload_task.course_item = '理论' then 10 else 1 end
    ) as task_ordinal,
   case workload_type
     when 0 then 0 -- 排除
@@ -324,12 +324,24 @@ join tm_load.workload_task_teacher on workload_task.id = workload_task_teacher.w
  * 辅助视图：教师任务工作量
  */
 create or replace view tm_load.av_teacher_workload_by_task as
-select term_id, code, task_ordinal, primary_teacher_id,
+select term_id, workload_task.id, code, task_ordinal, primary_teacher_id,
   teacher_id, teacher.name as teacher_name, d1.name as teacher_department,
-  course_id, course_name, course_item, course_property, d2.name as course_class_department,
-  workload_mode, workload_type, student_count,
-  class_size_ratio, instructional_mode_ratio, parallel_ratio,
-  correction, original_workload, standard_workload
+  course_id, course_name, course_item, course_credit, course_property, d2.name as course_class_department,
+  case workload_mode
+    when 1 then '1-按课程计'
+    when 2 then '2-按学生计'
+  end as workload_mode,
+  case workload_type
+    when 0 then '0-排除'
+    when 1 then '1-不计'
+    when 2 then '2-正常'
+  end as workload_type,
+  student_count, class_size_ratio, instructional_mode_ratio, parallel_ratio,
+  correction, original_workload, standard_workload, array(
+    select ea.fn_timetable_to_string(start_week, end_week, odd_even, day_of_week, start_section, total_section)
+    from tm_load.workload_task_schedule
+    where workload_task_id = workload_task.id
+  ) as task_schedules
 from tm_load.workload_task
 join tm_load.workload_task_teacher on workload_task.id = workload_task_teacher.workload_task_id
 join ea.teacher on workload_task_teacher.teacher_id = teacher.id
@@ -341,19 +353,24 @@ order by term_id desc, task_ordinal;
  * 合并视图：教师工作量设置
  */
 create or replace view tm_load.dvm_teacher_workload_settings as
-select a.id as teacher_id,
-  coalesce(b.post_type, '教师岗') as post_type,
-  case
-    when b.employment_mode = '在编人员' then '在编'
-    when b.employment_mode = '外籍教师人员' then '外籍'
-    else '外聘'
-  end as employment_mode,
-  coalesce(b.employment_status, '在岗') as employment_status
-from ea.teacher a
-left join tm_load.et_human_resource_teacher b on a.opposite_number = b.teacher_id
-where a.id in (
-  select teacher_id from tm_load.workload_task_teacher
-);
+with teacher as (
+  select a.id as teacher_id,
+    coalesce(b.post_type, '教师岗') as post_type,
+    case
+      when b.employment_mode = '在编人员' then '在编'
+      when b.employment_mode = '外籍教师人员' then '外籍'
+      else '外聘'
+    end as employment_mode,
+    coalesce(b.employment_status, '在岗') as employment_status
+  from ea.teacher a
+  left join tm_load.human_resource_teacher b on a.human_resource_number = b.id
+  where a.id in (
+    select teacher_id from tm_load.workload_task_teacher
+  )
+)
+select teacher_id, post_type, employment_mode, employment_status,
+  post_type = '教师岗' and employment_mode = '在编' as supplement
+from teacher;
 
 /**
  * 合并视图：教师学期工作量
@@ -364,35 +381,49 @@ with teacher_task_workload as (
       when 1 then workload_task.department_id -- 按开课单位申报
       when 2 then teacher.department_id -- 按教师单位申报
     end as department_id, workload_task_teacher.teacher_id,
-    workload_mode, standard_workload
+        workload_mode, standard_workload, executive_weekly_workload
   from tm_load.workload_task
   join tm_load.workload_task_teacher on workload_task_teacher.workload_task_id = workload_task.id
   join ea.teacher on workload_task_teacher.teacher_id = teacher.id
   join ea.term on workload_task.term_id = term.id
   left join tm_load.teacher_workload_settings on workload_task_teacher.teacher_id = teacher_workload_settings.teacher_id
   where (teacher_workload_settings.workload_type is null or teacher_workload_settings.workload_type <> 0)
-), teacher_term_workload_base as (
-  select term_id, department_id, teacher_id,
-    sum(standard_workload) filter(where workload_mode = 1) as teaching_workload,
-    sum(standard_workload) filter(where workload_mode = 2) as practice_workload
-  from teacher_task_workload
-  group by term_id, department_id, teacher_id
-), teacher_term_workload as (
-  select term_id, department_id, teacher_term_workload_base.teacher_id,
-    coalesce(teaching_workload, 0.00) as teaching_workload,
-    coalesce(practice_workload, 0.00) as practice_workload,
-    coalesce(teacher_workload_settings.supplement, coalesce(teacher_workload_settings.employment_mode, '外聘') = '在编') as need_supplement,
-    coalesce(executive_weekly_workload, 0.00) as executive_weekly_workload
-  from teacher_term_workload_base
-  left join tm_load.teacher_workload_settings on teacher_term_workload_base.teacher_id = teacher_workload_settings.teacher_id
 )
-select term_id, department_id, teacher_id, teaching_workload,
-  case need_supplement when true then round(teaching_workload / 17.0, 2) else 0.00 end as adjustment_workload,
-  case need_supplement when true then round(least(20.00, teaching_workload / 17.0 * 2), 2) else 0.00 end as supplement_workload,
-  practice_workload,
-  executive_weekly_workload * 20 as executive_workload
-from teacher_term_workload
-order by term_id, department_id, teacher_id;
+select term_id, department_id, teacher_id,
+  coalesce(sum(standard_workload) filter(where workload_mode = 1), 0.00) as teaching_workload,
+  coalesce(sum(standard_workload) filter(where workload_mode = 2), 0.00) as practice_workload,
+  coalesce(executive_weekly_workload, 0.00) * 20 as executive_workload
+from teacher_task_workload
+group by term_id, department_id, teacher_id, executive_weekly_workload;
+
+/**
+ * 更新视图：教师学期工作量-调整与合计
+ */
+create or replace view tm_load.dvu_workload as
+with teacher_term_workload_supplyment as (
+  select term_id, department_id, a.teacher_id,
+    teaching_workload, practice_workload, executive_workload,
+    external_teaching_workload, external_practice_workload,
+    external_executive_workload, external_correction, correction,
+    case coalesce(b.supplement, coalesce(b.employment_mode, '外聘') = '在编')
+      when true then round((teaching_workload + external_teaching_workload) / 17.0, 2)
+      else 0.00
+    end as adjustment_workload,
+    case coalesce(b.supplement, coalesce(b.employment_mode, '外聘') = '在编')
+      when true then round(least(20.00, (teaching_workload + external_teaching_workload) / 17.0 * 2), 2)
+      else 0.00 end
+    as supplement_workload
+  from tm_load.workload a
+  left join tm_load.teacher_workload_settings b on a.teacher_id = b.teacher_id
+)
+select term_id, department_id, teacher_id,
+    adjustment_workload, supplement_workload,
+    teaching_workload + external_teaching_workload +
+    adjustment_workload + supplement_workload +
+    practice_workload + external_practice_workload +
+    executive_workload + external_executive_workload +
+    correction + external_correction as total_workload
+from teacher_term_workload_supplyment;
 
 /**
  * 辅助视图：教师学期工作量
@@ -407,12 +438,87 @@ join ea.teacher on workload.teacher_id = teacher.id
 join ea.department on workload.department_id = department.id;
 
 /**
- * 外部视图：为bnuz提供教师学期工作量
+ * 外部视图：为bnuc提供教师学期工作量
  */
 create or replace view tm_load.ev_workload as
 select term_id, opposite_number as teacher_id, teacher.name as teacher_name,
   teaching_workload, practice_workload, executive_workload, correction, teacher.id as opposite_number
 from tm_load.workload
 join ea.teacher on workload.teacher_id = teacher.id
-where teacher.department_id = '201'
+where teacher.department_id = '91'
 and opposite_number is not null;
+
+/**
+ * 辅助视图：结构工资教师学期工作量任务
+ */
+create or replace view tm_load.rv_human_resource_workload_task as
+with task as (
+  select term_id, id, code, task_ordinal, teacher_id, teacher_name,
+    course_id, course_name, course_item, course_credit, course_property, course_class_department,
+    workload_mode, workload_type, student_count,
+    class_size_ratio, instructional_mode_ratio, parallel_ratio,
+    correction, original_workload, standard_workload, task_schedules
+  from tm_load.av_teacher_workload_by_task
+  union all
+    select term_id, id, code, task_ordinal, teacher_id, teacher_name,
+    course_id, course_name, course_item, course_credit, course_property, course_class_department,
+    workload_mode, workload_type, student_count,
+    class_size_ratio, instructional_mode_ratio, parallel_ratio,
+    correction, original_workload, standard_workload, task_schedules
+  from tm_load.et_teacher_workload_by_task
+)
+select term_id as 学期,
+  human_resource_teacher.id as 人事_职工号,
+  human_resource_teacher.name as 人事_姓名,
+  human_resource_teacher.department as 人事_部门,
+  task.teacher_id as 教务_职工号,
+  teacher.name as 教务_姓名,
+  department.name as 教务_部门,
+  course_id as 课程代码,
+  course_name as 课程名称,
+  course_item as 课程项目,
+  course_credit as 课程学分,
+  course_property as 课程性质,
+  course_class_department as 开课单位,
+  workload_mode as 工作量模式,
+  workload_type as 工作量类型,
+  student_count as 选课人数,
+  class_size_ratio as 班级规模系数,
+  instructional_mode_ratio as 教学形式系数,
+  parallel_ratio as 平行班系数,
+  correction as 工作量修正,
+  original_workload as 原始工作量,
+  standard_workload as 标准工作量,
+  task_schedules as 教学安排
+from task
+join ea.teacher on task.teacher_id = teacher.id
+join ea.department on teacher.department_id = department.id
+join tm_load.human_resource_teacher on human_resource_teacher.id = teacher.human_resource_number
+order by term_id, human_resource_teacher.department, human_resource_teacher.id, task_ordinal;
+
+/**
+ * 报表视图：结构工资教师学期工作量
+ */
+create or replace view tm_load.rv_human_resource_workload as
+select term_id as 学期,
+  human_resource_teacher.id as 人事_职工号,
+  human_resource_teacher.name as 人事_姓名,
+  human_resource_teacher.department as 人事_部门,
+  workload.teacher_id as 教务_职工号,
+  teacher.name as 教务_姓名,
+  department.name as 教务_部门,
+  teaching_workload as 教学工作量,
+  external_teaching_workload as 校区_教学工作量,
+  adjustment_workload as 教学工作量调整,
+  supplement_workload as 教学工作量补充,
+  practice_workload as 实践工作量,
+  external_practice_workload as 校区_实践工作量,
+  executive_workload as 行政工作量,
+  external_executive_workload as 校区_行政工作量,
+  correction as 工作量修正,
+  external_correction as 校区_工作量修正,
+  total_workload as 工作量合计
+from tm_load.workload
+join ea.teacher on workload.teacher_id = teacher.id
+join ea.department on workload.department_id = department.id
+join tm_load.human_resource_teacher on human_resource_teacher.id = teacher.human_resource_number;

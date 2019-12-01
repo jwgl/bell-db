@@ -81,37 +81,14 @@ where dvu.workload_task_id = workload_task_teacher.workload_task_id
 and dvu.teacher_id = workload_task_teacher.teacher_id;
 
 -- 合并teacher_workload_settings
-insert into tm_load.teacher_workload_settings(teacher_id, post_type, employment_mode, employment_status)
-select teacher_id, post_type, employment_mode, employment_status
+insert into tm_load.teacher_workload_settings(teacher_id, post_type, employment_mode, employment_status, supplement)
+select teacher_id, post_type, employment_mode, employment_status, supplement
 from tm_load.dvm_teacher_workload_settings
 on conflict(teacher_id) do update set
 post_type = excluded.post_type,
 employment_mode = excluded.employment_mode,
-employment_status = excluded.employment_status;
-
--- 合并workload
-insert into tm_load.workload(term_id, department_id, teacher_id,
-  teaching_workload, adjustment_workload, supplement_workload, practice_workload, executive_workload)
-select term_id, department_id, teacher_id,
-  teaching_workload, adjustment_workload, supplement_workload, practice_workload, executive_workload
-from tm_load.dvm_workload
-on conflict(term_id, department_id, teacher_id) do update set
-teaching_workload = excluded.teaching_workload,
-adjustment_workload = excluded.adjustment_workload,
-supplement_workload = excluded.supplement_workload,
-practice_workload = excluded.practice_workload,
-executive_workload = excluded.executive_workload;
-
-update tm_load.workload set
-total_workload = teaching_workload + adjustment_workload + supplement_workload
-               + practice_workload + executive_workload + correction;
-
--- 删除workload
-delete from tm_load.workload
-where (term_id, department_id, teacher_id) not in (
-  select term_id, department_id, teacher_id
-  from tm_load.dvm_workload
-);
+employment_status = excluded.employment_status,
+supplement = excluded.supplement;
 
 -- 删除workload_task_teacher
 delete from tm_load.teacher_workload_settings
@@ -140,3 +117,46 @@ where task_ids not in (
   select task_ids from tm_load.dvm_workload_task
 );
 
+-- 合并workload
+insert into tm_load.workload(term_id, department_id, teacher_id,
+  teaching_workload, practice_workload, executive_workload)
+select term_id, department_id, teacher_id,
+  teaching_workload, practice_workload, executive_workload
+from tm_load.dvm_workload
+on conflict(term_id, department_id, teacher_id) do update set
+teaching_workload = excluded.teaching_workload,
+practice_workload = excluded.practice_workload,
+executive_workload = excluded.executive_workload;
+
+-- 合并external_workload
+insert into tm_load.workload(term_id, department_id, teacher_id,
+  teaching_workload, practice_workload, executive_workload,
+  external_teaching_workload, external_practice_workload,
+  external_executive_workload, external_correction)
+select term_id, department_id, teacher_id,
+  teaching_workload, practice_workload, executive_workload,
+  external_teaching_workload, external_practice_workload,
+  external_executive_workload, external_correction
+from tm_load.dvm_external_workload
+on conflict(term_id, department_id, teacher_id) do update set
+external_teaching_workload = excluded.external_teaching_workload,
+external_practice_workload = excluded.external_practice_workload,
+external_executive_workload = excluded.external_executive_workload,
+external_correction = excluded.external_correction;
+
+-- 更新workload的总工作量
+update tm_load.workload workload set
+adjustment_workload = dvu.adjustment_workload,
+supplement_workload = dvu.supplement_workload,
+total_workload = dvu.total_workload
+from tm_load.dvu_workload dvu
+where dvu.term_id = workload.term_id
+and dvu.department_id = workload.department_id
+and dvu.teacher_id = workload.teacher_id;
+
+-- 删除workload
+delete from tm_load.workload
+where (term_id, department_id, teacher_id) not in (
+  select term_id, department_id, teacher_id
+  from tm_load.dvm_workload
+);
