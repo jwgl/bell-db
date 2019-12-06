@@ -1570,7 +1570,6 @@ with assess_normal as (
 )
 select
   b.course_class_id,
-  b.course_class_code,
   a.assess_stage,
   a.assess_type,
   a.assess_ratio
@@ -1821,7 +1820,7 @@ select a.course_assessment_id as id,
   b.course_grade_submit_id,
   assess_stage
 from ea.course_assessment_map a
-join ea.course_grade_submit_map b on a.course_class_code = b.course_class_code and a.submit_type = b.submit_type
+join ea.course_grade_submit_map b on a.course_class_code = b.course_class_code and a.submit_type = b.submit_type;
 
 /**
  * 课程考核成绩
