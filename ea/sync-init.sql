@@ -1489,6 +1489,7 @@ INSERT INTO COURSE_CLASS_SUFFIX VALUES('重考',     '毕业', 1, 0, 0, null,   
 INSERT INTO COURSE_CLASS_SUFFIX VALUES('缓考',     '补考', 1, 0, 0, '缓考',     null);
 INSERT INTO COURSE_CLASS_SUFFIX VALUES('重修',     '正考', 1, 1, 0, null,       null);
 INSERT INTO COURSE_CLASS_SUFFIX VALUES('-CX1',     '正考', 1, 1, 0, null,       null);
+INSERT INTO COURSE_CLASS_SUFFIX VALUES('4CX1',     '正考', 1, 1, 0, null,       null);
 INSERT INTO COURSE_CLASS_SUFFIX VALUES('cx',       '正考', 1, 1, 0, null,       null);
 INSERT INTO COURSE_CLASS_SUFFIX VALUES('CXKK',     '正考', 1, 1, 0, '旷考',     null);
 INSERT INTO COURSE_CLASS_SUFFIX VALUES('辅修',     '正考', 1, 0, 1, null,       null);
