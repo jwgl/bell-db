@@ -21,28 +21,6 @@ order by display_order;
 
 -- 应用角色
 create or replace view tm.dv_teacher_role as
-with admin_class_at_school as (
-    select ac.supervisor_id, ac.counsellor_id
-    from ea.admin_class ac
-    join ea.major m on ac.major_id = m.id
-    join ea.subject s on m.subject_id = s.id
-    where current_date < make_date(grade + length_of_schooling, 7, 1)
-    union all
-    select ac.supervisor_id, ac.counsellor_id
-    from ea.admin_class ac
-    join ea.major m on ac.major_id = m.id
-    join ea.subject s on m.subject_id = s.id
-    where current_date >= make_date(grade + length_of_schooling, 7, 1)
-    and exists (
-      select 1
-      from ea.course_class
-      join ea.task on course_class.id = task.course_class_id
-      join ea.task_student on task_student.task_id = task.id
-      join ea.student on student.id = task_student.student_id
-      where student.admin_class_id = ac.id
-      and ea.course_class.term_id = (select id from ea.term where active = true)
-    )
-)
 select t.id as user_id, 'ROLE_IN_SCHOOL_TEACHER' as role_id
 from ea.teacher t
 where t.at_school = true
@@ -78,10 +56,52 @@ from ea.teacher t
 join tm.booking_auth ba on ba.checker_id = t.id
 union all
 select distinct supervisor_id as user_id, 'ROLE_CLASS_SUPERVISOR' as role_id
-from admin_class_at_school
+from (
+  select ac.supervisor_id, ac.counsellor_id
+    from ea.admin_class ac
+    join ea.major m on ac.major_id = m.id
+    join ea.subject s on m.subject_id = s.id
+    where current_date < make_date(grade + length_of_schooling, 7, 1)
+    union all
+    select ac.supervisor_id, ac.counsellor_id
+    from ea.admin_class ac
+    join ea.major m on ac.major_id = m.id
+    join ea.subject s on m.subject_id = s.id
+    where current_date >= make_date(grade + length_of_schooling, 7, 1)
+    and exists (
+      select 1
+      from ea.course_class
+      join ea.task on course_class.id = task.course_class_id
+      join ea.task_student on task_student.task_id = task.id
+      join ea.student on student.id = task_student.student_id
+      where student.admin_class_id = ac.id
+      and ea.course_class.term_id = (select id from ea.term where active = true)
+    )
+) as admin_class_at_school
 union all
 select distinct counsellor_id as user_id, 'ROLE_STUDENT_COUNSELLOR' as role_id
-from admin_class_at_school
+from (
+  select ac.supervisor_id, ac.counsellor_id
+    from ea.admin_class ac
+    join ea.major m on ac.major_id = m.id
+    join ea.subject s on m.subject_id = s.id
+    where current_date < make_date(grade + length_of_schooling, 7, 1)
+    union all
+    select ac.supervisor_id, ac.counsellor_id
+    from ea.admin_class ac
+    join ea.major m on ac.major_id = m.id
+    join ea.subject s on m.subject_id = s.id
+    where current_date >= make_date(grade + length_of_schooling, 7, 1)
+    and exists (
+      select 1
+      from ea.course_class
+      join ea.task on course_class.id = task.course_class_id
+      join ea.task_student on task_student.task_id = task.id
+      join ea.student on student.id = task_student.student_id
+      where student.admin_class_id = ac.id
+      and ea.course_class.term_id = (select id from ea.term where active = true)
+    )
+) as admin_class_at_school
 union all
 select distinct s.teacher_id as user_id, 'ROLE_OBSERVER' as role_id
 from tm.observer s
@@ -239,21 +259,7 @@ select item.id as item_id,
        task_schedule.id as task_schedule_id
 from tm.free_listen_form form
 join tm.free_listen_item item on item.form_id = form.id
-join ea.task_schedule on item.task_schedule_id = task_schedule.id
-join ea.task on task_schedule.task_id = task.id
-join ea.course_class on task.course_class_id = course_class.id
-where form.status = 'APPROVED'
-union
-select item.id as item_id,
-       form.id as form_id,
-       form.term_id,
-       form.student_id,
-       course_class.id as course_class_id,
-       task.id as task_id,
-       task_schedule.id as task_schedule_id
-from tm.free_listen_form form
-join tm.free_listen_item item on item.form_id = form.id
-join ea.task_schedule on item.task_schedule_id = task_schedule.root_id
+join ea.task_schedule on item.task_schedule_id in (task_schedule.id, task_schedule.root_id)
 join ea.task on task_schedule.task_id = task.id
 join ea.course_class on task.course_class_id = course_class.id
 where form.status = 'APPROVED';
@@ -281,17 +287,9 @@ join ea.task_student on form.student_id = task_student.student_id
 join ea.task on task_student.task_id = task.id
 join ea.course_class on task.course_class_id = course_class.id and form.term_id = course_class.term_id
 join ea.task_schedule on task_schedule.task_id = task.id
- and (
-   item.task_schedule_id = task_schedule.id or
-   item.day_of_week = task_schedule.day_of_week or
-   item.day_of_week is null and item.task_schedule_id is null
- )
- and item.week between task_schedule.start_week and task_schedule.end_week
- and case task_schedule.odd_even
-   when 0 then true
-   when 1 then item.week % 2 = 1
-   when 2 then item.week % 2 = 0
- end
+ and coalesce(item.task_schedule_id, task_schedule.id) = task_schedule.id
+ and coalesce(item.day_of_week, task_schedule.day_of_week) = task_schedule.day_of_week
+ and 1 << (item.week - 1) & task_schedule.week_bits <> 0
 where form.status in ('APPROVED', 'FINISHED');
 
 -- 有效点名视图，用于函数统计
