@@ -302,3 +302,48 @@ and suggested_term <= current_term
 and course_name not like '毕业%'
 and course_name <> '专业实习'
 order by 1, 2;
+
+-- 教室使用情况-按天和节统计周数
+create or replace view ea.av_place_usage_by_day_and_section as
+with all_schedule as (
+  select place_id, a.start_week, a.end_week, odd_even, day_of_week, section_bits
+  from ea.task_schedule a
+  join ea.task b on a.task_id = b.id
+  join ea.course_class c on b.course_class_id = c.id
+  where term_id = (select id from ea.term where schedule = true)
+  union all
+  select place_id, start_week, end_week, odd_even, day_of_week, section_bits
+  from ea.et_bnuc_task_schedule
+  where term_id = (select id from ea.term where schedule = true)
+), schedule as (
+  select distinct place_id, start_week, end_week, end_week, day_of_week,
+    ea.fn_weeks_count(start_week, end_week, odd_even) as weeks_count, section_bits
+  from all_schedule
+), place_section as (
+  select place_id, day_of_week,
+    sum(weeks_count) filter( where (1 << 0) & section_bits <> 0) as s1,
+    sum(weeks_count) filter( where (1 << 1) & section_bits <> 0) as s2,
+    sum(weeks_count) filter( where (1 << 2) & section_bits <> 0) as s3,
+    sum(weeks_count) filter( where (1 << 3) & section_bits <> 0) as s4,
+    sum(weeks_count) filter( where (1 << 4) & section_bits <> 0) as s5,
+    sum(weeks_count) filter( where (1 << 5) & section_bits <> 0) as s6,
+    sum(weeks_count) filter( where (1 << 6) & section_bits <> 0) as s7,
+    sum(weeks_count) filter( where (1 << 7) & section_bits <> 0) as s8,
+    sum(weeks_count) filter( where (1 << 8) & section_bits <> 0) as s9,
+    sum(weeks_count) filter( where (1 << 9) & section_bits <> 0) as s10,
+    sum(weeks_count) filter( where (1 << 10) & section_bits <> 0) as s11,
+    sum(weeks_count) filter( where (1 << 11) & section_bits <> 0) as s12,
+    sum(weeks_count) filter( where (1 << 12) & section_bits <> 0) as s13
+  from schedule
+  group by place_id, day_of_week
+), place_day as (
+    select id, name, seat, type, day
+    from ea.place, generate_series(1, 7) as gs(day)
+    where id not in ('000000', '000001', '000002')
+    and building not in ('北理工', '元白楼', '南曦园')
+    and seat > 0
+)
+select b.id, b.name, b.seat, b.type, b.day, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13
+from place_section a
+right join place_day b on a.place_id = b.id and a.day_of_week = b.day
+order by b.id, b.day;
