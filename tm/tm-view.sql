@@ -390,12 +390,56 @@ and scheme.version_number <= latest_scheme.version_number
 and (sc.revise_version is null or sc.revise_version > latest_scheme.version_number);
 
 -- 辅助视图：最新培养方案学分统计
-create or replace view av_latest_scheme_credit as
-select program_id, subject_name as subject, direction_name as direction,
-  property_name as property, sum(credit) as credit, sum(practice_credit) as practice_credit
-from av_latest_scheme_course
-group by program_id, subject_name, direction_name, property_name
-order by 1, 2, 3, 4;
+create or replace view tm.av_latest_scheme_credit as
+with schema_property_credit_base as (
+  select program_id, subject_name as subject, direction_name as direction,
+    property_id, property_name as property, b.credit as total_credit,
+    sum(a.credit) as credit, sum(practice_credit) as practice_credit
+  from tm.av_latest_scheme_course a
+  join ea.program b on a.program_id = b.id
+  where a.property_id not in (2, 3)
+  group by program_id, subject_name, direction_name, property_id, property_name, b.credit
+  union all
+  select program_id, d.name as subject, null as direction,
+    property_id, e.name as property, b.credit as total_credit,
+    a.credit as credit, 0 as practice_credit
+  from ea.program_property a
+  join ea.program b on a.program_id = b.id
+  join ea.major c on b.major_id = c.id
+  join ea.subject d on c.subject_id = d.id
+  join ea.property e on a.property_id = e.id
+  where a.property_id in (2, 3)
+  and a.program_id in (select program_id from tm.av_latest_scheme_course)
+), schema_property_credit_fixed as (
+  select program_id, sum(credit) as fixed_credit
+  from (
+    select program_id, property_id, min(credit) as credit
+    from schema_property_credit_base
+    where property_id <> 6
+    group by program_id, property_id
+  ) x
+  group by program_id
+), schema_property_credit as (
+  select a.program_id, subject, direction, a.property_id, property, total_credit,
+    case a.property_id
+      when 6 then total_credit - fixed_credit
+      else credit
+    end as credit,
+    case a.property_id
+      when 6 then 0
+      else practice_credit
+    end as practice_credit
+  from schema_property_credit_base a
+  join schema_property_credit_fixed b on a.program_id = b.program_id
+)
+select schema_property_credit.program_id, subject, direction, property,
+  total_credit, schema_property_credit.credit as scheme_property_credit,
+  practice_credit as scheme_practice_credit,
+  program_property.credit as program_property_credit
+from schema_property_credit
+left join ea.program_property on schema_property_credit.program_id = program_property.program_id
+      and schema_property_credit.property_id = program_property.property_id
+order by program_id, subject, schema_property_credit.property_id, direction;
 
 -- 检查视图：培养方案与执行计划学分比较
 create or replace view tm.cv_scheme_program_credit as
