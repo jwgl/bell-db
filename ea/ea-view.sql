@@ -22,7 +22,7 @@ order by display_order;
 -- 辅助视图
 -- 教学班
 create or replace view ea.av_course_class as
-select cc.term_id, cc.id, cc.code, c.name as course,
+select cc.term_id, cc.id, cc.code, c.id as course_id, c.name as course_name,
   c.credit, d.name as department,
   coalesce(p.name, array_to_string(array(
     select distinct property.name

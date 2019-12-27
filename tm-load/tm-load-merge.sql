@@ -159,4 +159,7 @@ delete from tm_load.workload
 where (term_id, department_id, teacher_id) not in (
   select term_id, department_id, teacher_id
   from tm_load.dvm_workload
+  union all
+  select term_id, department_id, teacher_id
+  from tm_load.dvm_external_workload
 );
