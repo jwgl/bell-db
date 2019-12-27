@@ -3,14 +3,31 @@
  * 基本表直接依赖
  */
 create or replace view sync.dv_direct_dependency as
+with foreign_constraints as (
+  select c.conname as constraint_name,
+    nr.nspname as table_schema,
+    r.relname as table_name,
+    c.contype as constraint_type
+  from pg_namespace nr
+  join pg_class r on nr.oid = r.relnamespace
+  join pg_constraint c on c.conrelid = r.oid
+  where c.contype = 'f'
+), constraint_column_usage as (
+  SELECT nr.nspname AS table_schema,
+    r.relname AS table_name,
+    c.conname AS constraint_name
+  FROM pg_namespace nr
+  join pg_class r on nr.oid = r.relnamespace
+  join pg_attribute a on r.oid = a.attrelid
+  join pg_constraint c on r.oid = c.confrelid and a.attnum = ANY (c.confkey)
+  where c.contype = 'f'
+)
 select c1.id as parent_id, c2.id as child_id
-from information_schema.table_constraints as tc 
-join information_schema.key_column_usage as kcu on tc.constraint_name = kcu.constraint_name
-join information_schema.constraint_column_usage as ccu on ccu.constraint_name = tc.constraint_name
+from foreign_constraints as tc
+join constraint_column_usage as ccu on ccu.constraint_name = tc.constraint_name
 join sync.sync_config c1 on ccu.table_schema = c1.basic_schema and ccu.table_name = c1.basic_table
 left join sync.sync_config c2 on tc.table_schema = c2.basic_schema and tc.table_name = c2.basic_table
-where constraint_type = 'FOREIGN KEY'
-and c1.id <> c2.id;
+where c1.id <> c2.id;
 
 /**
  * 基本表间接依赖
