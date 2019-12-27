@@ -276,3 +276,18 @@ and (course_class.department_id, course_item.id) not in (
 and course.name <> course_item.name
 and course_item.name <> '理论'
 group by course_class.department_id, course.id, course.name, course_item.id, course_item.name;
+
+-- 级联删除
+alter table tm_load."workload_task_teacher"
+drop constraint "fkibohyn6osen4jndq0x2j0kkv9",
+add constraint "fkibohyn6osen4jndq0x2j0kkv9"
+  foreign key ("workload_task_id")
+  references "workload_task"(id)
+  on delete cascade;
+
+alter table tm_load."workload_task_schedule"
+drop constraint "fk4n6qejf7v6qbkafxbcoj7i52y",
+add constraint "fk4n6qejf7v6qbkafxbcoj7i52y"
+  foreign key ("workload_task_id")
+  references "workload_task"(id)
+  on delete cascade;
