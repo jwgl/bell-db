@@ -67,8 +67,8 @@ join ea.task on task.course_class_id = course_class.id
 left join ea.course_item on task.course_item_id = course_item.id
 left join tm_load.course_workload_settings on course_workload_settings.course_id = course_class.course_id and course_workload_settings.department_id = course_class.department_id
 left join tm_load.course_item_workload_settings on course_item_workload_settings.course_item_id = task.course_item_id and course_item_workload_settings.department_id = course_class.department_id
-where course_class.term_id >= 20191
-and task.id not in (select unnest(task_ids) from tm_load.dva_task_with_timetable);
+where task.id not in (select unnest(task_ids) from tm_load.dva_task_with_timetable);
+and course_class.term_id >= 20191
 
 /*
  * 合并视图：工作量教学任务
@@ -170,12 +170,16 @@ left join tm_load.class_size_ratio on class_size_ratio.type_id = task.class_size
 create or replace view tm_load.dvu_workload_task_instructional_mode as
 with task as (
   select workload_task.id as workload_task_id,
-    coalesce(
-      course_item_workload_settings.instructional_mode_id,
-      course_workload_settings.instructional_mode_id,
-      10 -- 理论课
-    ) as instructional_mode_id,
     case
+      when workload_task.course_id = '01100060' and workload_task.code not like '%,%' then 20 -- 通识课实验
+      else coalesce(
+        course_item_workload_settings.instructional_mode_id,
+        course_workload_settings.instructional_mode_id,
+        10 -- 理论课
+      )
+    end as instructional_mode_id,
+    case
+      when workload_task.course_id = '01100060' and workload_task.code not like '%,%' then 3
       when course_item_workload_settings.instructional_mode_id is not null then 2
       when course_workload_settings.instructional_mode_id is not null then 1
       else 0
@@ -443,6 +447,44 @@ select term_id, department_id, teacher_id,
   coalesce(executive_weekly_workload, 0.00) * 20 as executive_workload
 from teacher_task_workload
 group by term_id, department_id, teacher_id, executive_weekly_workload;
+
+/**
+ * 合并视图：外部教学学期工作量
+ */
+create or replace view tm_load.dvm_external_workload as
+with teacher_term_workload as (
+  select a.term_id, department_id, a.teacher_id,
+    a.teaching_workload as teaching_workload,
+    a.practice_workload as practice_workload,
+    a.executive_workload as executive_workload,
+    coalesce(b.teaching_workload, 0.00) as external_teaching_workload,
+    coalesce(b.practice_workload, 0.00) as external_practice_workload,
+    coalesce(b.executive_workload, 0.00) as external_executive_workload,
+    coalesce(b.correction, 0.00) as external_correction
+  from tm_load.workload a
+  left join tm_load.et_external_workload b on a.term_id = b.term_id and a.teacher_id = b.teacher_id
+  union all
+  select a.term_id, b.department_id, a.teacher_id,
+    0.00 as teaching_workload,
+    0.00 as practice_workload,
+    0.00 as executive_workload,
+    coalesce(a.teaching_workload, 0.00) as external_teaching_workload,
+    coalesce(a.practice_workload, 0.00) as external_practice_workload,
+    coalesce(a.executive_workload, 0.00) as external_executive_workload,
+    coalesce(a.correction, 0.00) as external_correction
+  from tm_load.et_external_workload a
+  join ea.teacher b on a.teacher_id = b.id
+  left join tm_load.teacher_workload_settings c on a.teacher_id = c.teacher_id
+  where (a.term_id, a.teacher_id) not in (
+    select term_id, teacher_id from tm_load.workload
+  )
+)
+select term_id, department_id, a.teacher_id,
+  teaching_workload, practice_workload, executive_workload,
+  external_teaching_workload, external_practice_workload,
+  external_executive_workload, external_correction
+from teacher_term_workload a
+left join tm_load.teacher_workload_settings b on a.teacher_id = b.teacher_id;
 
 /**
  * 更新视图：教师学期工作量-调整与合计

@@ -185,7 +185,8 @@ and (course.name like '毕业论文%'
   or course.name like '毕业设计%'
   or course.name like '辅修毕业论文%'
   or course.name like '毕业创作'
-  or course.name like '毕业作品%')
+  or course.name like '毕业作品%'
+)
 union all -- 其他论文
 select distinct course_class.department_id, course.id, '其他论文', null::numeric(3,2), 2 /*正常*/, 2 /*学生*/, 9 /*常量*/, 50
 from ea.course_class
@@ -203,12 +204,46 @@ join ea.course on course_class.course_id = course.id
 where course_class.term_id >= 20191
 and (course.name like '%实习%'
   or course.name like '%见习%'
-  or course.name like '%工作坊%'
+  or course.name like '%工作坊%' and course.name not like 'EAP工作坊%' -- 教育
   or course.name like '专业创新作品%'
   or course.name like '专业素质养成%'
   or course.name like '专业素质拓展%'
   or course.name like '专业拓展%'
-  or course.name like '%专业专题研习%')
+  or course.name like '志愿服务' and course.id = '10111450' -- 法政
+  or course.name like '专业综合实践' and course.id = '21111590' -- 运休
+)
+union all -- 运休小班
+select '21', course.id, '运休小班', null::numeric(3,2), 2 /*正常*/, 1 /*排课*/, 4 /*小班*/, 10 /*理论课*/
+from ea.course
+where id in (
+  '21110290', '21110390', '21110451', '21110461', '21110471', '21110480',
+  '21110760', '21111280', '21111350', '21111430', '21111460', '21111490',
+  '21111520', '21111540', '21190390', '21190450', '21190510', '21190520',
+  '21190530', '21190550', '21190560', '21190570', '21190580', '21190620',
+  '21190640'
+)
+union all -- 艺传小班
+select '08', course.id, '艺传小班', null::numeric(3,2), 2 /*正常*/, 1 /*排课*/, 4 /*小班*/, 10 /*理论课*/
+from ea.course
+where id in (
+  '08110950', '08111571', '08112470', '08113370', '08113570', '08113580',
+  '08113830', '08113840', '08113890', '08114180', '08114230', '08114530',
+  '08114560', '08114680', '08114690', '08114700', '08114720', '08120021',
+  '08120033', '08120701', '08121021', '08121081', '08121661', '08129330',
+  '08129360', '08130165', '08130172', '08130181', '08130221', '08130230',
+  '08130411', '08130712', '08130720', '08131010', '08131060', '08131182',
+  '08131260', '08131270', '08131420', '08131430', '08191671', '08191712',
+  '08192240', '08192290', '08192310', '08192380', '08192600', '08192660',
+  '08192810'
+)
+union all -- 艺传小班
+select '04', course.id, '不动产小班', null::numeric(3,2), 2 /*正常*/, 1 /*排课*/, 4 /*小班*/, 10 /*理论课*/
+from ea.course
+where id in (
+  '04112221', '04112531', '04112580', '04112820', '04112831', '04112870',
+  '04112890', '04113491', '04113690', '04113691', '04113810', '04191531',
+  '04191640', '04191650'
+)
 order by 1, 2
 on conflict(department_id, course_id) do update set
 category = excluded.category,
@@ -278,16 +313,16 @@ and course_item.name <> '理论'
 group by course_class.department_id, course.id, course.name, course_item.id, course_item.name;
 
 -- 级联删除
-alter table tm_load."workload_task_teacher"
-drop constraint "fkibohyn6osen4jndq0x2j0kkv9",
-add constraint "fkibohyn6osen4jndq0x2j0kkv9"
-  foreign key ("workload_task_id")
-  references "workload_task"(id)
+alter table tm_load.workload_task_teacher
+drop constraint fkibohyn6osen4jndq0x2j0kkv9,
+add constraint fkibohyn6osen4jndq0x2j0kkv9
+  foreign key (workload_task_id)
+  references tm_load.workload_task(id)
   on delete cascade;
 
-alter table tm_load."workload_task_schedule"
-drop constraint "fk4n6qejf7v6qbkafxbcoj7i52y",
-add constraint "fk4n6qejf7v6qbkafxbcoj7i52y"
-  foreign key ("workload_task_id")
-  references "workload_task"(id)
+alter table tm_load.workload_task_schedule
+drop constraint fk4n6qejf7v6qbkafxbcoj7i52y,
+add constraint fk4n6qejf7v6qbkafxbcoj7i52y
+  foreign key (workload_task_id)
+  references tm_load.workload_task(id)
   on delete cascade;
