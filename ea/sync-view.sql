@@ -1411,6 +1411,7 @@ with task_normal_all as (
         max(sjdxh) - min(sjdxh) + 1 as skcd,
         kc as guid,sknr
     from zfxfzb.tjkbapqkb
+    where not(qssj = jssj and decode(mod(qssj, 2), 1, '单', 0, '双') <> dsz) --去除4-4单的情况
     group by xkkh, jszgh, jsbh, xqj, qssjd, qssj, jssj, kc, sknr
 ), task_normal_info as (
     select distinct -- 正常教学任务（多教师）
@@ -1437,7 +1438,7 @@ with task_normal_all as (
     join task_with_lab b on a.xkkh = b.xkkh
     join zfxfzb.dgjsskxxb c on a.xkkh = c.xkkh_root and a.xkkh <> c.xkkh
 )
-select a.xn, a.xq, a.kcdm, a.xkkh, c.jszgh, c.jsbh, c.qsz, c.jsz, c.dsz,
+select a.xn, a.xq, a.kcdm, a.xkkh, c.jszgh, c.jsbh, c.qsz, c.jsz, decode(c.qsz, c.jsz, 0, c.dsz) dsz,
     c.xqj, c.qssjd, c.skcd, c.guid, a.course_item_id, tab, c.sknr
 from task_normal_info a
 join arr_normal c on a.xkkh = c.xkkh and a.jszgh=c.jszgh
