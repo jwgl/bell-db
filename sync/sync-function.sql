@@ -46,7 +46,7 @@ begin
 
   -- select sql
   if v_config.select_sql is not null then
-    v_select_sql := v_config.select_sql;
+    v_select_sql := replace(v_config.select_sql, '${column_names}', v_column_names);
     if v_upsert_condition is not null then
       if strpos(v_select_sql, '${where}') > 0 then
         v_select_sql := replace(v_select_sql, '${where}', v_upsert_condition);

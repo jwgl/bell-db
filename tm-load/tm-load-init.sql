@@ -204,7 +204,9 @@ join ea.course on course_class.course_id = course.id
 where course_class.term_id >= 20191
 and (course.name like '%实习%'
   or course.name like '%见习%'
-  or course.name like '%工作坊%' and course.name not like 'EAP工作坊%' -- 教育
+  or course.name like '%工作坊%'
+    and course.name not like 'EAP工作坊%' -- 教育
+    and course.name not like '读书研习工作坊%' -- 文学
   or course.name like '专业创新作品%'
   or course.name like '专业素质养成%'
   or course.name like '专业素质拓展%'
@@ -212,6 +214,18 @@ and (course.name like '%实习%'
   or course.name like '志愿服务' and course.id = '10111450' -- 法政
   or course.name like '专业综合实践' and course.id = '21111590' -- 运休
 )
+union all -- 社会调查
+select distinct course_class.department_id, course.id, '社会调查', null::numeric(3,2), 2 /*正常*/, 2 /*学生*/, 9 /*常量*/, 40
+from ea.course_class
+join ea.course on course_class.course_id = course.id
+where course_class.term_id >= 20191
+and course.name like '中国社会调查%'
+union all --
+select course_class.department_id, course.id, '教授论坛', null, 1 /*不计*/, 1 /*排课*/, 9 /*常量*/, 99
+from ea.course_class
+join ea.course on course_class.course_id = course.id
+where course_class.term_id >= 20191
+and course.name like '%教授论坛'
 union all -- 运休小班
 select '21', course.id, '运休小班', null::numeric(3,2), 2 /*正常*/, 1 /*排课*/, 4 /*小班*/, 10 /*理论课*/
 from ea.course
@@ -329,6 +343,13 @@ join ea.task on task.course_class_id = course_class.id
 join ea.course_item on task.course_item_id = course_item.id
 where term_id >= 20191
 and department_id = '92' and course_item.name like '阳光长跑%'
+union all
+select distinct course_class.department_id, course_item.id, '弓道', 1 /*不计*/, 1 /*排课*/, 9 /*常量*/, 99 /*其他*/
+from ea.course_class
+join ea.task on task.course_class_id = course_class.id
+join ea.course_item on task.course_item_id = course_item.id
+where term_id >= 20191
+and department_id = '92' and course_item.name like '弓道_'
 order by 1, 2
 on conflict(department_id, course_item_id) do update set
 category = excluded.category,

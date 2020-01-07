@@ -437,8 +437,7 @@ on conflict(task_id, teacher_id) do nothing;
 
 -- 教学安排
 -- Oracle端合并性能低，合并逻辑移到PostgreSQL端
-insert into ea.task_schedule(id, task_id, teacher_id, place_id, start_week, end_week,
-    odd_even, day_of_week, start_section, total_section, root_id)
+insert into ea.task_schedule(id, day_of_week, end_week, odd_even, place_id, start_section, start_week, task_id, teacher_id, total_section, root_id)
 with formal as (
     select case when b.id is null then a.id else b.id end as id, -- 统一ID为长度不等于1的安排
         case when b.id is null then a.root_id else b.root_id end as root_id, -- 统一ROOT_ID为长度不等于1的安排
@@ -455,11 +454,19 @@ with formal as (
     and a.total_section = 1
     and (a.start_section + a.total_section = b.start_section and b.start_section not in (5, 10)
       or b.start_section + b.total_section = a.start_section and a.start_section not in (5, 10))
-)
+), schedule as (
 select id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week,
     min(start_section) as start_section, sum(total_section) as total_section, root_id
 from formal
 group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, root_id
+)
+select id, day_of_week, end_week, odd_even, place_id, start_section, start_week, task_id, teacher_id, total_section,
+  case
+    when root_id is null then null
+    when exists (select id from schedule x where x.id = y.root_id) then root_id
+    else null
+  end as root_id
+from schedule y
 on conflict(id) do update set
 task_id        = EXCLUDED.task_id,
 teacher_id     = EXCLUDED.teacher_id,

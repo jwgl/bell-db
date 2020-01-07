@@ -43,3 +43,23 @@ update tm_load.human_resource_teacher a
 set teacher_id = unique_map.tid
 from unique_map
 where unique_map.hid = a.id;
+
+-- 双语课
+create table tm_load.tmp_foreign_language_course_class(
+    term_id integer,
+    department text,
+    teacher_name text,
+    course_name text,
+    type text,
+    credit numeric(3,1),
+    property text
+);
+
+insert into tm_load.tmp_foreign_language_course_class
+(term_id, department, teacher_name, course_name, type, credit, property) values
+('','','','','','','');
+
+select a.*, array((select course_name||'|'||credit from ea.av_course_class where term_id = 20191 and teacher_name = a.teacher_name))
+from tm_load.tmp_foreign_language_course_class a where (teacher_name, course_name, credit) not in (
+    select teacher_name, course_name, credit from ea.av_course_class where term_id=20191
+);

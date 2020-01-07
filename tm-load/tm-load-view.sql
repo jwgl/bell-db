@@ -296,7 +296,7 @@ with task as ( -- 查询所有任务的主讲教师和平行班系数设置
   select id, teacher_id,
     case workload_type
       when 1 then 0
-      when 2 then course_credit * student_count * instructional_mode_ratio
+      when 2 then round(course_credit * student_count, 0)
     end as workload, correction, 1.0 as parallel_ratio
   from task_teacher_by_student
 ), task_teacher_by_coursehour_base as ( -- 查询按学时计的任务工作量
@@ -362,9 +362,9 @@ select workload_task.id as workload_task_id, workload_task_teacher.teacher_id, r
     when 0 then 0 -- 排除
     when 1 then 0 -- 不计
     when 2 then case workload_mode -- 正常
-      when 1 then original_workload * class_size_ratio * instructional_mode_ratio * parallel_ratio
-      when 2 then original_workload
-      when 3 then original_workload * class_size_ratio * instructional_mode_ratio * parallel_ratio
+      when 1 then original_workload * instructional_mode_ratio * class_size_ratio * parallel_ratio -- 按排课
+      when 2 then original_workload * instructional_mode_ratio -- 按学生
+      when 3 then original_workload * instructional_mode_ratio * class_size_ratio * parallel_ratio -- 按学时
     end
   end as standard_workload
 from tm_load.workload_task
@@ -421,7 +421,8 @@ with teacher as (
     select teacher_id from tm_load.dvm_external_workload
   )
 )
-select teacher_id, post_type, employment_mode, employment_status, employment_mode = '在编' as supplement
+select teacher_id, post_type, employment_mode, employment_status,
+  employment_mode = '在编' or teacher_id in ('05213', '05210')as supplement
 from teacher;
 
 /**
@@ -588,8 +589,8 @@ select term_id as 学期,
 from task
 join ea.teacher on task.teacher_id = teacher.id
 join ea.department on teacher.department_id = department.id
-join tm_load.human_resource_teacher on human_resource_teacher.id = teacher.human_resource_number
 join tm_load.teacher_workload_settings on teacher_workload_settings.teacher_id= task.teacher_id
+left join tm_load.human_resource_teacher on human_resource_teacher.id = teacher.human_resource_number
 order by term_id, human_resource_teacher.department, human_resource_teacher.id, task_ordinal;
 
 /**
@@ -619,6 +620,6 @@ select term_id as 学期,
 from tm_load.workload
 join ea.teacher on workload.teacher_id = teacher.id
 join ea.department on workload.department_id = department.id
-join tm_load.human_resource_teacher on human_resource_teacher.id = teacher.human_resource_number
 join tm_load.teacher_workload_settings on teacher_workload_settings.teacher_id= workload.teacher_id
+left join tm_load.human_resource_teacher on human_resource_teacher.id = teacher.human_resource_number
 order by term_id, human_resource_teacher.department, human_resource_teacher.id;
