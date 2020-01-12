@@ -11,10 +11,10 @@ create foreign table tm_load.et_external_workload (
   term_id integer,
   teacher_id text,
   teacher_name text,
-  teaching_workload numeric(6,2),
-  practice_workload numeric(6,2),
-  executive_workload numeric(6,2),
-  correction numeric(6,2),
+  teaching_workload numeric(6, 2),
+  practice_workload numeric(6, 2),
+  executive_workload numeric(6, 2),
+  correction numeric(6, 2),
   opposite_number text
 ) server bnuc options (schema_name 'tm_load', table_name 'ev_workload', updatable 'false');
 
@@ -24,24 +24,34 @@ create foreign table tm_load.et_teacher_workload_by_task (
   id uuid,
   code text,
   task_ordinal integer,
-  primary_teacher_id text,
   teacher_id text,
   teacher_name text,
   teacher_department text,
   course_id text,
   course_name text,
   course_item text,
-  course_credit numeric(3,1),
+  course_credit numeric(3, 1),
   course_property text,
   course_class_department text,
   workload_mode text,
   workload_type text,
+  student_count_upper_bound integer,
   student_count integer,
-  class_size_ratio numeric(3,2),
-  instructional_mode_ratio numeric(3,2),
-  parallel_ratio numeric(3,2),
-  correction integer,
+  class_size_source text,
+  class_size_type text,
+  class_size_ratio numeric(3, 2),
+  instructional_mode_source text,
+  instructional_mode_type text,
+  instructional_mode_ratio numeric(3, 2),
+  parallel_ratio numeric(3, 2),
+  correction numeric(6, 2),
   original_workload integer,
-  standard_workload numeric(6,2),
-  task_schedules text[]
+  standard_workload numeric(6, 2),
+  workload_source text,
+  note text
 ) server bnuc options (schema_name 'tm_load', table_name 'ev_teacher_workload_by_task', updatable 'false');
+
+create view ea.ev_teacher as
+select teacher.id, teacher.name, department.name as department, opposite_number
+from ea.teacher
+join ea.department on teacher.department_id = department.id;

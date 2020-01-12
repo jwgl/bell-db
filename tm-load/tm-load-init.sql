@@ -12,9 +12,8 @@ insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(10, 
 insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(20, '通识课实验', 0.6, null);
 insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(21, '专业课实验', 0.8, null);
 insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(22, '综合性实验', 1.0, null);
-insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(25, '政治课实践', 0.6, null);
 insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(30, '双语课', 1.2, null);
-insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(31, '全外语课', 1.5, null);
+insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(31, '外语课', 1.5, null);
 insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(40, '分散实习', 0.2, 30);
 insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(41, '集中实习1', 0.2, 30);
 insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(42, '集中实习2', 0.4, 30);
@@ -24,6 +23,18 @@ insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(45, 
 insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(46, '野外实习', 1.2, 20);
 insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(50, '毕业论文（设计）', 0.5, null);
 insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(51, '毕业论文（设计）', 0.7, null);
+insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(61, '实践课01', 0.1, null);
+insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(62, '实践课02', 0.2, null);
+insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(63, '实践课03', 0.3, null);
+insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(64, '实践课04', 0.4, null);
+insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(65, '实践课05', 0.5, null);
+insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(66, '实践课06', 0.6, null);
+insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(67, '实践课07', 0.7, null);
+insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(68, '实践课08', 0.8, null);
+insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(69, '实践课09', 0.9, null);
+insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(70, '实践课10', 1.0, null);
+insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(71, '实践课11', 1.1, null);
+insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(72, '实践课12', 1.2, null);
 insert into tm_load.instructional_mode(id, name, ratio, upper_bound) values(99, '其他', 1.0, null);
 
 -- 班级规模类别
@@ -33,7 +44,7 @@ insert into tm_load.class_size_type(id, name, category) values (3, '实验课', 
 insert into tm_load.class_size_type(id, name, category) values (4, '艺体实操课', '课程');
 insert into tm_load.class_size_type(id, name, category) values (5, '通识课', '课程性质');
 insert into tm_load.class_size_type(id, name, category) values (6, '政治理论课', '课程');
-insert into tm_load.class_size_type(id, name, category) values (7, '研究生课程', '学生层次');
+insert into tm_load.class_size_type(id, name, category) values (7, '研究生留学生课程', '学生层次');
 insert into tm_load.class_size_type(id, name, category) values (9, '常量班型', '常量');
 
 -- 文法经管艺体
@@ -88,7 +99,7 @@ insert into tm_load.class_size_ratio(id, type_id, lower_bound, upper_bound, rati
 (64, 6, 176, 200,  1.4),
 (65, 6, 201, 9999, 1.5);
 
--- 研究生课程
+-- 研究生留学生课程
 insert into tm_load.class_size_ratio(id, type_id, lower_bound, upper_bound, ratio) values
 (70, 7, 1,   5,    0.5),
 (71, 7, 6,   10,   0.9),
@@ -100,285 +111,6 @@ insert into tm_load.class_size_ratio(id, type_id, lower_bound, upper_bound, rati
 -- 常量班型
 insert into tm_load.class_size_ratio(id, type_id, lower_bound, upper_bound, ratio) values
 (90, 9, 0,   9999, 1.0);
-
--- 专业工作量设置（理工外语/文法经管艺体）
-insert into tm_load.subject_workload_settings(subject_id, class_size_type_id)
-select distinct subject.id, case
-  when subject.id like '15%' or discipline.name in ('理学', '工学') then 2
-  else 1 end as class_size_type_id
-from ea.discipline
-join ea.subject on subject.degree_id = discipline.id
-left join ea.major on major.subject_id = subject.id
-where major.id is not null
-and major.grade >= 2012
-order by 1
-on conflict(subject_id) do update set
-class_size_type_id = excluded.class_size_type_id;
-
--- 课程工作量设置
-insert into tm_load.course_workload_settings(department_id, course_id, category, parallel_ratio, workload_type, workload_mode, class_size_type_id, instructional_mode_id)
--- 外国语大学外语
-select distinct '15', c.id, '大学外语', 0.72, 2 /*正常*/, 1 /*排课*/, 5 /*通识课*/, 10 /*理论课*/
-from ea.course_class cc
-join ea.course c on c.id = cc.course_id
-where cc.property_id = 1
-and substring(course_id, 1, 4) = '1511'
-and term_id >= 20191
-union all -- 商学部大学外语
-select '20', id, '大学外语', 0.72, 2 /*正常*/, 1 /*排课*/, 5 /*通识课*/, 10 /*理论课*/
-from ea.course where id like '031100_1'
-union all -- 大学体育
-select distinct '92', c.id, '大学体育', 0.72, 2 /*正常*/, 1 /*排课*/, 5 /*通识课*/, 10 /*理论课*/
-from ea.course_class cc
-join ea.course c on c.id = cc.course_id
-where cc.property_id = 1
-and substring(course_id, 1, 4) = '9211'
-and term_id >= 20191
-union all -- 政治理论课
-select '93', id, '政治理论课', null, 2 /*正常*/, 1 /*排课*/, 5 /*政治课*/, 10 /*理论课*/
-from ea.course
-where id like '93%'
-and id in (
-	select course_id
-	from ea.course_class
-  where term_id >= 20191
-)
-and name not like '%实践%'
-and name not in ('思想道德修养与法律基础（实践）', '形势与政策')
-union all -- 政治实践课
-select '93', id, '政治实践课', null, 2 /*正常*/, 3 /*学时*/, 5 /*政治课*/, 25 /*政治实践课*/
-from ea.course
-where id like '93%'
-and id in (
-	select course_id
-	from ea.course_class
-  where term_id >= 20191
-)
-and name like '%实践%'
-and name not in ('思想道德修养与法律基础（实践）', '形势与政策')
-union all -- 不计-政治理论课
-select '93', course.id, '政治理论课', null, 1 /*不计*/, 3 /*学时*/, 9 /*常量*/, 25 /*政治实践课*/
-from ea.course
-where name = '思想道德修养与法律基础（实践）'
-union all -- 不计-政治理论课
-select '93', course.id, '政治理论课', null, 1 /*不计*/, 1 /*排课*/, 9 /*常量*/, 10 /*理论课*/
-from ea.course
-where name = '形势与政策'
-union all -- 排除-研究生选定课程
-select '77', '77100000', '研究生排除', null, 0 /*排除*/, 1 /*排课*/, 9 /*常量*/, 10 /*理论课*/
-union all -- 排除-研究生选定课程
-select '15', '77100000', '研究生排除', null, 0 /*排除*/, 1 /*排课*/, 9 /*常量*/, 10 /*理论课*/
-union all -- 排除-军事教育
-select '94', course.id, '军事教育', null, 0 /*排除*/, 1 /*排课*/, 9, 10
-from ea.course
-where department_id = '94' and id like '9411%'
-union all -- 毕业论文（设计）
-select distinct course_class.department_id, course.id, '毕业论文（设计）', null::numeric(3,2), 2 /*正常*/, 2 /*学生*/, 9 /*常量*/,
-  case course_class.department_id
-    when '13' then 51 -- 设计学院
-    else 50
-  end
-from ea.course_class
-join ea.course on course_class.course_id = course.id
-where course_class.term_id >= 20191
-and (course.name like '毕业论文%'
-  or course.name like '毕业设计%'
-  or course.name like '辅修毕业论文%'
-  or course.name like '毕业创作'
-  or course.name like '毕业作品%'
-)
-union all -- 其他论文
-select distinct course_class.department_id, course.id, '其他论文', null::numeric(3,2), 2 /*正常*/, 2 /*学生*/, 9 /*常量*/, 50
-from ea.course_class
-join ea.course on course_class.course_id = course.id
-where course_class.term_id >= 20191
-and course.name in ('学年论文')
-union all -- 实习
-select distinct course_class.department_id, course.id, '分散实习', null::numeric(3,2), 2 /*正常*/, 2 /*学生*/, 9 /*常量*/,
-  case course.name
-    when '境外实习' then 44 /*分散实习*/
-    else 40
-  end
-from ea.course_class
-join ea.course on course_class.course_id = course.id
-where course_class.term_id >= 20191
-and (course.name like '%实习%'
-  or course.name like '%见习%'
-  or course.name like '%工作坊%'
-    and course.name not like 'EAP工作坊%' -- 教育
-    and course.name not like '读书研习工作坊%' -- 文学
-  or course.name like '专业创新作品%'
-  or course.name like '专业素质养成%'
-  or course.name like '专业素质拓展%'
-  or course.name like '专业拓展%'
-  or course.name like '志愿服务' and course.id = '10111450' -- 法政
-  or course.name like '专业综合实践' and course.id = '21111590' -- 运休
-)
-union all -- 社会调查
-select distinct course_class.department_id, course.id, '社会调查', null::numeric(3,2), 2 /*正常*/, 2 /*学生*/, 9 /*常量*/, 40
-from ea.course_class
-join ea.course on course_class.course_id = course.id
-where course_class.term_id >= 20191
-and course.name like '中国社会调查%'
-union all --
-select course_class.department_id, course.id, '教授论坛', null, 1 /*不计*/, 1 /*排课*/, 9 /*常量*/, 99
-from ea.course_class
-join ea.course on course_class.course_id = course.id
-where course_class.term_id >= 20191
-and course.name like '%教授论坛'
-union all -- 运休小班
-select '21', course.id, '运休小班', null::numeric(3,2), 2 /*正常*/, 1 /*排课*/, 4 /*小班*/, 10 /*理论课*/
-from ea.course
-where id in (
-  '21110290', '21110390', '21110451', '21110461', '21110471', '21110480',
-  '21110760', '21111280', '21111350', '21111430', '21111460', '21111490',
-  '21111520', '21111540', '21190390', '21190450', '21190510', '21190520',
-  '21190530', '21190550', '21190560', '21190570', '21190580', '21190620',
-  '21190640'
-)
-union all -- 艺传小班
-select '08', course.id, '艺传小班', null::numeric(3,2), 2 /*正常*/, 1 /*排课*/, 4 /*小班*/, 10 /*理论课*/
-from ea.course
-where id in (
-  '08110950', '08111571', '08112470', '08113370', '08113570', '08113580',
-  '08113830', '08113840', '08113890', '08114180', '08114230', '08114530',
-  '08114560', '08114680', '08114690', '08114700', '08114720', '08120021',
-  '08120033', '08120701', '08121021', '08121081', '08121661', '08129330',
-  '08129360', '08130165', '08130172', '08130181', '08130221', '08130230',
-  '08130411', '08130712', '08130720', '08131010', '08131060', '08131182',
-  '08131260', '08131270', '08131420', '08131430', '08191671', '08191712',
-  '08192240', '08192290', '08192310', '08192380', '08192600', '08192660',
-  '08192810'
-)
-union all -- 艺传小班
-select '04', course.id, '不动产小班', null::numeric(3,2), 2 /*正常*/, 1 /*排课*/, 4 /*小班*/, 10 /*理论课*/
-from ea.course
-where id in (
-  '04112221', '04112531', '04112580', '04112820', '04112831', '04112870',
-  '04112890', '04113491', '04113690', '04113691', '04113810', '04191531',
-  '04191640', '04191650'
-)
-union all -- 设计小班
-select '13', course.id, '设计小班', null::numeric(3,2), 2 /*正常*/, 1 /*排课*/, 4 /*小班*/, 10 /*理论课*/
-from ea.course
-where id in (
-  '04112541', '08110351', '08110401', '08110420', '08110440', '08111310',
-  '08111440', '08111530', '08111640', '08111650', '08111950', '08112410',
-  '08112421', '08120072', '08121310', '08130850', '08191380', '08191410',
-  '13110064', '13110073', '13110130', '13110150', '13110210', '13110260',
-  '13110331', '13110363', '13110391', '13110460', '13110461', '13110470',
-  '13110573', '13110600', '13110670', '13110671', '13110672', '13110711',
-  '13110720', '13110800', '13110832', '13110850', '13110861', '13110862',
-  '13110910', '13111010', '13111011', '13111110', '13111111', '13111113',
-  '13111120', '13111121', '13111132', '13111211', '13111222', '13111250',
-  '13111280', '13111290', '13111431', '13111480', '13111520', '13111521',
-  '13111790', '13111851', '13111852', '13112060', '13112070', '13112080',
-  '13112111', '13112120', '13112122', '13112160', '13112161', '13112162',
-  '13112470', '13112480', '13112502', '13112511', '13112520', '13112530',
-  '13112550', '13112580', '13112591', '13112611', '13112620', '13112640',
-  '13112690', '13112691', '13112692', '13112700', '13112710', '13112711',
-  '13112780', '13112790', '13112800', '13112810', '13112821', '13112980',
-  '13113021', '13113030', '13113100', '13113111', '13113120', '13113121',
-  '13113130', '13113131', '13113140', '13113170', '13113171', '13113180',
-  '13113270', '13113290', '13113370', '13113410', '13113461', '13113470',
-  '13113502', '13113521', '13113630', '13113640', '13113650', '13113700',
-  '13113710', '13113770', '13113780', '13113810', '13113840', '13113850',
-  '13113851', '13113890', '13113901', '13113910', '13113951', '13113960',
-  '13114000', '13114010', '13114030', '13114090', '13114100', '13114110',
-  '13114120', '13114130', '13114140', '13114150', '13114160', '13114170',
-  '13114180', '13114260', '13114290', '13114300', '13114380', '13114391',
-  '13114410', '13114411', '13114440', '13114450', '13114470', '13114490',
-  '13114520', '13114530', '13114550', '13114590', '13114600', '13114610',
-  '13114611', '13114621', '13114650', '13114670', '13114680', '13114710',
-  '13114720', '13114730', '13114740', '13114750', '13114760', '13114770',
-  '13114780', '13114790', '13114800', '13114810', '13114820', '13114830',
-  '13114840', '13114850', '13114880', '13114890', '13114900', '13114910',
-  '13114920', '13114940', '13114950', '13114960', '13114970', '13114980',
-  '13115020', '13115030', '13130101', '13130150', '13130170', '13130201',
-  '13130280', '13130291', '13130292', '13130310', '13130330', '13130522',
-  '13130530', '13130540', '13190050', '13190051', '13190220', '13190350',
-  '13190640', '13190641', '13190701', '13190720', '13190780', '13190840',
-  '13190860', '13190920', '13191000', '13191020', '13191070', '13191090',
-  '13191130', '13191150', '13191160', '13191240', '13191300', '13191400',
-  '13191470', '13191490', '13191510', '13191520', '13191551', '13191700',
-  '13191720', '13191740', '13191770', '13191780', '13191790', '13191800',
-  '13191810', '13191820', '13191850', '13191930', '13191960', '13191970',
-  '13191980', '20110760', '61101440'
-)
-order by 1, 2
-on conflict(department_id, course_id) do update set
-category = excluded.category,
-parallel_ratio = excluded.parallel_ratio,
-workload_mode = excluded.workload_mode,
-workload_type = excluded.workload_type,
-class_size_type_id = excluded.class_size_type_id,
-instructional_mode_id = excluded.instructional_mode_id;
-
--- 课程项目工作量设置
-insert into tm_load.course_item_workload_settings(department_id, course_item_id, category, workload_type, workload_mode, class_size_type_id, instructional_mode_id)
-select distinct course_class.department_id, course_item.id, '实验', 2 /*正常*/, 1 /*排课*/ , 3 /*实验课*/, 22 /*综合性实验*/
-from ea.course_class
-join ea.task on task.course_class_id = course_class.id
-join ea.course_item on task.course_item_id = course_item.id
-where term_id >= 20191
-and course_item.name like '实验'
-union all
-select distinct course_class.department_id, course_item.id, '体育俱乐部', 1 /*不计*/, 1 /*排课*/, 9 /*常量*/, 99 /*其他*/
-from ea.course_class
-join ea.task on task.course_class_id = course_class.id
-join ea.course_item on task.course_item_id = course_item.id
-where term_id >= 20191
-and department_id = '92' and course_item.name like '%俱乐部%'
-union all
-select distinct course_class.department_id, course_item.id, '校体育队', 1 /*不计*/, 1 /*排课*/, 9 /*常量*/, 99 /*其他*/
-from ea.course_class
-join ea.task on task.course_class_id = course_class.id
-join ea.course_item on task.course_item_id = course_item.id
-where term_id >= 20191
-and department_id = '92' and course_item.name like '%队%'
-union all
-select distinct course_class.department_id, course_item.id, '阳光长跑', 1 /*不计*/, 1 /*排课*/, 9 /*常量*/, 99 /*其他*/
-from ea.course_class
-join ea.task on task.course_class_id = course_class.id
-join ea.course_item on task.course_item_id = course_item.id
-where term_id >= 20191
-and department_id = '92' and course_item.name like '阳光长跑%'
-union all
-select distinct course_class.department_id, course_item.id, '弓道', 1 /*不计*/, 1 /*排课*/, 9 /*常量*/, 99 /*其他*/
-from ea.course_class
-join ea.task on task.course_class_id = course_class.id
-join ea.course_item on task.course_item_id = course_item.id
-where term_id >= 20191
-and department_id = '92' and course_item.name like '弓道_'
-order by 1, 2
-on conflict(department_id, course_item_id) do update set
-category = excluded.category,
-workload_type = excluded.workload_type,
-workload_mode = excluded.workload_mode,
-class_size_type_id = excluded.class_size_type_id,
-instructional_mode_id = excluded.instructional_mode_id;
-
--- 课程项目查询
-select course_class.department_id, course.id as course_id, course.name as course_name,
-  course_item.id as course_item_id, course_item.name as course_item_name,
-  array_to_string(array_agg(distinct task.code order by task.code desc), ',') as task_codes
-from ea.course_class
-join ea.task on task.course_class_id = course_class.id
-join ea.course_item on task.course_item_id = course_item.id
-join ea.course on course_item.course_id = course.id
-where term_id >= 20191
-and course_class.department_id not in ('15')
-and (course_class.department_id, course_item.id) not in (
-  select department_id, course_item_id
-  from tm_load.course_item_workload_settings
-)
--- and (course_class.department_id, course.id) not in (
---     select department_id, course_id
---     from tm_load.course_workload_settings
--- )
-and course.name <> course_item.name
-and course_item.name <> '理论'
-group by course_class.department_id, course.id, course.name, course_item.id, course_item.name;
 
 -- 级联删除
 alter table tm_load.workload_task_teacher
