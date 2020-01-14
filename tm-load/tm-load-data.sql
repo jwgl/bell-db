@@ -1,3 +1,42 @@
+-- tm@bnuz/tm
+-- 人事数据
+create table tm_load.human_resource_teacher (
+  id text primary key,
+  name text,
+  department text,
+  sex text,
+  birthday date,
+  age integer,
+  country text,
+  date_entrolled text,
+  employment_mode text,
+  employment_status text,
+  academic_degree text,
+  post_type text,
+  technical_Post text,
+  teacher_id text
+);
+comment on column tm_load.human_resource_teacher.id is '职工号';
+comment on column tm_load.human_resource_teacher.name is '姓名';
+comment on column tm_load.human_resource_teacher.department is '所在单位';
+comment on column tm_load.human_resource_teacher.sex is '性别';
+comment on column tm_load.human_resource_teacher.birthday is '出生日期';
+comment on column tm_load.human_resource_teacher.age is '年龄';
+comment on column tm_load.human_resource_teacher.country is '国家(地区)';
+comment on column tm_load.human_resource_teacher.date_entrolled is '来校年月';
+comment on column tm_load.human_resource_teacher.employment_mode is '用人形式';
+comment on column tm_load.human_resource_teacher.employment_status is '当前状态';
+comment on column tm_load.human_resource_teacher.academic_degree is '最高学位';
+comment on column tm_load.human_resource_teacher.post_type is '岗位类别';
+comment on column tm_load.human_resource_teacher.technical_Post is '专业技术职务';
+comment on column tm_load.human_resource_teacher.teacher_id is '教务职工号';
+
+\copy tm_load.human_resource_teacher(id, name, department, sex, birthday, age, country, date_entrolled, employment_mode, employment_status, academic_degree, post_type, technical_Post) from 'bnuz-formal-teacher.csv' with header csv;
+
+-- 更新教师职工号
+update tm_load.human_resource_teacher
+set teacher_id = (select id from ea.teacher where human_resource_number = human_resource_teacher.id);
+
 -- 人事数据
 \copy tm_load.human_resource_teacher_import(id, name, department, sex, birthday, age, country, date_entrolled, employment_mode, employment_status, academic_degree, post_type, technical_post) from 'hr-info.csv' csv header;
 

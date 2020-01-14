@@ -362,8 +362,16 @@ select workload_task.id as workload_task_id, workload_task_teacher.teacher_id, r
     partition by term_id, workload_task_teacher.teacher_id
     order by
       course_id,
-      case when workload_task.primary_teacher_id = workload_task_teacher.teacher_id then 1 else 2 end,
-      translate(substring(workload_task.code from '-(\d+[A-Z]?)(,|$)'), 'ABCDEFG', '1234567')::integer * case when workload_task.course_item = '理论' then 10 else 1 end
+      case
+        when workload_task.primary_teacher_id = workload_task_teacher.teacher_id then 1
+        else 2
+      end,
+      translate(substring(workload_task.code from '-(\d+[A-Z]?)(,|$)'), 'ABCDEFG', '1234567')::integer * case
+        when workload_task.course_item = '理论' then 10
+        else 1
+      end,
+      workload_task.code,
+      course_item
    ) as task_ordinal,
   case workload_type
     when 0 then 0 -- 排除
@@ -395,11 +403,8 @@ select term_id, workload_task.id, code, task_ordinal, primary_teacher_id,
     when 2 then '正常'
   end as workload_type,
   student_count, class_size_ratio, instructional_mode_ratio, parallel_ratio,
-  correction, original_workload, standard_workload, array(
-    select ea.fn_timetable_to_string(start_week, end_week, odd_even, day_of_week, start_section, total_section)
-    from tm_load.workload_task_schedule
-    where workload_task_id = workload_task.id
-  ) as task_schedules
+  correction, original_workload, standard_workload,
+  tm_load.fn_build_workload_task_schedule_string(workload_task.id, workload_task_teacher.teacher_id) as workload_source
 from tm_load.workload_task
 join tm_load.workload_task_teacher on workload_task.id = workload_task_teacher.workload_task_id
 join ea.teacher on workload_task_teacher.teacher_id = teacher.id
@@ -587,25 +592,7 @@ with task as (
     instructional_mode_type,
     instructional_mode_ratio,
     parallel_ratio, correction, original_workload, standard_workload,
-    array_to_string(array(
-      select weeks || ea.fn_day_of_week_to_string(day_of_week) || array_to_string(array_agg(
-          start_section || '-' || (start_section + total_section - 1)
-          order by start_section
-        ),',') || '节'
-      from (
-        select day_of_week, start_section, total_section, '第' || array_to_string(array_agg(
-            case when start_week = end_week then start_week::text else start_week || '-' || end_week end ||
-            case odd_even when 1 then '单' when 2 then '双' else '' end
-            order by start_week
-          ), ',' ) || '周' as weeks
-        from tm_load.workload_task_schedule
-        where workload_task_id = a.id
-        and teacher_id = b.teacher_id
-        group by day_of_week, start_section, total_section
-      ) x
-      group by weeks, day_of_week
-      order by day_of_week
-    ), ';') as workload_source,
+    tm_load.fn_build_workload_task_schedule_string(workload_task.id, workload_task_teacher.teacher_id) as workload_source,
     note
   from tm_load.workload_task a
   join tm_load.workload_task_teacher b on b.workload_task_id = a.id
@@ -667,7 +654,8 @@ select term_id,
     || class_size_source|| class_size_type || class_size_ratio
     || instructional_mode_source|| instructional_mode_type || instructional_mode_ratio
     || parallel_ratio || correction || original_workload || standard_workload
-    || workload_source || coalesce(note, ''), 'md5'), 'hex') as hash_value
+    || workload_source || coalesce(note, ''),
+  'md5'), 'hex') as hash_value
 from task
 join tm_load.teacher_workload_settings on teacher_workload_settings.teacher_id= task.teacher_id
 left join tm_load.human_resource_teacher on human_resource_teacher.id = task.human_resource_number
@@ -703,7 +691,8 @@ select term_id,
     || teaching_workload || external_teaching_workload || adjustment_workload || supplement_workload
     || practice_workload || external_practice_workload
     || executive_workload || external_executive_workload
-    || correction || external_correction || total_workload, 'md5'), 'hex') as hash_value
+    || correction || external_correction || total_workload,
+  'md5'), 'hex') as hash_value
 from tm_load.workload
 join ea.teacher on workload.teacher_id = teacher.id
 join ea.department on workload.department_id = department.id
@@ -780,33 +769,96 @@ order by term_id, teacher_department, teacher_id;
  */
 create or replace view tm_load.av_workload_report_detail_diff as
 with invalid_item as (
-  select * from tm_load.workload_report_detail
+  select term_id,
+  human_resource_id, human_resource_name, human_resource_department,
+  employment_mode, post_type,
+  teacher_id, teacher_name, teacher_department,
+  workload_task_id, workload_task_code, task_ordinal,
+  course_id, course_name, course_item, course_credit, course_property, course_class_department,
+  workload_mode, workload_type, student_count_upper_bound, student_count,
+  class_size_source, class_size_type, class_size_ratio,
+  instructional_mode_source, instructional_mode_type, instructional_mode_ratio,
+  parallel_ratio, correction, original_workload, standard_workload,
+  workload_source, note, hash_value, date_created, date_invalid
+  from tm_load.workload_report_detail
   where date_invalid is not null
 )
-select * from invalid_item
+select term_id,
+  human_resource_id, human_resource_name, human_resource_department,
+  employment_mode, post_type,
+  teacher_id, teacher_name, teacher_department,
+  workload_task_id, workload_task_code, task_ordinal,
+  course_id, course_name, course_item, course_credit, course_property, course_class_department,
+  workload_mode, workload_type, student_count_upper_bound, student_count,
+  class_size_source, class_size_type, class_size_ratio,
+  instructional_mode_source, instructional_mode_type, instructional_mode_ratio,
+  parallel_ratio, correction, original_workload, standard_workload,
+  workload_source, note, hash_value, date_created, date_invalid
+from invalid_item
 union
-select * from tm_load.workload_report_detail
+select term_id,
+  human_resource_id, human_resource_name, human_resource_department,
+  employment_mode, post_type,
+  teacher_id, teacher_name, teacher_department,
+  workload_task_id, workload_task_code, task_ordinal,
+  course_id, course_name, course_item, course_credit, course_property, course_class_department,
+  workload_mode, workload_type, student_count_upper_bound, student_count,
+  class_size_source, class_size_type, class_size_ratio,
+  instructional_mode_source, instructional_mode_type, instructional_mode_ratio,
+  parallel_ratio, correction, original_workload, standard_workload,
+  workload_source, note, hash_value, date_created, date_invalid
+from tm_load.workload_report_detail
 where date_invalid is null
-and (term_id, teacher_id, workload_task_id) in (
-  select term_id, teacher_id, workload_task_id
+and (term_id, teacher_id, workload_task_code) in (
+  select term_id, teacher_id, workload_task_code
   from invalid_item
 )
-order by teacher_department, teacher_id, date_created;
+order by term_id, teacher_department, teacher_id, course_id, task_ordinal, date_created;
 
 /**
  * 辅助视图：工作量报表差异
  */
 create or replace view tm_load.av_workload_report_diff as
 with invalid_item as (
-  select * from tm_load.workload_report
+  select term_id,
+  human_resource_id, human_resource_name, human_resource_department,
+  employment_mode, post_type,
+  teacher_id, teacher_name, teacher_department,
+  teaching_workload, external_teaching_workload,
+  adjustment_workload, supplement_workload,
+  practice_workload, external_practice_workload,
+  executive_workload, external_executive_workload,
+  correction, external_correction, total_workload,
+  hash_value, date_created, date_invalid
+  from tm_load.workload_report
   where date_invalid is not null
 )
-select * from invalid_item
+select term_id,
+  human_resource_id, human_resource_name, human_resource_department,
+  employment_mode, post_type,
+  teacher_id, teacher_name, teacher_department,
+  teaching_workload, external_teaching_workload,
+  adjustment_workload, supplement_workload,
+  practice_workload, external_practice_workload,
+  executive_workload, external_executive_workload,
+  correction, external_correction, total_workload,
+  hash_value, date_created, date_invalid
+  from invalid_item
 union
-select * from tm_load.workload_report
+select term_id,
+  human_resource_id, human_resource_name, human_resource_department,
+  employment_mode, post_type,
+  teacher_id, teacher_name, teacher_department,
+  teaching_workload, external_teaching_workload,
+  adjustment_workload, supplement_workload,
+  practice_workload, external_practice_workload,
+  executive_workload, external_executive_workload,
+  correction, external_correction, total_workload,
+  hash_value, date_created, date_invalid
+  from tm_load.workload_report
 where date_invalid is null
-and (term_id, teacher_id ,teacher_department) in (
+and (term_id, teacher_id, teacher_department) in (
   select term_id, teacher_id, teacher_department
   from invalid_item
 )
-order by teacher_department, teacher_id, date_created;
+order by term_id, teacher_department, teacher_id, date_created;

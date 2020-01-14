@@ -144,33 +144,6 @@ external_practice_workload = excluded.external_practice_workload,
 external_executive_workload = excluded.external_executive_workload,
 external_correction = excluded.external_correction;
 
--- 校区教辅工作量
-with teacher_with_name as (
-    select * from (values
-        (20191,'谭洋',24),
-        (20191,'丁琦',24),
-        (20191,'周庆华',4),
-        (20191,'黄喻培',19),
-        (20191,'周海婴',19),
-        (20191,'刘炜',16),
-        (20191,'燕飞',16),
-        (20191,'霍录景',23),
-        (20191,'李玉玲',23),
-        (20191,'张金花',23),
-        (20191,'刘思圆',28),
-        (20191,'马迎秋',16)
-    ) as t(term_id, teacher_name, correction)
-), teacher_correction as (
-    select x.*, (select id from ea.teacher where teacher.name = x.teacher_name and teacher.department_id = (
-      select id from ea.department where name ='应用数学学院')
-    ) as teacher_id
-    from teacher_with_name x
-)
-update tm_load.workload w
-set external_correction = external_correction + c.correction
-from teacher_correction c
-where w.term_id = c.term_id and w.teacher_id = c.teacher_id;
-
 -- 更新workload的总工作量
 update tm_load.workload workload set
 adjustment_workload = dvu.adjustment_workload,
@@ -218,7 +191,7 @@ select term_id,
   workload_source, note, hash_value
 from tm_load.dvm_workload_report_detail
 where (term_id, teacher_id, workload_task_id) not in (
-  select term_id, teacher_id, workload_task_id from tm_load.workload_report
+  select term_id, teacher_id, workload_task_id from tm_load.workload_report_detail
 );
 
 -- 合并workload_report_detail：更新旧数据
@@ -251,6 +224,7 @@ with inserted as (
    and a.teacher_id = b.teacher_id
    and a.workload_task_id = b.workload_task_id
   where a.hash_value <> b.hash_value
+   and b.date_invalid is null
   returning term_id, teacher_id, workload_task_id
 )
 update tm_load.workload_report_detail r
@@ -265,8 +239,9 @@ where r.term_id = inserted.term_id
 update tm_load.workload_report_detail
 set date_invalid = localtimestamp
 where (term_id, teacher_id, workload_task_id) not in (
-  select term_id, teacher_id, workload_task_id from tm_load.dvm_workload_report_detail
-);
+  select term_id, teacher_id, workload_task_id
+  from tm_load.dvm_workload_report_detail
+) and date_invalid is null;
 
 -- 合并workload_report：插入新数据
 insert into tm_load.workload_report(term_id,
@@ -313,7 +288,7 @@ with inserted as (
     a.employment_mode, a.post_type,
     a.teacher_id, a.teacher_name, a.teacher_department,
     a.teaching_workload, a.external_teaching_workload,
-    adjustment_workload, supplement_workload,
+    a.adjustment_workload, a.supplement_workload,
     a.practice_workload, a.external_practice_workload,
     a.executive_workload, a.external_executive_workload,
     a.correction, a.external_correction,
@@ -324,6 +299,7 @@ with inserted as (
    and a.teacher_name = b.teacher_name
    and a.teacher_department = b.teacher_department
   where a.hash_value <> b.hash_value
+    and b.date_invalid is null
   returning term_id, teacher_id, teacher_name, teacher_department
 )
 update tm_load.workload_report r
@@ -339,5 +315,6 @@ where r.term_id = inserted.term_id
 update tm_load.workload_report
 set date_invalid = localtimestamp
 where (term_id, teacher_id, teacher_department) not in (
-  select term_id, teacher_id, teacher_department from tm_load.dvm_workload_report
-);
+  select term_id, teacher_id, teacher_department
+  from tm_load.dvm_workload_report
+) and date_invalid is null;;

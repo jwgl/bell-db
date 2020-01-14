@@ -252,7 +252,8 @@ create foreign table ea.sv_teacher (
     resume varchar(3000),
     identity_number text,
     human_resource_number text,
-    opposite_number text
+    opposite_number text,
+    faculty text
 ) server zf options (schema 'EA', table 'SV_TEACHER', readonly 'true');
 
 -- 行政班
