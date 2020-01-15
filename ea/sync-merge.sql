@@ -213,11 +213,13 @@ department_id     = EXCLUDED.department_id;
 insert into ea.teacher(id, name, sex, birthday, political_status, nationality, academic_title,
     academic_level, academic_degree, educational_background, graduate_school, graduate_major,
     date_graduated, post_type, has_qualification, is_lab_technician, is_external,
-    at_school, can_guidance_graduate, department_id, resume, identity_number, human_resource_number, opposite_number)
+    at_school, can_guidance_graduate, department_id, resume,
+    identity_number, human_resource_number, opposite_number, faculty)
 select id, name, sex, birthday, political_status, nationality, academic_title,
     academic_level, academic_degree, educational_background, graduate_school, graduate_major,
     date_graduated, post_type, has_qualification, is_lab_technician, is_external,
-    at_school, can_guidance_graduate, department_id, resume, identity_number, human_resource_number, opposite_number
+    at_school, can_guidance_graduate, department_id, resume,
+    identity_number, human_resource_number, opposite_number, faculty
 from ea.sv_teacher
 on conflict(id) do update set
 name                   = EXCLUDED.name,
@@ -242,7 +244,8 @@ department_id          = EXCLUDED.department_id,
 resume                 = EXCLUDED.resume,
 identity_number        = EXCLUDED.identity_number,
 human_resource_number  = EXCLUDED.human_resource_number,
-opposite_number        = EXCLUDED.opposite_number;
+opposite_number        = EXCLUDED.opposite_number,
+faculty                = EXCLUDED.faculty;
 
 -- 行政班
 insert into ea.admin_class(id, name, major_id, department_id, supervisor_id, counsellor_id)
@@ -378,7 +381,7 @@ period         = EXCLUDED.period,
 course_item_id = EXCLUDED.course_item_id;
 
 -- 生成course_class_id与course_class_code对应关系，通过视图触发器实现
-insert into ea.sv_course_class_map values(null);
+insert into ea.sv_course_class_map values(null, null, null, null);
 
 -- 教学班
 insert into ea.course_class(term_id, id, code, name, period_theory, period_experiment, period_weeks,
@@ -417,7 +420,7 @@ select course_class_id, program_id from ea.sv_course_class_program
 on conflict(course_class_id, program_id) do nothing;
 
 -- 生成task_id与task_code对应关系，通过视图触发器实现
-insert into ea.sv_task_map values(null);
+insert into ea.sv_task_map values(null, null, null, null, null);
 
 -- 教学任务
 insert into ea.task(id, code, is_primary, start_week, end_week, course_item_id, course_class_id)
@@ -437,8 +440,7 @@ on conflict(task_id, teacher_id) do nothing;
 
 -- 教学安排
 -- Oracle端合并性能低，合并逻辑移到PostgreSQL端
-insert into ea.task_schedule(id, task_id, teacher_id, place_id, start_week, end_week,
-    odd_even, day_of_week, start_section, total_section, root_id)
+insert into ea.task_schedule(id, day_of_week, end_week, odd_even, place_id, start_section, start_week, task_id, teacher_id, total_section, root_id)
 with formal as (
     select case when b.id is null then a.id else b.id end as id, -- 统一ID为长度不等于1的安排
         case when b.id is null then a.root_id else b.root_id end as root_id, -- 统一ROOT_ID为长度不等于1的安排
@@ -455,11 +457,19 @@ with formal as (
     and a.total_section = 1
     and (a.start_section + a.total_section = b.start_section and b.start_section not in (5, 10)
       or b.start_section + b.total_section = a.start_section and a.start_section not in (5, 10))
-)
-select id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week,
+), schedule as (
+  select id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week,
     min(start_section) as start_section, sum(total_section) as total_section, root_id
-from formal
-group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, root_id
+  from formal
+  group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, root_id
+)
+select id, day_of_week, end_week, odd_even, place_id, start_section, start_week, task_id, teacher_id, total_section,
+  case
+    when root_id is null then null
+    when exists (select id from schedule x where x.id = y.root_id) then root_id
+    else null
+  end as root_id
+from schedule y
 on conflict(id) do update set
 task_id        = EXCLUDED.task_id,
 teacher_id     = EXCLUDED.teacher_id,
