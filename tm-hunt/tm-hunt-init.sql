@@ -62,8 +62,10 @@ INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.review'
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.review', 'hunt.review.view', 		 '查看',     '/hunt/teachers/${userId}/tasks/0/applications/${id}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.review', 'hunt.review.approve',	 '审批',     '/hunt/approvers/${userId}/tasks/0/${todo}/applications/${id};wi=${workitem}');
 
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-change', 'hunt.info-change.check',       '审核',     '/hunt/checkers/${userId}/infoChanges/${todo}/${id};wi=${workitem}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-change', 'hunt.info-change.reject',      '退回',     '/hunt/teachers/${userId}/infoChanges/${id}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-change', 'hunt.info-change.view',        '查看',     '/hunt/teachers/${userId}/infoChanges/${id}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-change', 'hunt.info-change.approve',     '审批',     '/hunt/approvers/${userId}/infoChanges/${todo}/${id};wi=${workitem}');
-INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-change', 'hunt.info-change.review',      '加签',     '/hunt/directors/${userId}/infoChanges/${todo}/${id};wi=${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-change', 'hunt.info-change.check',       '审核',     '/hunt/checkers/${userId}/info-changes/${todo}/${id};wi=${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-change', 'hunt.info-change.reject',      '退回',     '/hunt/teachers/${userId}/info-changes/${id}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-change', 'hunt.info-change.view',        '查看',     '/hunt/teachers/${userId}/info-changes/${id}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-change', 'hunt.info-change.approve',     '审批',     '/hunt/approvers/${userId}/info-changes/${todo}/${id};wi=${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-change', 'hunt.info-change.review',      '加签',     '/hunt/directors/${userId}/info-changes/${todo}/${id};wi=${workitem}');
+
+update tm.workflow_activity set url = replace(url, 'infoChanges', 'info-changes') where workflow_id='hunt.info-change';
