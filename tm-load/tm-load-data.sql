@@ -96,23 +96,29 @@ create table tm_load.tmp_foreign_language_course_class(
 );
 
 insert into tm_load.tmp_foreign_language_course_class
-(term_id, department, teacher_name, course_name, type, credit, property, task_code) values
-(20191,'国际商学部','孙云','','双语教学','3','专业核心课','(2019-2020-1)-22110070-19006-1');
+(term_id, department, teacher_name, course_name, credit, property, type, task_code) values
+(20192,'设计学院','潘绍华','设计基础Ⅲ','3','专业核心课','双语教学','(2019-2020-2)-13114260-13185-1,(2019-2020-2)-13114260-13185-2'),
+;
 
-select a.*, (select course_name||'|'||credit from ea.av_course_class where code = a.task_code),
-array((select course_name||'|'||credit from ea.av_course_class where term_id = 20191 and teacher_name = a.teacher_name))
-from tm_load.tmp_foreign_language_course_class a where (teacher_name, course_name, credit) not in (
-    select teacher_name, course_name, credit from ea.av_course_class where term_id=20191
-);
+-- 检查选课课号
+with normal as (
+  select term_id, department, teacher_name, course_name, type, credit, property, unnest(regexp_split_to_array(task_code, ',')) as code
+  from tmp_foreign_language_course_class
+)
+select * from normal where code not in (select code from ea.task);
 
-update tm_load.tmp_foreign_language_course_class set task_code = replace(task_code, '；', '');
-update tm_load.tmp_foreign_language_course_class set task_code = regexp_replace(task_code, ',$', '');
+-- 检查课程名称、学分
+with normal as (
+  select term_id, department, teacher_name, course_name, type, credit, property, unnest(regexp_split_to_array(task_code, ',')) as code
+  from tmp_foreign_language_course_class
+)
+select a.*, (select course_name||'|'||credit from ea.av_course_class where code = a.code) as by_task,
+  array((select course_name||'|'||credit from ea.av_course_class where term_id = 20192 and teacher_name = a.teacher_name)) as other_class
+from normal a where (teacher_name, course_name, credit) not in (
+    select teacher_name, course_name, credit from ea.av_course_class where term_id=20192
+) and term_id=20192;
 
-select b.code, b.course_name, a.*
-from tm_load.tmp_foreign_language_course_class a
-left join ea.av_course_class b on a.term_id = b.term_id and a.teacher_name = a.teacher_name and position(b.code in a.task_code) > 0
-where b.code is null;
-
+-- 插入任务工作量设置表
 insert into tm_load.task_workload_settings(task_id, instructional_mode_id)
 with normal as (
     select a.*, unnest(regexp_split_to_array(a.task_code, ',')) as code
@@ -124,6 +130,7 @@ select task.id, case normal.type
   end as instructional_mode_id
 from normal
 left join ea.task on task.code = normal.code
+where term_id = 20192
 on conflict (task_id) do update set
 instructional_mode_id = excluded.instructional_mode_id;
 

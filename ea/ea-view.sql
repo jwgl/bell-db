@@ -71,7 +71,7 @@ left join property p on p.id = cc.property_id;
 
 -- 教学任务
 create or replace view ea.av_task as
-select task.id, cc.term_id, c.id as course_id, c.name as course_name,
+select task.id, cc.term_id, cc.id as course_class_id, d.name as department, c.id as course_id, c.name as course_name,
     ci.name as course_item,
     array_agg(t.name) as teacher_name,
     count(t.id) as teacher_count,
@@ -81,15 +81,17 @@ join course_class cc on cc.id = task.course_class_id
 join course c on c.id = cc.course_id
 join task_teacher tt on tt.task_id = task.id
 join teacher t on t.id = tt.teacher_id
+join department d on cc.department_id = d.id
 left join course_item ci on task.course_item_id = ci.id
-group by term_id, task.id, c.id, c.name, ci.name, task.code;
+group by task.id, term_id, cc.id, d.name, c.id, c.name, ci.name, task.code;
 
 -- 教学安排
 create or replace view ea.av_task_schedule as
 select a.id, cc.term_id, c.id as course_id, c.name as course_name, ci.name as course_item,
-    te.id as teacher_id, te.name as teacher_name, a.start_week, a.end_week,
-    day_of_week, start_section, total_section, odd_even, place_id, place.name as place,
-    task_id, task.code as task_code, course_class_id, d.name as department, week_bits, section_bits
+    te.id as teacher_id, te.name as teacher_name, a.start_week, a.end_week, a.odd_even,
+    day_of_week, start_section, total_section, place_id, place.name as place_name,
+    task_id, task.code as task_code, course_class_id, d.name as department, week_bits, section_bits,
+    fn_timetable_to_string(a.start_week, a.end_week, a.odd_even, day_of_week, start_section, total_section) as schedule
 from task_schedule a
 join task on a.task_id = task.id
 join course_class cc on cc.id = task.course_class_id
@@ -98,6 +100,20 @@ join course c on c.id = cc.course_id
 join teacher te on te.id = a.teacher_id
 left join course_item ci on ci.id = task.course_item_id
 left join place on place.id = a.place_id;
+
+-- 教学班学生
+create or replace view ea.av_course_class_student as
+select distinct c.term_id, course_class_id, c.code, course_id, d.name as course_name, c.teacher_id, i.name as teacher_name,
+  student_id, e.name as student_name, f.name as student_department, g.grade, h.name as subject
+from ea.task_student a
+join ea.task b on a.task_id = b.id
+join ea.course_class c on b.course_class_id = c.id
+join ea.course d on c.course_id = d.id
+join ea.student e on a.student_id = e.id
+join ea.department f on e.department_id = f.id
+join ea.major g on e.major_id = g.id
+join ea.subject h on g.subject_id = h.id
+join ea.teacher i on c.teacher_id = i.id;
 
 -- 学生课表
 create or replace view ea.av_student_schedule as
@@ -120,7 +136,7 @@ left join place on place.id = a.place_id;
 -- 学生信息
 create or replace view ea.av_student as
 select student.id, student.name, d.id as department_id, d.name as department_name, m.grade,
-  s.name as subject, ac.name as adimin_class,
+  s.name as subject, ac.name as admin_class,
   t1.id || '-' || t1.name as counsellor, t1.id || '-' || t2.name supervisor, student.at_school
 from student
 join admin_class ac on ac.id = student.admin_class_id
@@ -288,7 +304,7 @@ left join program_course_class pcc on pc.program_id = pcc.program_id and pcc.cou
 create or replace view ea.cv_unexecuted_program_course as
 select department, program_id, grade, subject,
   course_id, course_name, credit, property, current_term, suggested_term,
-  major_student_count, (select count(distinct student.id) 
+  major_student_count, (select count(distinct student.id)
   from ea.task_student
   join ea.task on task_student.task_id = task.id
   join ea.course_class on task.course_class_id = course_class.id

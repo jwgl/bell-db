@@ -26,10 +26,12 @@ student_count = (
   where task_student.task_id = any(wt.task_ids)
 );
 
--- 更新workload_task的课程性质
+-- 更新workload_task的教学班信息
 update tm_load.workload_task workload_task set
-course_property = dvu.course_property
-from tm_load.dvu_workload_task_course_property dvu
+course_property = dvu.course_property,
+course_class_name = dvu.course_class_name,
+course_class_major = dvu.course_class_major
+from tm_load.dvu_workload_task_course_class dvu
 where dvu.workload_task_id = workload_task.id;
 
 -- 更新workload_task的班级规模
@@ -176,7 +178,7 @@ insert into tm_load.workload_report_detail(term_id,
   class_size_source, class_size_type, class_size_ratio,
   instructional_mode_source, instructional_mode_type, instructional_mode_ratio,
   parallel_ratio, correction, original_workload, standard_workload,
-  workload_source, note, hash_value
+  workload_source, course_class_name, course_class_major, note, hash_value
 )
 select term_id,
   human_resource_id, human_resource_name, human_resource_department,
@@ -188,7 +190,7 @@ select term_id,
   class_size_source, class_size_type, class_size_ratio,
   instructional_mode_source, instructional_mode_type, instructional_mode_ratio,
   parallel_ratio, correction, original_workload, standard_workload,
-  workload_source, note, hash_value
+  workload_source, course_class_name, course_class_major, note, hash_value
 from tm_load.dvm_workload_report_detail
 where (term_id, teacher_id, workload_task_id) not in (
   select term_id, teacher_id, workload_task_id from tm_load.workload_report_detail
@@ -206,7 +208,7 @@ with inserted as (
     class_size_source, class_size_type, class_size_ratio,
     instructional_mode_source, instructional_mode_type, instructional_mode_ratio,
     parallel_ratio, correction, original_workload, standard_workload,
-    workload_source, note, hash_value
+    workload_source, course_class_name, course_class_major, note, hash_value
   )
   select a.term_id,
     a.human_resource_id, a.human_resource_name, a.human_resource_department,
@@ -218,13 +220,13 @@ with inserted as (
     a.class_size_source, a.class_size_type, a.class_size_ratio,
     a.instructional_mode_source, a.instructional_mode_type, a.instructional_mode_ratio,
     a.parallel_ratio, a.correction, a.original_workload, a.standard_workload,
-    a.workload_source, a.note, a.hash_value
+    a.workload_source, a.course_class_name, a.course_class_major, a.note, a.hash_value
   from tm_load.dvm_workload_report_detail a
   join tm_load.workload_report_detail b on a.term_id = b.term_id
    and a.teacher_id = b.teacher_id
    and a.workload_task_id = b.workload_task_id
   where a.hash_value <> b.hash_value
-   and b.date_invalid is null
+    and b.date_invalid is null
   returning term_id, teacher_id, workload_task_id
 )
 update tm_load.workload_report_detail r
