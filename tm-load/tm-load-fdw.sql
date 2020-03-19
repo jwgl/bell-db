@@ -48,6 +48,8 @@ create foreign table tm_load.et_teacher_workload_by_task (
   original_workload integer,
   standard_workload numeric(6, 2),
   workload_source text,
+  course_class_name text,
+  course_class_major text,
   note text
 ) server bnuc options (schema_name 'tm_load', table_name 'ev_teacher_workload_by_task', updatable 'false');
 
