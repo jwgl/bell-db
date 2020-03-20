@@ -1,3 +1,6 @@
+/**
+ * 生成教学安排
+ */
 create or replace function tm_load.fn_build_workload_task_schedule_string(
   p_workload_task_id uuid,
   p_teacher_id text
@@ -28,7 +31,47 @@ begin
 end;
 $$ language plpgsql;
 
-create or replace function tm_load.fn_update_workload_by_term(
+/**
+ * 设置工作量修正
+ */
+create or replace function tm_load.fn_set_workload_correction(
+  p_term_id integer,
+  p_department_id text,
+  p_teacher_id text,
+  p_correction numeric(6,2),
+  p_note text
+) returns void as $$
+begin
+  -- Upsert工作量修正
+  insert into tm_load.workload(term_id, department_id, teacher_id, correction, note, workload_source_type, date_modified)
+  select p_term_id, p_department_id, p_teacher_id, p_correction, p_note, 2 /*手工*/, LOCALTIMESTAMP
+  on conflict(term_id, department_id, teacher_id) do update set
+  correction = excluded.correction,
+  note = excluded.note,
+  date_modified = LOCALTIMESTAMP;
+
+  -- 更新workload的总工作量
+  update tm_load.workload workload set
+  adjustment_workload = dvu.adjustment_workload,
+  supplement_workload = dvu.supplement_workload,
+  total_workload = dvu.total_workload
+  from tm_load.dvu_workload dvu
+  where dvu.term_id = workload.term_id
+  and dvu.department_id = workload.department_id
+  and dvu.teacher_id = workload.teacher_id
+  and workload.term_id = p_term_id
+  and workload.department_id = p_department_id
+  and workload.teacher_id = p_teacher_id;
+
+  -- 更新报表
+  perform tm_load.fn_update_workload_report(p_term_id, p_teacher_id);
+end;
+$$ language plpgsql;
+
+/**
+ * 更新教学工作量
+ */
+create or replace function tm_load.fn_update_workload(
   p_term_id integer
 ) returns void as $$
 begin
@@ -186,13 +229,22 @@ begin
   practice_workload = excluded.practice_workload,
   executive_workload = excluded.executive_workload;
 
+  update tm_load.workload set
+  teaching_workload = 0,
+  practice_workload = 0,
+  executive_workload = 0
+  where term_id = p_term_id
+  and teacher_id not in (
+    select teacher_id from tm_load.dvm_workload where term_id = p_term_id
+  );
+
   -- 合并external_workload
   insert into tm_load.workload(term_id, department_id, teacher_id,
     teaching_workload, practice_workload, executive_workload,
     external_teaching_workload, external_practice_workload,
     external_executive_workload, external_correction)
   select term_id, department_id, teacher_id,
-    teaching_workload, practice_workload, executive_workload,
+    0.00, 0.00, 0.00,
     external_teaching_workload, external_practice_workload,
     external_executive_workload, external_correction
   from tm_load.dvm_external_workload
@@ -202,14 +254,6 @@ begin
   external_practice_workload = excluded.external_practice_workload,
   external_executive_workload = excluded.external_executive_workload,
   external_correction = excluded.external_correction;
-
-  delete from tm_load.workload
-  where term_id = p_term_id
-  and teacher_id not in (
-    select teacher_id from tm_load.dvm_workload where term_id = p_term_id
-    union all
-    select teacher_id from tm_load.dvm_external_workload where term_id = p_term_id
-  );
 
   update tm_load.workload set
   external_teaching_workload = 0,
@@ -240,9 +284,22 @@ begin
     union all
     select term_id, department_id, teacher_id
     from tm_load.dvm_external_workload
-  ) and term_id = p_term_id;
+  ) and term_id = p_term_id
+  and correction = 0.00; -- 且教师无修正，如有修正，则不删除。
 
+  -- 更新报表
+  perform tm_load.fn_update_workload_report(p_term_id);
+end;
+$$ language plpgsql;
 
+/**
+ * 按学期更新教学工作量报告
+ */
+create or replace function tm_load.fn_update_workload_report(
+  p_term_id integer,
+  p_teacher_id text default '%'
+) returns void as $$
+begin
   -- 合并workload_report_detail：插入新数据
   insert into tm_load.workload_report_detail(term_id,
     human_resource_id, human_resource_name, human_resource_department,
@@ -269,8 +326,12 @@ begin
     workload_source, course_class_name, course_class_major, note, hash_value
   from tm_load.dvm_workload_report_detail
   where (term_id, teacher_id, workload_task_id) not in (
-    select term_id, teacher_id, workload_task_id from tm_load.workload_report_detail
-  ) and term_id = p_term_id;
+      select term_id, teacher_id, workload_task_id
+      from tm_load.workload_report_detail
+      where date_invalid is null
+    )
+    and term_id = p_term_id
+    and teacher_id like p_teacher_id;
 
   -- 合并workload_report_detail：更新旧数据
   with inserted as (
@@ -304,6 +365,7 @@ begin
     where a.hash_value <> b.hash_value
     and b.date_invalid is null
     and a.term_id = p_term_id
+    and a.teacher_id like p_teacher_id
     returning term_id, teacher_id, workload_task_id
   )
   update tm_load.workload_report_detail r
@@ -318,10 +380,12 @@ begin
   update tm_load.workload_report_detail
   set date_invalid = localtimestamp
   where (term_id, teacher_id, workload_task_id) not in (
-    select term_id, teacher_id, workload_task_id
-    from tm_load.dvm_workload_report_detail
-  ) and date_invalid is null
-  and term_id = p_term_id;
+      select term_id, teacher_id, workload_task_id
+      from tm_load.dvm_workload_report_detail
+    )
+    and date_invalid is null
+    and term_id = p_term_id
+    and teacher_id like p_teacher_id;
 
   -- 合并workload_report：插入新数据
   insert into tm_load.workload_report(term_id,
@@ -347,8 +411,12 @@ begin
     total_workload, hash_value
   from tm_load.dvm_workload_report
   where (term_id, teacher_id, teacher_name, teacher_department) not in (
-    select term_id, teacher_id, teacher_name, teacher_department from tm_load.workload_report
-  ) and term_id = p_term_id;
+      select term_id, teacher_id, teacher_name, teacher_department
+      from tm_load.workload_report
+      where date_invalid is null
+    )
+    and term_id = p_term_id
+    and teacher_id like p_teacher_id;
 
   -- 合并workload_report：更新旧数据
   with inserted as (
@@ -381,6 +449,7 @@ begin
     where a.hash_value <> b.hash_value
       and b.date_invalid is null
       and a.term_id = p_term_id
+      and a.teacher_id like p_teacher_id
     returning term_id, teacher_id, teacher_name, teacher_department
   )
   update tm_load.workload_report r
@@ -396,9 +465,11 @@ begin
   update tm_load.workload_report
   set date_invalid = localtimestamp
   where (term_id, teacher_id, teacher_department) not in (
-    select term_id, teacher_id, teacher_department
-    from tm_load.dvm_workload_report
-  ) and date_invalid is null
-  and term_id = p_term_id;
+      select term_id, teacher_id, teacher_department
+      from tm_load.dvm_workload_report
+    )
+    and date_invalid is null
+    and term_id = p_term_id
+    and teacher_id like p_teacher_id;
 end;
 $$ language plpgsql;

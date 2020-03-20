@@ -464,40 +464,15 @@ group by term_id, department_id, teacher_id, executive_weekly_workload;
  * 合并视图：外部教学学期工作量
  */
 create or replace view tm_load.dvm_external_workload as
-with teacher_term_workload as (
-  select a.term_id, department_id, a.teacher_id,
-    a.teaching_workload as teaching_workload,
-    a.practice_workload as practice_workload,
-    a.executive_workload as executive_workload,
-    coalesce(b.teaching_workload, 0.00) as external_teaching_workload,
-    coalesce(b.practice_workload, 0.00) as external_practice_workload,
-    coalesce(b.executive_workload, 0.00) as external_executive_workload,
-    coalesce(b.correction, 0.00) as external_correction
-  from tm_load.workload a
-  left join tm_load.et_external_workload b on a.term_id = b.term_id and a.teacher_id = b.teacher_id
-  union all
-  select a.term_id, b.department_id, a.teacher_id,
-    0.00 as teaching_workload,
-    0.00 as practice_workload,
-    0.00 as executive_workload,
-    coalesce(a.teaching_workload, 0.00) as external_teaching_workload,
-    coalesce(a.practice_workload, 0.00) as external_practice_workload,
-    coalesce(a.executive_workload, 0.00) as external_executive_workload,
-    coalesce(a.correction, 0.00) as external_correction
-  from tm_load.et_external_workload a
-  join ea.teacher b on a.teacher_id = b.id
-  left join tm_load.teacher_workload_settings c on a.teacher_id = c.teacher_id
-  where (a.term_id, a.teacher_id) not in (
-    select term_id, teacher_id from tm_load.workload
-  )
-)
-select term_id, department_id, a.teacher_id,
-  teaching_workload, practice_workload, executive_workload,
-  external_teaching_workload, external_practice_workload,
-  external_executive_workload, external_correction
-from teacher_term_workload a
-left join tm_load.teacher_workload_settings b on a.teacher_id = b.teacher_id
-where b.employment_status = '在岗';
+select a.term_id, b.department_id, a.teacher_id,
+  coalesce(a.teaching_workload, 0.00) as external_teaching_workload,
+  coalesce(a.practice_workload, 0.00) as external_practice_workload,
+  coalesce(a.executive_workload, 0.00) as external_executive_workload,
+  coalesce(a.correction, 0.00) as external_correction
+from tm_load.et_external_workload a
+join ea.teacher b on a.teacher_id = b.id
+left join tm_load.teacher_workload_settings c on a.teacher_id = c.teacher_id
+where c.employment_status = '在岗';
 
 /**
  * 更新视图：教师学期工作量-调整与合计
