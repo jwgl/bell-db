@@ -663,13 +663,14 @@ select term_id,
   correction,
   external_correction,
   total_workload,
+  note,
   encode(digest(term_id
     || coalesce(human_resource_teacher.id, '') || coalesce(human_resource_teacher.name, '') ||  coalesce(human_resource_teacher.department, '')
     || coalesce(teacher_workload_settings.employment_mode, '') || coalesce(teacher_workload_settings.post_type, '')
     || teaching_workload || external_teaching_workload || adjustment_workload || supplement_workload
     || practice_workload || external_practice_workload
     || executive_workload || external_executive_workload
-    || correction || external_correction || total_workload,
+    || correction || external_correction || total_workload || coalesce(note, ''),
   'md5'), 'hex') as hash_value
 from tm_load.workload
 join ea.teacher on workload.teacher_id = teacher.id
@@ -702,7 +703,7 @@ select term_id, human_resource_id, human_resource_name, human_resource_departmen
   practice_workload, external_practice_workload,
   -- executive_workload, external_executive_workload,
   correction, external_correction,
-  total_workload
+  total_workload, note
 from tm_load.workload_report
 where date_invalid is null
 order by term_id, teacher_department, teacher_id;
@@ -773,7 +774,7 @@ with invalid_item as (
   practice_workload, external_practice_workload,
   executive_workload, external_executive_workload,
   correction, external_correction, total_workload,
-  hash_value, date_created, date_invalid
+  note, hash_value, date_created, date_invalid
   from tm_load.workload_report
   where date_invalid is not null
 )
@@ -786,7 +787,7 @@ select term_id,
   practice_workload, external_practice_workload,
   executive_workload, external_executive_workload,
   correction, external_correction, total_workload,
-  hash_value, date_created, date_invalid
+  note, hash_value, date_created, date_invalid
   from invalid_item
 union
 select term_id,
@@ -798,7 +799,7 @@ select term_id,
   practice_workload, external_practice_workload,
   executive_workload, external_executive_workload,
   correction, external_correction, total_workload,
-  hash_value, date_created, date_invalid
+  note, hash_value, date_created, date_invalid
   from tm_load.workload_report
 where date_invalid is null
 and (term_id, teacher_id, teacher_department) in (

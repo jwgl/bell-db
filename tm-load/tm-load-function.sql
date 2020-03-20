@@ -397,7 +397,7 @@ begin
     practice_workload, external_practice_workload,
     executive_workload, external_executive_workload,
     correction, external_correction, total_workload,
-    hash_value
+    note, hash_value
   )
   select term_id,
     human_resource_id, human_resource_name, human_resource_department,
@@ -407,8 +407,8 @@ begin
     adjustment_workload, supplement_workload,
     practice_workload, external_practice_workload,
     executive_workload, external_executive_workload,
-    correction, external_correction,
-    total_workload, hash_value
+    correction, external_correction, total_workload, 
+    note, hash_value
   from tm_load.dvm_workload_report
   where (term_id, teacher_id, teacher_name, teacher_department) not in (
       select term_id, teacher_id, teacher_name, teacher_department
@@ -428,8 +428,8 @@ begin
       adjustment_workload, supplement_workload,
       practice_workload, external_practice_workload,
       executive_workload, external_executive_workload,
-      correction, external_correction,
-      total_workload, hash_value
+      correction, external_correction, total_workload,
+      note, hash_value
     )
     select a.term_id,
       a.human_resource_id, a.human_resource_name, a.human_resource_department,
@@ -439,8 +439,8 @@ begin
       a.adjustment_workload, a.supplement_workload,
       a.practice_workload, a.external_practice_workload,
       a.executive_workload, a.external_executive_workload,
-      a.correction, a.external_correction,
-      a.total_workload, a.hash_value
+      a.correction, a.external_correction, a.total_workload,
+      a.note, a.hash_value
     from tm_load.dvm_workload_report a
     join tm_load.workload_report b on a.term_id = b.term_id
     and a.teacher_id = b.teacher_id
