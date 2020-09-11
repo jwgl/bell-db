@@ -81,7 +81,9 @@ create foreign table tm_wx.et_student(
     admin_class varchar(50),
     type varchar(50),
     enroll varchar(5),
-    at_school varchar(5)
+    at_school varchar(5),
+    id_number varchar(20),
+    sex varchar(2)
 ) server wxgzh options (schema 'BNUZ_WX', table 'STUDENT');
 
 --辅修名单
@@ -95,3 +97,22 @@ drop foreign table if exists tm_wx.et_student_abroad;
 create foreign table tm_wx.et_student_abroad(
     id varchar(20)
 ) server wxgzh options (schema 'BNUZ_WX', table 'STUDENT_ABROAD');
+
+--补考名单
+drop foreign table if exists tm_wx.et_make_up;
+create foreign table tm_wx.et_make_up(
+    xn varchar(9) options (key 'true'),
+    xq varchar(2) options (key 'true'),
+    course_id varchar(50) options (key 'true'),
+    student_id varchar(10) options (key 'true'),
+    flag varchar(2) options (key 'true'),
+    graduation varchar(4) options (key 'true'),
+    times varchar(50) options (key 'true'),
+    student_name varchar(100),
+    course_name varchar(100),
+    credit varchar(5),
+    property varchar(50),
+    department_name varchar(50),
+    grade varchar(5),
+    make_up_time varchar(45)    
+) server wxgzh options (schema 'ZFXFZB', table 'BKMDBVIEW');

@@ -22,6 +22,9 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_HUNT_DIRECT
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_HUNT_ADMIN',        	'PERM_HUNT_OVERVIEW');
 
 insert into tm.menu(id, label, display_order) values ('main.hunt',        '教学项目',     60);
+insert into tm.menu(id, label, display_order) values ('main.hunt.group',  '项目汇总',     61);	
+insert into tm.menu(id, label, display_order) values ('main.hunt.check',  '项目审核',     62);	
+insert into tm.menu(id, label, display_order) values ('main.hunt.check',  '项目变更',     63);
 
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.settings.huntType', 'main.settings', '项目类型', '/hunt/settings/types', true, array['TM-HUNT-API'], 30, 'PERM_HUNT_ADMIN');
@@ -38,21 +41,25 @@ insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_o
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.hunt.approval', 'main.hunt', '项目审批', '/hunt/approvers/${userId}/tasks', true, array['TM-HUNT-API'], 30, 'PERM_HUNT_ADMIN');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.hunt.expertReview', 'main.hunt', '项目评审', '/hunt/experts/${userId}/reviews', true, array['TM-HUNT-API'], 40, 'PERM_HUNT_REVIEW');
+('main.hunt.expertReview', 'main.hunt', '专家评审', '/hunt/experts/${userId}/reviews', true, array['TM-HUNT-API'], 40, 'PERM_HUNT_REVIEW');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.hunt.projectChange', 'main.hunt', '项目变更', '/hunt/teachers/${userId}/info-changes', true, array['TM-HUNT-API'], 21, 'PERM_HUNT_WRITE');
+('main.hunt.projectChange', 'main.hunt.modify', '变更申请', '/hunt/teachers/${userId}/info-changes', true, array['TM-HUNT-API'], 21, 'PERM_HUNT_WRITE');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.hunt.changeCheck', 'main.hunt', '项目变更审核', '/hunt/checkers/${userId}/info-changes', true, array['TM-HUNT-API'], 30, 'PERM_HUNT_CHECK');
+('main.hunt.changeCheck', 'main.hunt.modify', '项目变更审核', '/hunt/checkers/${userId}/info-changes', true, array['TM-HUNT-API'], 30, 'PERM_HUNT_CHECK');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.hunt.changeApproval', 'main.hunt', '项目变更审批', '/hunt/approvers/${userId}/info-changes', true, array['TM-HUNT-API'], 40, 'PERM_HUNT_ADMIN');
+('main.hunt.changeApproval', 'main.hunt.modify', '项目变更审批', '/hunt/approvers/${userId}/info-changes', true, array['TM-HUNT-API'], 40, 'PERM_HUNT_ADMIN');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.hunt.projectDepartment', 'main.hunt', '本单位项目', '/hunt/checkers/${userId}/projects', true, array['TM-HUNT-API'], 50, 'PERM_HUNT_CHECK');
+('main.hunt.projectDepartment', 'main.hunt.group', '本单位项目', '/hunt/checkers/${userId}/projects', true, array['TM-HUNT-API'], 50, 'PERM_HUNT_CHECK');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.hunt.changeReview', 'main.hunt', '处长加签', '/hunt/directors/${userId}/info-changes', true, array['TM-HUNT-API'], 20, 'PERM_HUNT_DIRECT');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.hunt.projects', 'main.hunt', '项目汇总', '/hunt/users/${userId}/projects', true, array['TM-HUNT-API'], 70, 'PERM_HUNT_OVERVIEW');
+('main.hunt.projects', 'main.hunt.group', '项目汇总', '/hunt/users/${userId}/projects', true, array['TM-HUNT-API'], 70, 'PERM_HUNT_OVERVIEW');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.hunt.fund', 'main.hunt', '经费管理', '/hunt/approvers/${userId}/funds', true, array['TM-HUNT-API'], 60, 'PERM_HUNT_ADMIN');
+insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+('main.hunt.myProjects', 'main.hunt.group', '我的项目', '/hunt/teachers/${userId}/projects', true, array['TM-HUNT-API'], 72, 'PERM_HUNT_WRITE');
+insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+('main.hunt.directorChange', 'main.hunt.modify', '变更负责人和终止', '/hunt/checkers/${userId}/projects', true, array['TM-HUNT-API'], 22, 'PERM_HUNT_WRITE');
 
 INSERT INTO tm.workflow (id,name) VALUES ('hunt.review', 		'教学项目项目审核');
 INSERT INTO tm.workflow (id,name) VALUES ('hunt.info-change', 		'教学项目项目变更审核');
