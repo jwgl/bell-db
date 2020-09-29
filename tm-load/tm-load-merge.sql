@@ -38,7 +38,7 @@ where dvu.workload_task_id = workload_task.id;
 update tm_load.workload_task workload_task set
 class_size_source = dvu.source,
 class_size_type = dvu.type,
-class_size_ratio = coalesce(dvu.ratio, 0)
+class_size_ratio = dvu.ratio
 from tm_load.dvu_workload_task_class_size dvu
 where dvu.workload_task_id = workload_task.id;
 

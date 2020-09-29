@@ -78,10 +78,18 @@ with teacher_map as (
     union
     select hid, tid from teacher_map where hid not in (select hid from unique_teacher)
 )
+--select a.*, c.id, d.name from tm_load.human_resource_teacher a join unique_map b on a.id = b.hid join ea.teacher c on b.tid = c.id join ea.department d on c.department_id = d.id where a.teacher_id is null;
 update tm_load.human_resource_teacher a
 set teacher_id = unique_map.tid
 from unique_map
-where unique_map.hid = a.id;
+where unique_map.hid = a.id
+and a.teacher_id is null;
+
+update tm_load.human_resource_teacher
+set supplement = (
+    employment_mode = '在编人员'
+and employment_status in ('在岗', '离岗')
+);
 
 -- 双语课
 create table tm_load.tmp_foreign_language_course_class(
@@ -117,6 +125,21 @@ select a.*, (select course_name||'|'||credit from ea.av_course_class where code 
 from normal a where (teacher_name, course_name, credit) not in (
     select teacher_name, course_name, credit from ea.av_course_class where term_id=20192
 ) and term_id=20192;
+
+-- 检查是否课堂教学
+with normal as (
+  select term_id, department, teacher_name, course_name, type, credit, property, unnest(regexp_split_to_array(task_code, ',')) as code
+  from tmp_foreign_language_course_class
+)
+select normal.*, exists(
+  select 1 from ea.task_schedule where task_id = task.id
+) from normal
+join ea.task on normal.code = task.code
+join ea.course_class on task.course_class_id = course_class.id
+left join tm_load.course_workload_settings on course_workload_settings.course_id = course_class.course_id and course_workload_settings.department_id = course_class.department_id
+left join tm_load.course_item_workload_settings on course_item_workload_settings.course_item_id = task.course_item_id and course_item_workload_settings.department_id = course_class.department_id
+where course_workload_settings.workload_mode <> 1
+   or course_item_workload_settings.workload_mode <> 1;
 
 -- 插入任务工作量设置表
 insert into tm_load.task_workload_settings(task_id, instructional_mode_id)
@@ -280,9 +303,16 @@ select distinct course_class.department_id, course.id, '分散实习', null::num
 from ea.course_class
 join ea.course on course_class.course_id = course.id
 where course_class.term_id >= 20191
-and (course.name like '%实习%'
-    and course.name not like '环境化学实习' -- 不动产(排课)
-  or course.name like '%见习%'
+and (course.name like '%实习%' and (course_class.department_id, course.name) not in(
+    ('04', '环境化学实习'), -- 不动产(学时)
+    ('04', '综合实习（一）'), -- 不动产(学时)
+    ('04', '综合实习（二）'), -- 不动产(学时)
+    ('04', '专业认识实习（一）'), -- 不动产(学时)
+    ('04', '专业认识实习（二）') -- 不动产(学时)
+  )
+  or course.name like '%见习%' and (course_class.department_id, course.name) not in(
+    ('04', '专业见习') -- 不动产(学时)
+  )
 )
 order by 1, 2
 on conflict(department_id, course_id) do update set
@@ -299,14 +329,17 @@ select distinct course_class.department_id, course.id, '实践教学', null::num
 from ea.course_class
 join ea.course on course_class.course_id = course.id
 where course_class.term_id >= 20191
-and (course.name like '%工作坊%'
-    and course.name not like 'EAP工作坊%' -- 教育(排课)
-    and course.name not like '读书研习工作坊%' -- 文学(排课)
-  or course.name like '专业创新作品%'
-  or course.name like '专业素质养成%'
-  or course.name like '专业拓展%'
-  or course.name like '专业综合实践' and course.id = '21111590' -- 运休
-)
+and course.name like '%工作坊%'
+and course.name not like 'EAP工作坊%' -- 教育(排课)
+and (course.name not like '读书研习工作坊%' and course_class.department_id='05') -- 文学(排课)
+and (course.name not like '专题研习工作坊【%'  and course_class.department_id='05')-- 文学(排课)
+and (course.name not like '社会工作工作坊' and course_class.department_id='10') --法政(排课)
+and (course.name not like '网络编辑工作坊' and course_class.department_id='08') -- 艺传(排课)
+and (course.name not like '团体活动设计工作坊' and course_class.department_id='07') -- 教育(排课)
+or course.name like '专业创新作品%'
+or course.name like '专业素质养成%'
+or course.name like '专业拓展%'
+or course.name like '专业综合实践' and course.id = '21111590' -- 运休
 union all -- 文学
 select distinct course_class.department_id, course.id, '社会调查', null::numeric(3,2), 2 /*正常*/, 2 /*学生*/, 9 /*常量*/, 62 /*0.2*/
 from ea.course_class
@@ -325,6 +358,10 @@ where course.name like '幼儿园教育实务'
 or course.name like '应用心理学专业专题研习%' and credit = 1
 or course.name like '学前教育专业专题研习%' and credit = 1
 or course.name like '教育专业专题研习%' and credit = 1
+union all -- 教育
+select '07', id, '创新创业', null, 2 /*正常*/, 1 /*排课*/, 3 /*实验课*/, 68 /*0.8*/
+from ea.course
+where course.name like '大学生创新创业教育' and credit = 1
 union all -- 法政
 select distinct course_class.department_id, course.id, '学年论文', null::numeric(3,2), 2 /*正常*/, 2 /*学生*/, 9 /*常量*/, 62 /*0.2*/
 from ea.course_class
@@ -342,19 +379,20 @@ select distinct course_class.department_id, course.id, '实践教学', null::num
 from ea.course_class
 join ea.course on course_class.course_id = course.id
 where course_class.term_id >= 20191
-and course.name in ('国土整治实务') and course_class.department_id = '04'
+and course.name in ('国土整治实务','综合实习（一）','综合实习（二）','专业认识实习（一）','专业认识实习（二）','专业见习') and course_class.department_id = '04'
 union all -- 设计
 select distinct course_class.department_id, course.id, '设计考察', null::numeric(3,2), 2 /*正常*/, 3 /*学时*/, 4 /*小班*/, 70 /*1.0*/
 from ea.course_class
 join ea.course on course_class.course_id = course.id
 where course_class.term_id >= 20191
 and course.name in ('设计考察与实践') and course_class.department_id = '13'
-union all -- 国商
-select distinct course_class.department_id, course.id, '沙盘模拟', null::numeric(3,2), 2 /*正常*/, 3 /*学时*/, 3 /*实验*/, 70 /*1.0*/
-from ea.course_class
-join ea.course on course_class.course_id = course.id
-where course_class.term_id >= 20191
-and course.name in ('ERP沙盘模拟') and course_class.department_id = '20'
+-- union all -- 国商
+-- select distinct course_class.department_id, course.id, '沙盘模拟', null::numeric(3,2), 2 /*正常*/, 3 /*学时*/, 3 /*实验*/, 70 /*1.0*/
+-- from ea.course_class
+-- join ea.course on course_class.course_id = course.id
+-- where course_class.term_id >= 20191
+-- and course.name in ('ERP沙盘模拟') and course_class.department_id = '20'
+
 order by 1, 2
 on conflict(department_id, course_id) do update set
 category = excluded.category,
@@ -384,6 +422,20 @@ workload_type = excluded.workload_type,
 class_size_type_id = excluded.class_size_type_id,
 instructional_mode_id = excluded.instructional_mode_id;
 
+-- 课程工作量设置-艺传实践+小班
+insert into tm_load.course_workload_settings(department_id, course_id, category, parallel_ratio, workload_type, workload_mode, class_size_type_id, instructional_mode_id)
+select '08', course.id, '艺传实践+小班', null::numeric(3,2), 2 /*正常*/, 1 /*排课*/, 4 /*小班*/, 21 /*实验课0.8*/
+from ea.course
+where id in ('08120021','08192290','08192240','08114720', '08114680')
+order by 1, 2
+on conflict(department_id, course_id) do update set
+category = excluded.category,
+parallel_ratio = excluded.parallel_ratio,
+workload_mode = excluded.workload_mode,
+workload_type = excluded.workload_type,
+class_size_type_id = excluded.class_size_type_id,
+instructional_mode_id = excluded.instructional_mode_id;
+
 -- 课程工作量设置-艺传小班
 insert into tm_load.course_workload_settings(department_id, course_id, category, parallel_ratio, workload_type, workload_mode, class_size_type_id, instructional_mode_id)
 select '08', course.id, '艺传小班', null::numeric(3,2), 2 /*正常*/, 1 /*排课*/, 4 /*小班*/, 10 /*理论课*/
@@ -391,13 +443,56 @@ from ea.course
 where id in (
   '08110950', '08111571', '08112470', '08113370', '08113570', '08113580',
   '08113830', '08113840', '08113890', '08114180', '08114230', '08114530',
-  '08114560', '08114680', '08114690', '08114700', '08114720', '08120021',
+  '08114560', '08114690', '08114700',
   '08120033', '08120701', '08121021', '08121081', '08121661', '08129330',
   '08129360', '08130165', '08130172', '08130181', '08130221', '08130230',
   '08130411', '08130712', '08130720', '08131010', '08131060', '08131182',
   '08131260', '08131270', '08131420', '08131430', '08191671', '08191712',
-  '08192240', '08192290', '08192310', '08192380', '08192600', '08192660',
-  '08192810'
+  '08192310', '08192600', '08192660',
+  '08192810', '08130621', '08131301', '08131301'
+)
+order by 1, 2
+on conflict(department_id, course_id) do update set
+category = excluded.category,
+parallel_ratio = excluded.parallel_ratio,
+workload_mode = excluded.workload_mode,
+workload_type = excluded.workload_type,
+class_size_type_id = excluded.class_size_type_id,
+instructional_mode_id = excluded.instructional_mode_id;
+
+-- 艺传实验课
+insert into tm_load.course_workload_settings(department_id, course_id, category, parallel_ratio, workload_type, workload_mode, class_size_type_id, instructional_mode_id)
+select '08', course.id, '艺传实践课', null::numeric(3,2), 2 /*正常*/, 1 /*排课*/, 3 /*实验课*/, 21 /*实验课0.8*/
+from ea.course
+where id in (
+  '08114340', -- 影视剪辑
+  '08114760', -- 微电影创作
+  '08192630', -- 媒体策划与创意实训
+  '05190350', -- 摄影与摄像
+  '08114140', -- 电视导播技术
+  '05111460', -- 广播电视编辑与节目制作
+  '08111550', -- 电子编排设计
+  '08111550', -- 电子编排设计
+  '05100600', -- 办公自动化
+  '05100600', -- 办公自动化
+  '05110162', -- 出版现代技术（2）
+  '05111510', -- 网络编辑学
+  '08114270', -- 网络编辑工作坊
+  '08192700', -- 数据调研实训
+  '08192700', -- 数据调研实训
+  '08114730', -- 电视节目编创
+  '08114730', -- 电视节目编创
+  '08114730', -- 电视节目编创
+  '08114900', -- 多媒体音像制作
+  '08114750', -- 纪录片创作
+  '08114750', -- 纪录片创作
+  '08114750', -- 纪录片创作
+  '08192211', -- 新媒体工作室
+  '08192211', -- 新媒体工作室
+  '08192211', -- 新媒体工作室
+  '08114840', -- 演艺项目运营实训
+  '08192680', -- 文化品牌运营
+  '08111950' -- 实务2
 )
 order by 1, 2
 on conflict(department_id, course_id) do update set

@@ -112,7 +112,7 @@ select jsbh as id,
     decode(kskyf, 'T', 1, 0) as can_test,
     to_number(substr(jykyxq, 1, 4) || substr(jykyxq, 11, 1)) as booking_term,
     decode(jyjsdx, '01', 1, '10', 2, '11', 3, 0) as booking_user,
-    decode(xqdm, 0, 1, 1, 0, 2, 0) as is_external,
+    decode(xqdm, 1, 0, 1) as is_external,
     regexp_replace(translate(bz, chr(10)||chr(11)||chr(13), '   '), '\s+', ' ') as note
 from zfxfzb.jxcdxxb
 order by id;
@@ -376,6 +376,7 @@ with task as (
         'fxkjxrwb' tab
     from zfxfzb.fxkjxrwb
     where jxjhh in (select jxjhh from zfxfzb.fxjxjhkcxxb) -- 存在错误数据（教学任务问题37）
+    and jsz is not null
     union all
     select -- 按实际执行产生的教学计划（特殊课）
         case when mxnj is null then substr(xn, 1, 4) else mxnj end || xq jxjhh, null zydm, null zymc, null zyfx,

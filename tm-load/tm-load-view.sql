@@ -21,8 +21,18 @@ from (
       when course_item.name = '理论' then 10
       else 1
     end as task_ordinal,
-    coalesce(course_item_workload_settings.workload_type, course_workload_settings.workload_type, 2 /*正常*/) as workload_type,
-    coalesce(course_item_workload_settings.workload_mode, course_workload_settings.workload_mode, 1 /*课时*/) as workload_mode
+    coalesce(
+      task_workload_settings.workload_type,
+      course_item_workload_settings.workload_type,
+      course_workload_settings.workload_type,
+      2 /*正常*/
+    ) as workload_type,
+    coalesce(
+      task_workload_settings.workload_mode,
+      course_item_workload_settings.workload_mode,
+      course_workload_settings.workload_mode,
+      1 /*课时*/
+    ) as workload_mode
   from ea.task_schedule
   join ea.task on task.id = task_schedule.task_id
   join ea.course_class on course_class.id = task.course_class_id
@@ -30,6 +40,7 @@ from (
   left join ea.course_item on course_item.id = task.course_item_id
   left join tm_load.course_workload_settings on course_workload_settings.course_id = course_class.course_id and course_workload_settings.department_id = course_class.department_id
   left join tm_load.course_item_workload_settings on course_item_workload_settings.course_item_id = task.course_item_id and course_item_workload_settings.department_id = course_class.department_id
+  left join tm_load.task_workload_settings on task_workload_settings.task_id = task.id
   where term_id >= 20191
 ) x
 group by term_id, department_id, start_week, end_week, odd_even, day_of_week, start_section, total_section, teacher_id, workload_type, workload_mode;
@@ -58,14 +69,25 @@ select course_class.term_id,
   course.name as course_name,
   course.credit as course_credit,
   course_item.name as course_item,
-  coalesce(course_item_workload_settings.workload_type, course_workload_settings.workload_type, 2 /*正常*/) as workload_type,
-  coalesce(course_item_workload_settings.workload_mode, course_workload_settings.workload_mode, 1 /*课时*/) as workload_mode
+  coalesce(
+    task_workload_settings.workload_type,
+    course_item_workload_settings.workload_type,
+    course_workload_settings.workload_type,
+    2 /*正常*/
+  ) as workload_type,
+  coalesce(
+    task_workload_settings.workload_mode,
+    course_item_workload_settings.workload_mode,
+    course_workload_settings.workload_mode,
+    1 /*课时*/
+  ) as workload_mode
 from ea.course_class
 join ea.course on course_class.course_id = course.id
 join ea.task on task.course_class_id = course_class.id
 left join ea.course_item on task.course_item_id = course_item.id
 left join tm_load.course_workload_settings on course_workload_settings.course_id = course_class.course_id and course_workload_settings.department_id = course_class.department_id
 left join tm_load.course_item_workload_settings on course_item_workload_settings.course_item_id = task.course_item_id and course_item_workload_settings.department_id = course_class.department_id
+left join tm_load.task_workload_settings on task_workload_settings.task_id = task.id
 where task.id not in (select task_id from ea.task_schedule)
 and course_class.term_id >= 20191;
 
@@ -85,16 +107,16 @@ order by term_id, department_id, code, course_item;
  */
 create or replace view tm_load.dvu_task_primary_teacher as
 select distinct on (workload_task.id) workload_task.id, course_class.teacher_id as primary_teacher_id
-  from tm_load.workload_task
-  join ea.task on task.id = any(workload_task.task_ids)
-  join ea.course_class on course_class.id = task.course_class_id
-  order by workload_task.id, case
-      when exists (
-        select 1 from tm_load.workload_task_schedule
-        where workload_task_id = workload_task.id
-        and teacher_id = course_class.teacher_id
-      ) then 1
-      else 0 end desc;
+from tm_load.workload_task
+join ea.task on task.id = any(workload_task.task_ids)
+join ea.course_class on course_class.id = task.course_class_id
+order by workload_task.id, case
+    when exists (
+      select 1 from tm_load.workload_task_schedule
+      where workload_task_id = workload_task.id
+      and teacher_id = course_class.teacher_id
+    ) then 1
+    else 0 end desc;
 
 /*
  * 更新视图：工作量教学任务-教学班信息
@@ -160,7 +182,7 @@ with task as (
 select distinct on (workload_task_id) workload_task_id,
   class_size_source as source,
   class_size_type.name as type,
-  class_size_ratio.ratio
+  coalesce(class_size_ratio.ratio, 0.00)::numeric(3,2) as ratio
 from task
 join tm_load.class_size_type on class_size_type.id = task.class_size_type_id
 left join tm_load.class_size_ratio on class_size_ratio.type_id = task.class_size_type_id
@@ -347,15 +369,17 @@ with task as ( -- 查询所有任务的主讲教师和平行班系数设置
   join tm_load.workload_task b on a.id = b.id
   join task_teacher_by_coursehour_count c on a.id = c.id
   left join task_settings d on a.id = d.id
+), workload_all as (
+  select id as workload_task_id, teacher_id, workload as original_workload, correction, parallel_ratio
+  from workload_by_timetable
+  union all
+  select id as workload_task_id, teacher_id, workload as original_workload, correction, parallel_ratio
+  from workload_by_student
+  union all
+  select id as workload_task_id, teacher_id, workload as original_workload, correction, parallel_ratio
+  from workload_by_coursehour
 )
-select id as workload_task_id, teacher_id, workload as original_workload, correction, parallel_ratio
-from workload_by_timetable
-union all
-select id as workload_task_id, teacher_id, workload as original_workload, correction, parallel_ratio
-from workload_by_student
-union all
-select id as workload_task_id, teacher_id, workload as original_workload, correction, parallel_ratio
-from workload_by_coursehour;
+select * from workload_all where teacher_id is not null;
 
 /*
  * 更新视图：工作量教学任务-标准工作量和任务顺序
@@ -422,7 +446,7 @@ create or replace view tm_load.dvm_teacher_workload_settings as
 select a.id as teacher_id,
   coalesce(b.post_type, '教师岗') as post_type,
   case
-    when b.employment_mode = '在编人员' then '在编'
+    when b.employment_mode = '在编人员' and employment_status in ('在岗', '离岗') then '在编'
     when b.employment_mode = '外籍教师人员' then '外籍'
     else '外聘'
   end as employment_mode,
@@ -632,7 +656,7 @@ select term_id,
     || class_size_source|| class_size_type || class_size_ratio
     || instructional_mode_source|| instructional_mode_type || instructional_mode_ratio
     || parallel_ratio || correction || original_workload || standard_workload
-    || workload_source || coalesce(course_class_name, '') || coalesce(course_class_major, '') || coalesce(note, ''),
+    || coalesce(workload_source, '') || coalesce(course_class_name, '') || coalesce(course_class_major, '') || coalesce(note, ''),
   'md5'), 'hex') as hash_value
 from task
 join tm_load.teacher_workload_settings on teacher_workload_settings.teacher_id= task.teacher_id
@@ -758,7 +782,24 @@ and (term_id, teacher_id, workload_task_code) in (
   select term_id, teacher_id, workload_task_code
   from invalid_item
 )
-order by term_id, teacher_department, teacher_id, course_id, task_ordinal, date_created;
+order by term_id, teacher_department, teacher_id, workload_task_code, date_created;
+
+/**
+ * 辅助视图：最新工作量报表明细差异
+ */
+create or replace view tm_load.av_workload_report_latest_detail_diff as
+with term_last_update as (
+  select term_id, max(date_created) as last_update
+  from tm_load.av_workload_report_detail_diff
+  group by term_id
+)
+select * from tm_load.av_workload_report_detail_diff
+where (term_id, date_created) in (
+  select term_id, last_update from term_last_update
+) or (term_id, date_invalid) in (
+  select term_id, last_update from term_last_update
+);
+
 
 /**
  * 辅助视图：工作量报表差异
@@ -809,6 +850,22 @@ and (term_id, teacher_id, teacher_department) in (
 order by term_id, teacher_department, teacher_id, date_created;
 
 /**
+ * 辅助视图：最新工作量报表差异
+ */
+create or replace view tm_load.av_workload_report_latest_diff as
+with term_last_update as (
+  select term_id, max(date_created) as last_update
+  from tm_load.av_workload_report_diff
+  group by term_id
+)
+select * from tm_load.av_workload_report_diff
+where (term_id, date_created) in (
+  select term_id, last_update from term_last_update
+) or (term_id, date_invalid) in (
+  select term_id, last_update from term_last_update
+);
+
+/**
  * 辅助视图：工作量任务
  */
 create or replace view tm_load.av_workload_task as
@@ -839,10 +896,90 @@ join ea.department on department.id = workload_task.department_id
 group by term_id, department.name, code, workload_task.id, task_ids, course_id, course_name, course_item, course_credit, course_property, student_count
 order by term_id, department.name, code;
 
-
+/**
+ * 辅助视图：教师工作量设置
+ */
 create or replace view tm_load.av_teacher_workload_settings as
 select c.name as department, teacher_id, b.name as teacher_name, supplement,
   employment_mode, employment_status, workload_type, declaration_type, executive_weekly_workload
 from tm_load.teacher_workload_settings a
 join ea.teacher b on a.teacher_id = b.id
 join ea.department c on b.department_id = c.id;
+
+/**
+ * 辅助视图：最新工作量报表差异JSON
+ */
+create or replace view tm_load.av_workload_report_latest_detail_diff_json as
+with latest as (
+  select max(date_created) - interval '1hour' as lastest_date from tm_load.workload_report_detail
+), diff as (
+  select a as x, lag(a) over(partition by a.workload_task_id, a.teacher_id order by date_created) as y
+  from tm_load.av_workload_report_detail_diff a
+  where date_invalid >= (select lastest_date from latest)
+     or date_created >= (select lastest_date from latest)
+)
+select jsonb_pretty(jsonb_build_object(
+  'term_id', (x).term_id,
+  'teacher_id', (x).teacher_id,
+  'teacher_name', (x).teacher_name,
+  'teacher_department', (x).teacher_department,
+  'workload_task_id', (x).workload_task_id,
+  'workload_task_code', (x).workload_task_code,
+  'course_id', (x).course_id,
+  'course_name', (x).course_name,
+  'course_item', (x).course_item,
+  'course_credit', (x).course_credit,
+  'course_property', (x).course_property,
+  'course_class_department', (x).course_class_department
+)) as base_info,
+jsonb_pretty(jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
+  'date_created', json_build_object(
+    'old', (y).date_created, 'new', (x).date_created
+  ),
+  'workload_mode', case
+    when (x).workload_mode is distinct from (y).workload_mode
+    then jsonb_build_object('old', (y).workload_mode, 'new', (x).workload_mode)
+  end,
+  'workload_type', case
+    when (x).workload_type is distinct from (y).workload_type
+    then jsonb_build_object('old', (y).workload_type, 'new', (x).workload_type)
+  end,
+  'student_count', case
+    when (x).student_count is distinct from (y).student_count
+    then jsonb_build_object('old', (y).student_count, 'new', (x).student_count)
+  end,
+  'class_size_ratio', case
+    when (x).class_size_ratio is distinct from (y).class_size_ratio
+    then jsonb_build_object('old', (y).class_size_ratio, 'new', (x).class_size_ratio)
+  end,
+  'instructional_mode_ratio', case
+    when (x).instructional_mode_ratio is distinct from (y).instructional_mode_ratio
+    then jsonb_build_object('old', (y).instructional_mode_ratio, 'new', (x).instructional_mode_ratio)
+  end,
+  'parallel_ratio', case
+    when (x).parallel_ratio is distinct from (y).parallel_ratio
+    then jsonb_build_object('old', (y).parallel_ratio, 'new', (x).parallel_ratio)
+  end,
+  'parallel_ratio', case
+    when (x).correction is distinct from (y).correction
+    then jsonb_build_object('old', (y).correction, 'new', (x).correction)
+  end,
+  'original_workload', case
+    when (x).original_workload is distinct from (y).original_workload
+    then jsonb_build_object('old', (y).original_workload, 'new', (x).original_workload)
+  end,
+  'standard_workload', case
+    when (x).standard_workload is distinct from (y).standard_workload
+    then jsonb_build_object('old', (y).standard_workload, 'new', (x).standard_workload)
+  end,
+  'workload_source', case
+    when (x).workload_source is distinct from (y).workload_source
+    then jsonb_build_object('old', (y).workload_source, 'new', (x).workload_source)
+  end
+)) order by (x).date_created desc)) as diff_info
+from diff
+where (y).workload_task_id is not null
+group by (x).term_id, (x).teacher_department, (x).teacher_id, (x).teacher_name,
+  (x).workload_task_id, (x).workload_task_code,
+  (x).course_id, (x).course_name, (x).course_item, (x).course_credit, (x).course_property, (x).course_class_department
+order by (x).term_id, (x).teacher_department, (x).teacher_id, (x).workload_task_code;
