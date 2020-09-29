@@ -63,7 +63,7 @@ with active_term as (
 ), inspect4 as (
     select distinct inspector.teachercode as teacher_id
     from tm.observation_legacy_form inspector
-    where inspector.teachercode is not null and inspector.observer_type = 1 and (inspector.term_id + 30) > (( select active_term.id from active_term))
+    where inspector.teachercode is not null and inspector.observer_type = 1 and (inspector.term_id + 20) > (( select active_term.id from active_term))
     union
     select distinct form.teacher_id
     from tm.observation_form form
