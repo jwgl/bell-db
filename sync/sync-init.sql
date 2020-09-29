@@ -92,7 +92,11 @@ set unique_index = 'timeplate_id, odd_even, day_of_week, start_section'
 where id = 'ea.timeplate_slot';
 
 update sync.sync_config set
-before_sync = $$insert into ea.sv_course_class_map values(null);$$,
+delete_condition = $$id not in ('00000')$$
+where id = 'ea.teacher';
+
+update sync.sync_config set
+before_sync = $$insert into ea.sv_course_class_map values(null, null, null, null);$$,
 upsert_condition = $$term_id = ${term_id}$$,
 delete_condition = $$term_id = ${term_id}$$
 where id = 'ea.course_class';
@@ -116,7 +120,7 @@ delete_condition = $$course_class_id in (
 where id = 'ea.course_class_program';
 
 update sync.sync_config set
-before_sync = $$insert into ea.sv_task_map values(null);$$,
+before_sync = $$insert into ea.sv_task_map values(null, null, null, null, null);$$,
 upsert_condition = $$term_id = ${term_id}$$,
 delete_condition = $$course_class_id in (
     select id

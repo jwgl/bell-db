@@ -197,6 +197,7 @@ declare
   v_context sync.sync_context%rowtype;
   v_message_text text;
   v_exception_detail text;
+  v_exception_context text;
   v_loop_start timestamp;
   v_loop_time numeric;
 begin
@@ -237,8 +238,9 @@ begin
     exception
       when others then
         get stacked diagnostics v_message_text = message_text,
-                                v_exception_detail = pg_exception_detail;
-        v_execute_result = format(E'%s\n%s', v_message_text, v_exception_detail);
+                                v_exception_detail = pg_exception_detail,
+                                v_exception_context = pg_exception_context;
+        v_execute_result = format(E'%s - %s\n\t%s\n\t%s', v_sync_id, v_message_text, v_exception_detail, v_exception_context);
         raise notice '%', v_execute_result;
         reset session authorization;
         exit;

@@ -69,6 +69,57 @@ end;
 $$ language plpgsql;
 
 /**
+ * 设置任务教师工作量修正
+ */
+create or replace function tm_load.fn_set_workload_task_teacher_correction(
+  p_workload_task_id uuid,
+  p_teacher_id text,
+  p_correction numeric(6,2),
+  p_note text
+) returns void as $$
+declare
+  v_term_id integer;
+  v_department_id text;
+begin
+  -- 更新工作量修正
+  update tm_load.workload_task_teacher set
+  correction = correction,
+  note = p_note
+  where workload_task_id = p_workload_task_id
+  and teacher_id = p_teacher_id;
+
+  select term_id, department_id into v_term_id, v_department_id
+  from tm_load.workload_task
+  where id = p_workload_task_id;
+
+  -- 更新workload_task_teacher的标准工作量和任务顺序
+  update tm_load.workload_task_teacher workload_task_teacher set
+  standard_workload = dvu.standard_workload,
+  task_ordinal = dvu.task_ordinal
+  from tm_load.dvu_workload_task_teacher_standard_workload dvu
+  where dvu.workload_task_id = workload_task_teacher.workload_task_id
+  and dvu.teacher_id = p_teacher_id
+  and workload_task_teacher.workload_task_id = p_workload_task_id;
+
+  -- 更新workload的总工作量
+  update tm_load.workload workload set
+  adjustment_workload = dvu.adjustment_workload,
+  supplement_workload = dvu.supplement_workload,
+  total_workload = dvu.total_workload
+  from tm_load.dvu_workload dvu
+  where dvu.term_id = workload.term_id
+  and dvu.department_id = workload.department_id
+  and dvu.teacher_id = workload.teacher_id
+  and workload.term_id = v_term_id
+  and workload.department_id = v_department_id
+  and workload.teacher_id = p_teacher_id;
+
+  -- 更新报表
+  perform tm_load.fn_update_workload_report(v_term_id, p_teacher_id);
+end;
+$$ language plpgsql;
+
+/**
  * 更新教学工作量
  */
 create or replace function tm_load.fn_update_workload(
@@ -76,6 +127,7 @@ create or replace function tm_load.fn_update_workload(
 ) returns void as $$
 begin
   -- 合并workload_task
+  raise notice 'Insert workload_task ...';
   insert into tm_load.workload_task(term_id, department_id, code, task_ids, course_id, course_name,
     course_credit, course_item, workload_type, workload_mode, campus)
   select term_id, department_id, code, task_ids, course_id, course_name,
@@ -93,6 +145,7 @@ begin
   workload_mode = excluded.workload_mode;
 
   -- 更新workload_task的主讲教师
+  raise notice 'Update workload_task primary_teacher ...';
   update tm_load.workload_task workload_task set
   primary_teacher_id = dvu.primary_teacher_id
   from tm_load.dvu_task_primary_teacher dvu
@@ -100,6 +153,7 @@ begin
   and workload_task.term_id = p_term_id;
 
   -- 更新workload_task的选课人数
+  raise notice 'Update workload_task student_count ...';
   update tm_load.workload_task workload_task set
   student_count = (
     select count(distinct student_id)
@@ -109,6 +163,7 @@ begin
   where workload_task.term_id = p_term_id;
 
   -- 更新workload_task的教学班信息
+  raise notice 'Update workload_task course_class ...';
   update tm_load.workload_task workload_task set
   course_property = dvu.course_property,
   course_class_name = dvu.course_class_name,
@@ -118,15 +173,17 @@ begin
   and workload_task.term_id = p_term_id;
 
   -- 更新workload_task的班级规模
+  raise notice 'Update workload_task class_size ...';
   update tm_load.workload_task workload_task set
   class_size_source = dvu.source,
   class_size_type = dvu.type,
-  class_size_ratio = coalesce(dvu.ratio, 0)
+  class_size_ratio = dvu.ratio
   from tm_load.dvu_workload_task_class_size dvu
   where dvu.workload_task_id = workload_task.id
   and workload_task.term_id = p_term_id;
 
   -- 更新workload_task的教学形式
+  raise notice 'Update workload_task instructional_mode ...';
   update tm_load.workload_task workload_task set
   instructional_mode_source = dvu.source,
   instructional_mode_type = dvu.type,
@@ -137,6 +194,7 @@ begin
   and workload_task.term_id = p_term_id;
 
   -- 合并workload_task_schedule
+  raise notice 'Merge workload_task_schedule ...';
   insert into tm_load.workload_task_schedule(workload_task_id, task_schedule_ids, start_week, end_week, odd_even, day_of_week, start_section, total_section, teacher_id)
   select workload_task_id, task_schedule_ids, start_week, end_week, odd_even, day_of_week, start_section, total_section, teacher_id
   from tm_load.dvm_task_schedule
@@ -153,6 +211,7 @@ begin
   teacher_id = excluded.teacher_id;
 
   -- 合并workload_task_teacher
+  raise notice 'Merge workload_task_teacher ...';
   insert into tm_load.workload_task_teacher(workload_task_id, teacher_id, original_workload, correction, parallel_ratio)
   select workload_task_id, teacher_id, original_workload, correction, parallel_ratio
   from tm_load.dvm_workload_task_teacher
@@ -166,6 +225,7 @@ begin
     or workload_task_teacher.parallel_ratio <> excluded.parallel_ratio;
 
   -- 更新workload_task_teacher的标准工作量和任务顺序
+  raise notice 'Update workload_task_teacher standard_workload ...';
   update tm_load.workload_task_teacher workload_task_teacher set
   standard_workload = dvu.standard_workload,
   task_ordinal = dvu.task_ordinal
@@ -177,6 +237,7 @@ begin
   );
 
   -- 合并teacher_workload_settings
+  raise notice 'Merge teacher_workload_settings ...';
   insert into tm_load.teacher_workload_settings(teacher_id, post_type, employment_mode, employment_status, supplement)
   select teacher_id, post_type, employment_mode, employment_status, supplement
   from tm_load.dvm_teacher_workload_settings
@@ -187,6 +248,7 @@ begin
   supplement = excluded.supplement;
 
   -- 删除workload_task_teacher
+  raise notice 'Delete teacher_workload_settings ...';
   delete from tm_load.teacher_workload_settings
   where teacher_id not in (
     select teacher_id
@@ -194,6 +256,7 @@ begin
   );
 
   -- 删除workload_task_schedule
+  raise notice 'Delete workload_task_schedule ...';
   delete from tm_load.workload_task_schedule
   where task_schedule_ids not in (
     select task_schedule_ids
@@ -203,6 +266,7 @@ begin
   );
 
   -- 删除workload_task_teacher
+  raise notice 'Delete workload_task_teacher ...';
   delete from tm_load.workload_task_teacher
   where (workload_task_id, teacher_id) not in (
     select workload_task_id, teacher_id
@@ -212,12 +276,16 @@ begin
   );
 
   -- 删除workload_task
+  raise notice 'Delete workload_task ...';
   delete from tm_load.workload_task
   where task_ids not in (
-    select task_ids from tm_load.dvm_workload_task
+    select task_ids
+    from tm_load.dvm_workload_task
+    where term_id = p_term_id
   ) and term_id = p_term_id;
 
   -- 合并workload
+  raise notice 'Merge workload ...';
   insert into tm_load.workload(term_id, department_id, teacher_id,
     teaching_workload, practice_workload, executive_workload)
   select term_id, department_id, teacher_id,
@@ -229,6 +297,8 @@ begin
   practice_workload = excluded.practice_workload,
   executive_workload = excluded.executive_workload;
 
+  -- 更新不存在的教师的工作量为0
+  raise notice 'Update workload not exists ...';
   update tm_load.workload set
   teaching_workload = 0,
   practice_workload = 0,
@@ -239,6 +309,7 @@ begin
   );
 
   -- 合并external_workload
+  raise notice 'Merge external_workload ...';
   insert into tm_load.workload(term_id, department_id, teacher_id,
     teaching_workload, practice_workload, executive_workload,
     external_teaching_workload, external_practice_workload,
@@ -255,6 +326,8 @@ begin
   external_executive_workload = excluded.external_executive_workload,
   external_correction = excluded.external_correction;
 
+  -- 更新不存在的教师的外部工作量为0
+  raise notice 'Update external workload not exists ...';
   update tm_load.workload set
   external_teaching_workload = 0,
   external_practice_workload = 0,
@@ -266,6 +339,7 @@ begin
   );
 
   -- 更新workload的总工作量
+  raise notice 'Update total workload ...';
   update tm_load.workload workload set
   adjustment_workload = dvu.adjustment_workload,
   supplement_workload = dvu.supplement_workload,
@@ -277,6 +351,7 @@ begin
   and workload.term_id = p_term_id;
 
   -- 删除workload
+  raise notice 'Delete workload ...';
   delete from tm_load.workload
   where (term_id, department_id, teacher_id) not in (
     select term_id, department_id, teacher_id
@@ -288,6 +363,7 @@ begin
   and correction = 0.00; -- 且教师无修正，如有修正，则不删除。
 
   -- 更新报表
+  raise notice 'Update report ...';
   perform tm_load.fn_update_workload_report(p_term_id);
 end;
 $$ language plpgsql;
@@ -334,6 +410,13 @@ begin
     and teacher_id like p_teacher_id;
 
   -- 合并workload_report_detail：更新旧数据
+  if exists(select 1 from tm_load.dvm_workload_report_detail
+    where term_id = p_term_id
+    and teacher_id like p_teacher_id
+    and hash_value is null) then
+    raise exception using hint = "Exists null hash_value in tm_load.dvm_workload_report_detail.";
+  end if;
+
   with inserted as (
     insert into tm_load.workload_report_detail(term_id,
       human_resource_id, human_resource_name, human_resource_department,
@@ -362,7 +445,7 @@ begin
     join tm_load.workload_report_detail b on a.term_id = b.term_id
     and a.teacher_id = b.teacher_id
     and a.workload_task_id = b.workload_task_id
-    where a.hash_value <> b.hash_value
+    where a.hash_value is distinct from b.hash_value
     and b.date_invalid is null
     and a.term_id = p_term_id
     and a.teacher_id like p_teacher_id
@@ -419,6 +502,13 @@ begin
     and teacher_id like p_teacher_id;
 
   -- 合并workload_report：更新旧数据
+  if exists(select 1 from tm_load.dvm_workload_report
+    where term_id = p_term_id
+    and teacher_id like p_teacher_id
+    and hash_value is null) then
+    raise exception using hint = "Exists null hash_value in tm_load.dvm_workload_report.";
+  end if;
+
   with inserted as (
     insert into tm_load.workload_report(term_id,
       human_resource_id, human_resource_name, human_resource_department,
@@ -446,7 +536,7 @@ begin
     and a.teacher_id = b.teacher_id
     and a.teacher_name = b.teacher_name
     and a.teacher_department = b.teacher_department
-    where a.hash_value <> b.hash_value
+    where a.hash_value is distinct from b.hash_value
       and b.date_invalid is null
       and a.term_id = p_term_id
       and a.teacher_id like p_teacher_id
