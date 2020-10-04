@@ -88,7 +88,10 @@ left join ea.course_item on task.course_item_id = course_item.id
 left join tm_load.course_workload_settings on course_workload_settings.course_id = course_class.course_id and course_workload_settings.department_id = course_class.department_id
 left join tm_load.course_item_workload_settings on course_item_workload_settings.course_item_id = task.course_item_id and course_item_workload_settings.department_id = course_class.department_id
 left join tm_load.task_workload_settings on task_workload_settings.task_id = task.id
-where task.id not in (select task_id from ea.task_schedule)
+where not exists (
+  select 1 from ea.task_schedule
+  where task_id = task.id
+)
 and course_class.term_id >= 20191;
 
 /*
@@ -279,10 +282,11 @@ with task as ( -- 查询所有任务的主讲教师和平行班系数设置
   join ea.task b on b.id = any(a.task_ids)
   join ea.task_teacher c on b.id = c.task_id
   left join tm_load.workload_task_teacher d on a.id = d.workload_task_id and c.teacher_id = d.teacher_id
-  where (a.id, c.teacher_id) not in (
-    select x.id, coalesce(x.teacher_id, y.primary_teacher_id)
+  where not exists (
+    select 1
     from task_teacher_by_timetable_base x
     join task_settings y on x.id = y.id
+    where x.id = a.id and coalesce(x.teacher_id, y.primary_teacher_id) = c.teacher_id
   )
   and a.workload_type <> 0 and a.workload_mode = 1
 ), workload_by_timetable as ( -- 计算按排课计的任务的平行班系数
@@ -913,8 +917,9 @@ create or replace view tm_load.av_workload_report_latest_detail_diff_json as
 with latest as (
   select max(date_created) - interval '1hour' as lastest_date from tm_load.workload_report_detail
 ), diff as (
-  select a as x, lag(a) over(partition by a.workload_task_id, a.teacher_id order by date_created) as y
-  from tm_load.av_workload_report_detail_diff a
+  select a as x, lag(a) over(partition by a.workload_task_id, a.teacher_id order by date_created) as y,
+    count(*) over(partition by a.workload_task_id, a.teacher_id) as row_count
+  from tm_load.workload_report_detail a
   where date_invalid >= (select lastest_date from latest)
      or date_created >= (select lastest_date from latest)
 )
@@ -935,6 +940,9 @@ select jsonb_pretty(jsonb_build_object(
 jsonb_pretty(jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
   'date_created', json_build_object(
     'old', (y).date_created, 'new', (x).date_created
+  ),
+  'date_invalid', json_build_object(
+    'old', (y).date_invalid, 'new', (x).date_invalid
   ),
   'workload_mode', case
     when (x).workload_mode is distinct from (y).workload_mode
@@ -978,7 +986,7 @@ jsonb_pretty(jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
   end
 )) order by (x).date_created desc)) as diff_info
 from diff
-where (y).workload_task_id is not null
+where row_count = 1 or row_count > 1 and (y).workload_task_id is not null
 group by (x).term_id, (x).teacher_department, (x).teacher_id, (x).teacher_name,
   (x).workload_task_id, (x).workload_task_code,
   (x).course_id, (x).course_name, (x).course_item, (x).course_credit, (x).course_property, (x).course_class_department
