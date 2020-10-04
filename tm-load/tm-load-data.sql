@@ -103,65 +103,6 @@ create table tm_load.tmp_foreign_language_course_class(
     task_code text
 );
 
-insert into tm_load.tmp_foreign_language_course_class
-(term_id, department, teacher_name, course_name, credit, property, type, task_code) values
-(20192,'设计学院','潘绍华','设计基础Ⅲ','3','专业核心课','双语教学','(2019-2020-2)-13114260-13185-1,(2019-2020-2)-13114260-13185-2'),
-;
-
--- 检查选课课号
-with normal as (
-  select term_id, department, teacher_name, course_name, type, credit, property, unnest(regexp_split_to_array(task_code, ',')) as code
-  from tmp_foreign_language_course_class
-)
-select * from normal where code not in (select code from ea.task);
-
--- 检查课程名称、学分
-with normal as (
-  select term_id, department, teacher_name, course_name, type, credit, property, unnest(regexp_split_to_array(task_code, ',')) as code
-  from tmp_foreign_language_course_class
-)
-select a.*, (select course_name||'|'||credit from ea.av_course_class where code = a.code) as by_task,
-  array((select course_name||'|'||credit from ea.av_course_class where term_id = 20192 and teacher_name = a.teacher_name)) as other_class
-from normal a where (teacher_name, course_name, credit) not in (
-    select teacher_name, course_name, credit from ea.av_course_class where term_id=20192
-) and term_id=20192;
-
--- 检查是否课堂教学
-with normal as (
-  select term_id, department, teacher_name, course_name, type, credit, property, unnest(regexp_split_to_array(task_code, ',')) as code
-  from tmp_foreign_language_course_class
-)
-select normal.*, exists(
-  select 1 from ea.task_schedule where task_id = task.id
-) from normal
-join ea.task on normal.code = task.code
-join ea.course_class on task.course_class_id = course_class.id
-left join tm_load.course_workload_settings on course_workload_settings.course_id = course_class.course_id and course_workload_settings.department_id = course_class.department_id
-left join tm_load.course_item_workload_settings on course_item_workload_settings.course_item_id = task.course_item_id and course_item_workload_settings.department_id = course_class.department_id
-where course_workload_settings.workload_mode <> 1
-   or course_item_workload_settings.workload_mode <> 1;
-
--- 插入任务工作量设置表
-insert into tm_load.task_workload_settings(task_id, instructional_mode_id)
-with normal as (
-    select a.*, unnest(regexp_split_to_array(a.task_code, ',')) as code
-    from tm_load.tmp_foreign_language_course_class a
-)
-select task.id, case normal.type
-    when '双语教学' then 30
-    when '外语教学' then 31
-  end as instructional_mode_id
-from normal
-left join ea.task on task.code = normal.code
-where term_id = 20192
-on conflict (task_id) do update set
-instructional_mode_id = excluded.instructional_mode_id;
-
-create table tm_load.task_workload_settings(
-    task_id uuid primary key references ea.task,
-    instructional_mode_id integer references tm_load.instructional_mode
-);
-
 -- 工作量调整
 with task_teacher_correction as (
     select teacher_id, t.id as workload_task_id, c.code, correction::numeric(6,2) as correction from (values
@@ -308,7 +249,8 @@ and (course.name like '%实习%' and (course_class.department_id, course.name) n
     ('04', '综合实习（一）'), -- 不动产(学时)
     ('04', '综合实习（二）'), -- 不动产(学时)
     ('04', '专业认识实习（一）'), -- 不动产(学时)
-    ('04', '专业认识实习（二）') -- 不动产(学时)
+    ('04', '专业认识实习（二）'), -- 不动产(学时)
+    ('04', '环境微生物实习') -- 不动产(排课)
   )
   or course.name like '%见习%' and (course_class.department_id, course.name) not in(
     ('04', '专业见习') -- 不动产(学时)
@@ -426,7 +368,7 @@ instructional_mode_id = excluded.instructional_mode_id;
 insert into tm_load.course_workload_settings(department_id, course_id, category, parallel_ratio, workload_type, workload_mode, class_size_type_id, instructional_mode_id)
 select '08', course.id, '艺传实践+小班', null::numeric(3,2), 2 /*正常*/, 1 /*排课*/, 4 /*小班*/, 21 /*实验课0.8*/
 from ea.course
-where id in ('08120021','08192290','08192240','08114720', '08114680')
+where id in ('08120021','08192290','08192240','08114720', '08114680', '08121661')
 order by 1, 2
 on conflict(department_id, course_id) do update set
 category = excluded.category,
@@ -444,7 +386,7 @@ where id in (
   '08110950', '08111571', '08112470', '08113370', '08113570', '08113580',
   '08113830', '08113840', '08113890', '08114180', '08114230', '08114530',
   '08114560', '08114690', '08114700',
-  '08120033', '08120701', '08121021', '08121081', '08121661', '08129330',
+  '08120033', '08120701', '08121021', '08121081', '08129330',
   '08129360', '08130165', '08130172', '08130181', '08130221', '08130230',
   '08130411', '08130712', '08130720', '08131010', '08131060', '08131182',
   '08131260', '08131270', '08131420', '08131430', '08191671', '08191712',
@@ -492,7 +434,12 @@ where id in (
   '08192211', -- 新媒体工作室
   '08114840', -- 演艺项目运营实训
   '08192680', -- 文化品牌运营
-  '08111950' -- 实务2
+  '08111950', -- 实务2
+  '08114600', -- 报纸编辑工作坊
+  '08129370', -- 整合营销传播工作室
+  '08114510', -- 影视灯光
+  '08113360', -- 图片摄影工作室
+  '08114890' -- 教科书编辑与制作工作坊
 )
 order by 1, 2
 on conflict(department_id, course_id) do update set
