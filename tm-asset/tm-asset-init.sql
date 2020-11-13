@@ -30,4 +30,11 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_ASSET_SYS',
 insert into tm.menu(id, label, display_order) values ('main.asset',        '教室资产',     70);
 
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.asset.place', 'main.asset', '场地查询', '/asset/users/${userId}/places', true, array['TM-ASSET-API'], 30, 'PERM_ASSET_VIEW');
+('main.asset.place', 'main.asset', '场地查询', '/asset/users/${userId}/places', true, array['TM-ASSET-API'], 10, 'PERM_ASSET_VIEW');
+insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+('main.asset.receipt', 'main.asset', '入库单', '/asset/users/${userId}/receiptForms', true, array['TM-ASSET-API'], 20, 'PERM_ASSET_ADVICE_WRITE');
+
+INSERT INTO tm.workflow (id,name) VALUES ('asset.checkin', 		'入库单审核');
+
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('asset.checkin', 'asset.checkin.check',   '审核',     '/asset/checkers/${userId}/receiptForms/${id};wi=${workitem}');
+INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('asset.checkin', 'asset.checkin.view', 	 '查看',     '/asset/checkers/${userId}/receiptForms/${id}');
