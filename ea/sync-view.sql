@@ -112,7 +112,7 @@ select jsbh as id,
     decode(kskyf, 'T', 1, 0) as can_test,
     to_number(substr(jykyxq, 1, 4) || substr(jykyxq, 11, 1)) as booking_term,
     decode(jyjsdx, '01', 1, '10', 2, '11', 3, 0) as booking_user,
-    decode(xqdm, 0, 1, 1, 0) as is_external,
+    decode(xqdm, 1, 0, 1) as is_external,
     regexp_replace(translate(bz, chr(10)||chr(11)||chr(13), '   '), '\s+', ' ') as note
 from zfxfzb.jxcdxxb
 order by id;
@@ -376,6 +376,7 @@ with task as (
         'fxkjxrwb' tab
     from zfxfzb.fxkjxrwb
     where jxjhh in (select jxjhh from zfxfzb.fxjxjhkcxxb) -- 存在错误数据（教学任务问题37）
+    and jsz is not null
     union all
     select -- 按实际执行产生的教学计划（特殊课）
         case when mxnj is null then substr(xn, 1, 4) else mxnj end || xq jxjhh, null zydm, null zymc, null zyfx,
@@ -427,6 +428,7 @@ select kcdm as id,
     case when regexp_like(a.zxs, '-\d+\.\d?$') then to_number(regexp_substr(a.zxs, '\d+\.\d?$')) else 0 end as period_experiment,
     case when regexp_like(a.zxs, '^\+\d+$')    then to_number(regexp_substr(a.zxs, '\d+'))       else 0 end as period_weeks,
     to_number(kcxzdm) as property_id,
+    kcgs as category,
     decode(kclb, '必修课', 1, '选修课', 0, '实践环节', 1, 1) as is_compulsory,
     case when regexp_like(a.zxs, '^\+\d+$') then 1 else 0 end as is_practical,
     decode(xlcc,'本科', 1, '本科毕业生', 1, '硕士研究生', 2, /*其它或空*/ 9) as education_level,
@@ -610,12 +612,16 @@ select
             end
     end as department_id,
     jsjj as resume,
-    sfzh as identity_number
+    sfzh as identity_number,
+    rszgh as human_resource_number,
+    jwzgh as opposite_number,
+    decode(trim(ks), '-', null, '', null, ks) as faculty
 from zfxfzb.jsxxb
 union all
 select id, name, sex, birthday, political_status, nationality, academic_title, academic_level, academic_degree,
     educational_background, graduate_school, graduate_major, date_graduated, post_type,
-    has_qualification, is_lab_technician, is_external, at_school, can_guidance_graduate, department_id, resume, null
+    has_qualification, is_lab_technician, is_external, at_school, can_guidance_graduate, department_id, resume,
+    null, null, null, null
 from ea.external_staff
 order by id;
 
@@ -1407,6 +1413,7 @@ with task_normal_all as (
         max(sjdxh) - min(sjdxh) + 1 as skcd,
         kc as guid,sknr
     from zfxfzb.tjkbapqkb
+    where not(qssj = jssj and decode(mod(qssj, 2), 1, '单', 0, '双') <> dsz) --去除4-4单的情况
     group by xkkh, jszgh, jsbh, xqj, qssjd, qssj, jssj, kc, sknr
 ), task_normal_info as (
     select distinct -- 正常教学任务（多教师）
@@ -1433,13 +1440,13 @@ with task_normal_all as (
     join task_with_lab b on a.xkkh = b.xkkh
     join zfxfzb.dgjsskxxb c on a.xkkh = c.xkkh_root and a.xkkh <> c.xkkh
 )
-select a.xn, a.xq, a.kcdm, a.xkkh, c.jszgh, c.jsbh, c.qsz, c.jsz, c.dsz,
+select a.xn, a.xq, a.kcdm, a.xkkh, c.jszgh, c.jsbh, c.qsz, c.jsz, decode(c.qsz, c.jsz, 0, c.dsz) dsz,
     c.xqj, c.qssjd, c.skcd, c.guid, a.course_item_id, tab, c.sknr
 from task_normal_info a
 join arr_normal c on a.xkkh = c.xkkh and a.jszgh=c.jszgh
 union all
 select distinct -- 外语
-    a.xn,a.xq,d.course_id,b.xkkh, b.jszgh, b.jsbh, b.qsz, b.jsz, decode(a.dsz, '单', 1, '双', 2, 0) as dsz,
+    a.xn,a.xq,d.course_id,b.xkkh, coalesce(dg.jszgh, b.jszgh), b.jsbh, b.qsz, b.jsz, decode(a.dsz, '单', 1, '双', 2, 0) as dsz,
     a.xqj, a.qssjd, a.skcd, b.guid, d.id as course_item_id, 'en' as tab,'5' sknr
 from zfxfzb.bksjapb a
 join zfxfzb.bkdjjsfpb b on b.bkdm = a.bkdm and b.bkkcmc = a.bkkcmc and
@@ -1449,6 +1456,7 @@ join zfxfzb.bkdjjsfpb b on b.bkdm = a.bkdm and b.bkkcmc = a.bkkcmc and
 join ea.sv_course_item d on d.course_id = substr(b.xkkh, 15, 8) and d.name = b.bz
 join task_en e on e.xkkh = b.xkkh
 join zfxfzb.jsxxb g on g.zgh = b.jszgh -- 有不存在的教师
+left join zfxfzb.dgjsskxxb dg on b.xkkh = dg.xkkh and a.xh = dg.xh_bksj
 union all
 select distinct -- 其它课
     a.xn, to_number(a.xq), a.kcdm ,a.xkkh, a.jszgh,
@@ -1543,7 +1551,7 @@ join ea.task_map on task_code = xkkh;
  */
 create or replace view ea.sv_course_class_assessment as
 with assess_normal as (
-  select distinct xkkh,
+  select distinct xn, xq, xkkh,
     round(to_number(nvl(pscj,0)) / 100.0, 2) as pscj, '考查' as psfs,
     round(to_number(nvl(sycj,0)) / 100.0, 2) as sycj, '考查' as syfs,
     round(to_number(nvl(qzcj,0)) / 100.0, 2) as qzcj, khfs as qzfs,
@@ -1564,8 +1572,8 @@ with assess_normal as (
   where assess_ratio > 0
 )
 select
+  to_number(substr(xn, 1, 4) || xq) as term_id,
   b.course_class_id,
-  b.course_class_code,
   a.assess_stage,
   a.assess_type,
   a.assess_ratio
@@ -1698,18 +1706,18 @@ from grade_count_unpivot
 group by xkkh, submit_type, assess_stage;
 
 /**
- * 课程成绩提交ID映射
+ * 课程成绩来源ID映射
  */
-create or replace view ea.sv_course_grade_submit_map as
-select term_id, course_grade_submit_id, course_class_code, submit_type, date_submitted，date_created
-from ea.course_grade_submit_map;
+create or replace view ea.sv_course_grade_source_map as
+select term_id, course_grade_source_id, course_grade_source_code, course_grade_source_type, date_created
+from ea.course_grade_source_map;
 
 /**
  * 用于同步时触发生成course_assessment_map和course_grade_submit_map数据，使用insert语句触发
  */
-create or replace trigger ea.sv_course_grade_submit_map_trigger
+create or replace trigger ea.sv_course_grade_source_map_trigger
   instead of insert
-  on ea.sv_course_grade_submit_map
+  on ea.sv_course_grade_source_map
 begin
   -- 合并course_assessment_map
   merge into ea.course_assessment_map a
@@ -1717,13 +1725,15 @@ begin
     select to_number(substr(xkkh, 2, 4) || substr(xkkh, 12, 1)) as term_id,
       xkkh as course_class_code, submit_type, assess_stage
     from ea.sva_course_assessment_stage
-  ) b on (a.course_class_code = b.course_class_code and a.assess_stage = b.assess_stage)
+  ) b on (a.course_class_code = b.course_class_code and a.submit_type = b.submit_type and a.assess_stage = b.assess_stage)
   when not matched then insert (term_id, course_class_code, submit_type, assess_stage)
-  values(b.term_id, b.course_class_code, b.submit_type, b.assess_stage);
+  values(b.term_id, b.course_class_code, b.submit_type, b.assess_stage)
+  when matched then update set
+    term_id = b.term_id;
 
   delete from ea.course_assessment_map
-  where (course_class_code, assess_stage) not in (
-    select xkkh, assess_stage
+  where (course_class_code, submit_type, assess_stage) not in (
+    select xkkh, submit_type, assess_stage
     from ea.sva_course_assessment_stage
   );
 
@@ -1735,7 +1745,9 @@ begin
     order by course_class_code, submit_type
   ) b on (a.course_class_code = b.course_class_code and a.submit_type = b.submit_type)
   when not matched then insert (term_id, course_class_code, submit_type)
-  values(b.term_id, b.course_class_code, b.submit_type);
+  values(b.term_id, b.course_class_code, b.submit_type)
+  when matched then update set
+    term_id = b.term_id;
 
   delete from ea.course_grade_submit_map
   where (course_class_code, submit_type) not in (
@@ -1743,80 +1755,70 @@ begin
     from ea.course_assessment_map
   );
 
-  -- 计算初次提交时间，修改任务表后可直接获取
+  -- 更新初次提交时间
   merge into ea.course_grade_submit_map a
   using (
-    select xkkh as course_class_code, to_timestamp(min(cjdate), 'YYYY-MM-DD HH24:MI:SS') as date_submitted
-    from zfxfzb.cjb
-    where xn || '-' || xq >= '2013-2014-2'
+    select xkkh as course_class_code, min(to_date(lrsj, 'YYYY-MM-DD hh24:mi:ss')) as date_submitted
+    from zfxfzb.jxrwbview
     group by xkkh
   ) b on (a.course_class_code = b.course_class_code and a.submit_type='正考')
   when matched then update set date_submitted = b.date_submitted;
-end;
-/
 
-/**
- * 课程成绩来源ID映射
- */
-create or replace view ea.sv_course_grade_source_map as
-select term_id, course_grade_source_id, course_grade_source_code, date_created
-from ea.course_grade_source_map;
-
-/**
- * 用于同步时触发生成sv_course_grade_source_map数据，使用insert语句触发
- */
-create or replace trigger ea.sv_course_grade_source_map_trigger
-  instead of insert
-  on ea.sv_course_grade_source_map
-begin
+-- 合并course_grade_source_map
   merge into ea.course_grade_source_map a
   using (
-    select distinct x.term_id, x.course_class_code
-    from course_grade_submit_map x
+    select distinct x.term_id, x.course_class_code as course_grade_source_code, case
+        when y.course_class_code is null then 2
+        else 1
+      end as course_grade_source_type
+    from ea.course_grade_submit_map x
     left join ea.course_class_map y on x.course_class_code = y.course_class_code
-    where y.course_class_id is null
-  ) b on (a.course_grade_source_code = b.course_class_code)
-  when not matched then insert (term_id, course_grade_source_code)
-  values(b.term_id, b.course_class_code);
+  ) b on (a.course_grade_source_code = b.course_grade_source_code)
+  when not matched then insert (term_id, course_grade_source_code, course_grade_source_type)
+  values(b.term_id, b.course_grade_source_code, course_grade_source_type)
+  when matched then update set
+  term_id = b.term_id,
+  course_grade_source_type = b.course_grade_source_type;
 
   delete from ea.course_grade_source_map
   where (course_grade_source_code) not in (
-    select x.course_class_code
-    from course_grade_submit_map x
-    left join ea.course_class_map y on x.course_class_code = y.course_class_code
-    where y.course_class_id is null
+    select course_class_code
+    from course_grade_submit_map
   );
 end;
 /
 
 /**
+ * 课程成绩来源
+ */
+create or replace view ea.sv_course_grade_source as
+select term_id, course_grade_source_id as id,
+  course_grade_source_code as code,
+  COURSE_GRADE_SOURCE_TYPE as type
+from ea.course_grade_source_map;
+
+/**
  * 课程成绩提交
  */
 create or replace view ea.sv_course_grade_submit as
-select a.course_grade_submit_id as id,
-  b.course_class_id as course_grade_source_id,
-  1 as course_grade_source_type, -- 来自教学班
-  submit_type, c.teacher_id, a.date_submitted, a.term_id
-from ea.course_grade_submit_map a
-join ea.course_class_map b on a.course_class_code = b.course_class_code
-left join ea.sv_course_class c on a.course_class_code = c.code
-union all
-select a.course_grade_submit_id as id,
+select a.term_id, a.course_grade_submit_id as id,
   b.course_grade_source_id,
-  2 as course_grade_source_type, -- 来自其它
-  submit_type, null as teacher_id, a.date_submitted, a.term_id
+  submit_type, c. teacher_id, a.date_submitted
 from ea.course_grade_submit_map a
-join ea.course_grade_source_map b on a.course_class_code = b.course_grade_source_code;
+join ea.course_grade_source_map b on a.course_class_code = b.course_grade_source_code
+left join ea.sv_course_class c on a.course_class_code = c.code;
 
 /**
  * 课程考核
  */
 create or replace view ea.sv_course_assessment as
-select a.course_assessment_id as id,
+select a.term_id, a.course_assessment_id as id,
+  c.course_grade_source_id,
   b.course_grade_submit_id,
   assess_stage
 from ea.course_assessment_map a
 join ea.course_grade_submit_map b on a.course_class_code = b.course_class_code and a.submit_type = b.submit_type
+join ea.course_grade_source_map c on a.course_class_code = c.course_grade_source_code;
 
 /**
  * 课程考核成绩

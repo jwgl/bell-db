@@ -182,6 +182,7 @@ create foreign table ea.sv_course (
     period_experiment numeric(3, 1),
     period_weeks integer,
     property_id integer,
+    category text,
     is_compulsory boolean,
     is_practical boolean,
     education_level integer,
@@ -249,7 +250,10 @@ create foreign table ea.sv_teacher (
     can_guidance_graduate boolean,
     department_id char(2),
     resume varchar(3000),
-    identity_number text
+    identity_number text,
+    human_resource_number text,
+    opposite_number text,
+    faculty text
 ) server zf options (schema 'EA', table 'SV_TEACHER', readonly 'true');
 
 -- 行政班

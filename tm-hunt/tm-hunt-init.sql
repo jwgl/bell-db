@@ -23,8 +23,13 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_HUNT_ADMIN'
 
 insert into tm.menu(id, label, display_order) values ('main.hunt',        '教学项目',     60);
 insert into tm.menu(id, label, display_order) values ('main.hunt.group',  '项目汇总',     61);	
+<<<<<<< HEAD
 insert into tm.menu(id, label, display_order) values ('main.hunt.review',  '项目审核',     62);	
 insert into tm.menu(id, label, display_order) values ('main.hunt.modify',  '项目变更',     63);
+=======
+insert into tm.menu(id, label, display_order) values ('main.hunt.check',  '项目审核',     62);	
+insert into tm.menu(id, label, display_order) values ('main.hunt.check',  '项目变更',     63);
+>>>>>>> upstream/master
 
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
 ('main.settings.huntType', 'main.settings', '项目类型', '/hunt/settings/types', true, array['TM-HUNT-API'], 30, 'PERM_HUNT_ADMIN');
@@ -75,7 +80,11 @@ INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-ch
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-change', 'hunt.info-change.approve',     '审批',     '/hunt/approvers/${userId}/info-changes/${todo}/${id};wi=${workitem}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-change', 'hunt.info-change.review',      '加签',     '/hunt/directors/${userId}/info-changes/${todo}/${id};wi=${workitem}');
 
+<<<<<<< HEAD
 update tm.workflow_activity set url = replace(url, 'infoChanges', 'info-changes') where workflow_id='hunt.info-change';
 
 --在oracle中增加校外专家
 insert into external_staff(id,name,HAS_QUALIFICATION,IS_LAB_TECHNICIAN,CAN_GUIDANCE_GRADUATE,IS_EXTERNAL,at_school,password,department_id) values('61901','校外专家1',0,0,0,1,1,'67913','61');	
+=======
+update tm.workflow_activity set url = replace(url, 'infoChanges', 'info-changes') where workflow_id='hunt.info-change';
+>>>>>>> upstream/master

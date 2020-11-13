@@ -21,28 +21,6 @@ order by display_order;
 
 -- 应用角色
 create or replace view tm.dv_teacher_role as
-with admin_class_at_school as (
-    select ac.supervisor_id, ac.counsellor_id
-    from ea.admin_class ac
-    join ea.major m on ac.major_id = m.id
-    join ea.subject s on m.subject_id = s.id
-    where current_date < make_date(grade + length_of_schooling, 7, 1)
-    union all
-    select ac.supervisor_id, ac.counsellor_id
-    from ea.admin_class ac
-    join ea.major m on ac.major_id = m.id
-    join ea.subject s on m.subject_id = s.id
-    where current_date >= make_date(grade + length_of_schooling, 7, 1)
-    and exists (
-      select 1
-      from ea.course_class
-      join ea.task on course_class.id = task.course_class_id
-      join ea.task_student on task_student.task_id = task.id
-      join ea.student on student.id = task_student.student_id
-      where student.admin_class_id = ac.id
-      and ea.course_class.term_id = (select id from ea.term where active = true)
-    )
-)
 select t.id as user_id, 'ROLE_IN_SCHOOL_TEACHER' as role_id
 from ea.teacher t
 where t.at_school = true
@@ -78,10 +56,52 @@ from ea.teacher t
 join tm.booking_auth ba on ba.checker_id = t.id
 union all
 select distinct supervisor_id as user_id, 'ROLE_CLASS_SUPERVISOR' as role_id
-from admin_class_at_school
+from (
+  select ac.supervisor_id, ac.counsellor_id
+    from ea.admin_class ac
+    join ea.major m on ac.major_id = m.id
+    join ea.subject s on m.subject_id = s.id
+    where current_date < make_date(grade + length_of_schooling, 7, 1)
+    union all
+    select ac.supervisor_id, ac.counsellor_id
+    from ea.admin_class ac
+    join ea.major m on ac.major_id = m.id
+    join ea.subject s on m.subject_id = s.id
+    where current_date >= make_date(grade + length_of_schooling, 7, 1)
+    and exists (
+      select 1
+      from ea.course_class
+      join ea.task on course_class.id = task.course_class_id
+      join ea.task_student on task_student.task_id = task.id
+      join ea.student on student.id = task_student.student_id
+      where student.admin_class_id = ac.id
+      and ea.course_class.term_id = (select id from ea.term where active = true)
+    )
+) as admin_class_at_school
 union all
 select distinct counsellor_id as user_id, 'ROLE_STUDENT_COUNSELLOR' as role_id
-from admin_class_at_school
+from (
+  select ac.supervisor_id, ac.counsellor_id
+    from ea.admin_class ac
+    join ea.major m on ac.major_id = m.id
+    join ea.subject s on m.subject_id = s.id
+    where current_date < make_date(grade + length_of_schooling, 7, 1)
+    union all
+    select ac.supervisor_id, ac.counsellor_id
+    from ea.admin_class ac
+    join ea.major m on ac.major_id = m.id
+    join ea.subject s on m.subject_id = s.id
+    where current_date >= make_date(grade + length_of_schooling, 7, 1)
+    and exists (
+      select 1
+      from ea.course_class
+      join ea.task on course_class.id = task.course_class_id
+      join ea.task_student on task_student.task_id = task.id
+      join ea.student on student.id = task_student.student_id
+      where student.admin_class_id = ac.id
+      and ea.course_class.term_id = (select id from ea.term where active = true)
+    )
+) as admin_class_at_school
 union all
 select distinct s.teacher_id as user_id, 'ROLE_OBSERVER' as role_id
 from tm.observer s
@@ -244,21 +264,7 @@ select item.id as item_id,
        task_schedule.id as task_schedule_id
 from tm.free_listen_form form
 join tm.free_listen_item item on item.form_id = form.id
-join ea.task_schedule on item.task_schedule_id = task_schedule.id
-join ea.task on task_schedule.task_id = task.id
-join ea.course_class on task.course_class_id = course_class.id
-where form.status = 'APPROVED'
-union
-select item.id as item_id,
-       form.id as form_id,
-       form.term_id,
-       form.student_id,
-       course_class.id as course_class_id,
-       task.id as task_id,
-       task_schedule.id as task_schedule_id
-from tm.free_listen_form form
-join tm.free_listen_item item on item.form_id = form.id
-join ea.task_schedule on item.task_schedule_id = task_schedule.root_id
+join ea.task_schedule on item.task_schedule_id in (task_schedule.id, task_schedule.root_id)
 join ea.task on task_schedule.task_id = task.id
 join ea.course_class on task.course_class_id = course_class.id
 where form.status = 'APPROVED';
@@ -286,17 +292,9 @@ join ea.task_student on form.student_id = task_student.student_id
 join ea.task on task_student.task_id = task.id
 join ea.course_class on task.course_class_id = course_class.id and form.term_id = course_class.term_id
 join ea.task_schedule on task_schedule.task_id = task.id
- and (
-   item.task_schedule_id = task_schedule.id or
-   item.day_of_week = task_schedule.day_of_week or
-   item.day_of_week is null and item.task_schedule_id is null
- )
- and item.week between task_schedule.start_week and task_schedule.end_week
- and case task_schedule.odd_even
-   when 0 then true
-   when 1 then item.week % 2 = 1
-   when 2 then item.week % 2 = 0
- end
+ and coalesce(item.task_schedule_id, task_schedule.id) = task_schedule.id
+ and coalesce(item.day_of_week, task_schedule.day_of_week) = task_schedule.day_of_week
+ and 1 << (item.week - 1) & task_schedule.week_bits <> 0
 where form.status in ('APPROVED', 'FINISHED');
 
 -- 有效点名视图，用于函数统计
@@ -330,16 +328,21 @@ with latest_scheme as (
   where status = 'APPROVED'
   group by program_id
 )
-select department.name as department,
+select department.id as department_id,
+    department.name as department_name,
     p.id as program_id,
     m.grade as grade,
-    s.name as subject,
-    d.name as direction,
-    property.name as property,
-    course.id::text as course_id,
+    s.id as subject_id,
+    s.name as subject_name,
+    d.id as direction_id,
+    d.name as direction_name,
+    property.id as property_id,
+    property.name as property_name,
+    course.id as course_id,
     course.name as course_name,
     course.credit,
     sc.practice_credit,
+    allowed_term,
     suggested_term,
     sc.revise_version,
     sc.id as scheme_course_id,
@@ -358,16 +361,21 @@ where m.grade >= 2016
 and scheme.version_number <= latest_scheme.version_number
 and (sc.revise_version is null or sc.revise_version > latest_scheme.version_number)
 union all
-select department.name as department,
+select department.id as department_id,
+    department.name as department_name,
     p.id as program_id,
     m.grade as grade,
-    s.name as subject,
-    d.name as direction,
-    property.name as property,
-    'T' || course.id :: text as course_id,
+    s.id as subject_id,
+    s.name as subject_name,
+    d.id as direction_id,
+    d.name as direction_name,
+    property.id as property_id,
+    property.name as property_name,
+    ('T' || course.id) :: varchar(8) as course_id,
     course.name as course_name,
     course.credit,
     sc.practice_credit,
+    allowed_term,
     suggested_term,
     sc.revise_version,
     sc.id as scheme_course_id,
@@ -387,18 +395,63 @@ and scheme.version_number <= latest_scheme.version_number
 and (sc.revise_version is null or sc.revise_version > latest_scheme.version_number);
 
 -- 辅助视图：最新培养方案学分统计
-create or replace view av_latest_scheme_credit as
-select program_id, subject, direction, property, sum(credit) as credit, sum(practice_credit) as practice_credit
-from av_latest_scheme_course
-group by program_id, subject, direction, property
-order by 1, 2, 3, 4;
+create or replace view tm.av_latest_scheme_credit as
+with schema_property_credit_base as (
+  select program_id, subject_name as subject, direction_name as direction,
+    property_id, property_name as property, b.credit as total_credit,
+    sum(a.credit) as credit, sum(practice_credit) as practice_credit
+  from tm.av_latest_scheme_course a
+  join ea.program b on a.program_id = b.id
+  where a.property_id not in (2, 3)
+  group by program_id, subject_name, direction_name, property_id, property_name, b.credit
+  union all
+  select program_id, d.name as subject, null as direction,
+    property_id, e.name as property, b.credit as total_credit,
+    a.credit as credit, 0 as practice_credit
+  from ea.program_property a
+  join ea.program b on a.program_id = b.id
+  join ea.major c on b.major_id = c.id
+  join ea.subject d on c.subject_id = d.id
+  join ea.property e on a.property_id = e.id
+  where a.property_id in (2, 3)
+  and a.program_id in (select program_id from tm.av_latest_scheme_course)
+), schema_property_credit_fixed as (
+  select program_id, sum(credit) as fixed_credit
+  from (
+    select program_id, property_id, min(credit) as credit
+    from schema_property_credit_base
+    where property_id <> 6
+    group by program_id, property_id
+  ) x
+  group by program_id
+), schema_property_credit as (
+  select a.program_id, subject, direction, a.property_id, property, total_credit,
+    case a.property_id
+      when 6 then total_credit - fixed_credit
+      else credit
+    end as credit,
+    case a.property_id
+      when 6 then 0
+      else practice_credit
+    end as practice_credit
+  from schema_property_credit_base a
+  join schema_property_credit_fixed b on a.program_id = b.program_id
+)
+select schema_property_credit.program_id, subject, direction, property,
+  total_credit, schema_property_credit.credit as scheme_property_credit,
+  practice_credit as scheme_practice_credit,
+  program_property.credit as program_property_credit
+from schema_property_credit
+left join ea.program_property on schema_property_credit.program_id = program_property.program_id
+      and schema_property_credit.property_id = program_property.property_id
+order by program_id, subject, schema_property_credit.property_id, direction;
 
 -- 检查视图：培养方案与执行计划学分比较
 create or replace view tm.cv_scheme_program_credit as
 with scheme_info as (
-  select program_id, subject, property, direction, sum(credit) as credit
+  select program_id, subject_name as subject, property_name as property, direction_name direction, sum(credit) as credit
   from tm.av_latest_scheme_course
-  group by program_id, subject, property, direction
+  group by program_id, subject_name, property, direction
 ), program_info as (
   select pc.program_id, p.name as property, d.name as direction, sum(credit) as credit
   from ea.program_course pc
@@ -420,3 +473,45 @@ join program_property c on a.program_id = c.program_id and a.property = c.proper
 left join program_info b on a.program_id = b.program_id and a.property = b.property
   and a.direction is not distinct from b.direction
 order by 1, 3;
+
+-- 当前学期领导
+create or replace view tm.dv_leaders as
+select o.teacher_id
+from tm.observer o join ea.term on o.term_id = term.id
+where o.observer_type = 3 and term.active;
+
+-- 辅修视图-免听申请
+create or replace view av_free_listen as
+select free_listen_form.id form_id, free_listen_form.term_id,
+    student.id as student_id, student.name as student_name, student.at_school,
+    course.id as course_id, course.name as course_name,
+    teacher.id as teacher_id, teacher.name as teacher_name,
+    free_listen_form.date_approved, free_listen_form.status
+from tm.free_listen_form
+join tm.free_listen_item on free_listen_form.id = free_listen_item.form_id
+join ea.task_schedule on task_schedule.id = free_listen_item.task_schedule_id
+join ea.task on task.id = task_schedule.task_id
+join ea.course_class on course_class.id = task.course_class_id
+join ea.course on course.id = course_class.course_id
+join ea.student on student.id = free_listen_form.student_id
+join ea.teacher on teacher.id = free_listen_form.checker_id;
+
+-- 检查视图-免听申请在校生每学期不超过两门
+create or replace view cv_free_listen as
+select form_id, term_id, student_id, student_name,
+  rank() over (partition by term_id, student_id order by date_approved) as rank,
+  course_id, course_name, teacher_id, teacher_name, date_approved, status
+from (
+  select distinct form_id, term_id, student_id, student_name,
+    course_id, course_name, teacher_id, teacher_name, date_approved, status
+  from av_free_listen
+  where status = 'APPROVED'
+  and (term_id, student_id) in (
+      select term_id, student_id
+      from av_free_listen
+      where status = 'APPROVED'
+      and at_school = true
+      group by term_id, student_id
+      having count(distinct course_id) > 2
+  )
+) a order by student_id, date_approved;

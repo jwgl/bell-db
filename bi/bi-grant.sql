@@ -38,3 +38,4 @@ grant select on tm.et_dualdegree_student to bi;
 grant select on tm_dual.degree_application to bi;
 grant select on tm_hunt.teacher_temp to bi;
 grant select on tm.dv_observation_view    to bi;    ----督导听课视图
+grant select on tm_hunt.teacher_temp to bi;
