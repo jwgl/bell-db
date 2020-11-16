@@ -80,11 +80,10 @@ INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-ch
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-change', 'hunt.info-change.approve',     '审批',     '/hunt/approvers/${userId}/info-changes/${todo}/${id};wi=${workitem}');
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('hunt.info-change', 'hunt.info-change.review',      '加签',     '/hunt/directors/${userId}/info-changes/${todo}/${id};wi=${workitem}');
 
-<<<<<<< HEAD
+update tm.workflow_activity set url = replace(url, 'infoChanges', 'info-changes') where workflow_id='hunt.info-change';
 update tm.workflow_activity set url = replace(url, 'infoChanges', 'info-changes') where workflow_id='hunt.info-change';
 
 --在oracle中增加校外专家
 insert into external_staff(id,name,HAS_QUALIFICATION,IS_LAB_TECHNICIAN,CAN_GUIDANCE_GRADUATE,IS_EXTERNAL,at_school,password,department_id) values('61901','校外专家1',0,0,0,1,1,'67913','61');	
-=======
-update tm.workflow_activity set url = replace(url, 'infoChanges', 'info-changes') where workflow_id='hunt.info-change';
->>>>>>> upstream/master
+
+--在tm_hunt.expert中增加校外专家
