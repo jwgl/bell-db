@@ -118,7 +118,8 @@ select distinct c.teacher_id as user_id, 'ROLE_HUNT_CHECKER' as role_id
 from tm_hunt.checker c
 union all
 select distinct e.teacher_id as user_id, 'ROLE_HUNT_EXPERT' as role_id
-from tm_hunt.expert e;
+from tm_hunt.expert e
+where e.is_external is not true;
 
 -- 学生角色
 create or replace view tm.dv_student_role as
@@ -147,7 +148,10 @@ create or replace view tm.dv_external_role as
 select id as user_id, 'ROLE_BUILDING_KEEPER' as role_id
 from tm.system_user
 where user_type = 9 and name like '%楼管理员%';
-
+union all
+select distinct e.teacher_id as user_id, 'ROLE_HUNT_EXPERT' as role_id
+from tm_hunt.expert e
+where e.is_external is true;
 -- 计划-课程
 create or replace view tm.dv_scheme_course as
 select c.id, c.name, c.credit,
