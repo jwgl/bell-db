@@ -152,6 +152,7 @@ union all
 select distinct e.teacher_id as user_id, 'ROLE_HUNT_EXPERT' as role_id
 from tm_hunt.expert e
 where e.is_external is true;
+
 -- 计划-课程
 create or replace view tm.dv_scheme_course as
 select c.id, c.name, c.credit,
