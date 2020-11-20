@@ -239,6 +239,7 @@ select distinct course_class.department_id, course.id, '分散实习', null::num
   case course.name
     when '境外实习' then 44 /*暑期实习1.2*/
     when '金工实习' then 43 /*集中实习0.8*/
+    when '数控技术实践' then 43 /*集中实习0.8*/
     else 40
   end
 from ea.course_class
@@ -254,6 +255,9 @@ and (course.name like '%实习%' and (course_class.department_id, course.name) n
   )
   or course.name like '%见习%' and (course_class.department_id, course.name) not in(
     ('04', '专业见习') -- 不动产(学时)
+  )
+  or (course_class.department_id, course.name) in(
+    ('18', '数控技术实践') -- 工程(实习)
   )
 )
 order by 1, 2
@@ -344,6 +348,21 @@ workload_type = excluded.workload_type,
 class_size_type_id = excluded.class_size_type_id,
 instructional_mode_id = excluded.instructional_mode_id;
 
+-- 课程工作量设置-运休实践课
+insert into tm_load.course_workload_settings(department_id, course_id, category, parallel_ratio, workload_type, workload_mode, class_size_type_id, instructional_mode_id)
+select distinct course_class.department_id, course.id, '实践教学', null::numeric(3,2), 2 /*正常*/, 2 /*学生*/, 9 /*常量*/, 63 /*0.3*/
+from ea.course_class
+join ea.course on course_class.course_id = course.id
+where course_class.term_id >= 20201
+and course.name like '专业综合实践' and course.id = '21111590' -- 运休
+on conflict(department_id, course_id) do update set
+category = excluded.category,
+parallel_ratio = excluded.parallel_ratio,
+workload_mode = excluded.workload_mode,
+workload_type = excluded.workload_type,
+class_size_type_id = excluded.class_size_type_id,
+instructional_mode_id = excluded.instructional_mode_id;
+
 -- 课程工作量设置-运休小班
 insert into tm_load.course_workload_settings(department_id, course_id, category, parallel_ratio, workload_type, workload_mode, class_size_type_id, instructional_mode_id)
 select '21', course.id, '运休小班', null::numeric(3,2), 2 /*正常*/, 1 /*排课*/, 4 /*小班*/, 10 /*理论课*/
@@ -368,7 +387,9 @@ instructional_mode_id = excluded.instructional_mode_id;
 insert into tm_load.course_workload_settings(department_id, course_id, category, parallel_ratio, workload_type, workload_mode, class_size_type_id, instructional_mode_id)
 select '08', course.id, '艺传实践+小班', null::numeric(3,2), 2 /*正常*/, 1 /*排课*/, 4 /*小班*/, 21 /*实验课0.8*/
 from ea.course
-where id in ('08120021','08192290','08192240','08114720', '08114680', '08121661')
+where id in (
+  '08120021','08192290','08192240','08114720', '08114680', '08121661'
+)
 order by 1, 2
 on conflict(department_id, course_id) do update set
 category = excluded.category,
@@ -439,7 +460,8 @@ where id in (
   '08129370', -- 整合营销传播工作室
   '08114510', -- 影视灯光
   '08113360', -- 图片摄影工作室
-  '08114890' -- 教科书编辑与制作工作坊
+  '08114890', -- 教科书编辑与制作工作坊
+  '08114190' -- 创业工作室
 )
 order by 1, 2
 on conflict(department_id, course_id) do update set
