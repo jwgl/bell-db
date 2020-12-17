@@ -49,9 +49,13 @@ begin
     join tm.place_user_type t on p2.id = t.place_id
     where (t.user_type = p_user_type or p_adv_user = true)
     and p2.type = p_place_type
-    and (enabled = true or enabled = false and exists (
-      select * from ea.place_booking_term where place_id = p2.id
-    ))
+    and ( -- 如果设置了可借用学期，与是否启用无关
+      exists (
+        select * from ea.place_booking_term pbt where pbt.place_id = p2.id and term_id = p_term_id
+      ) or not exists ( -- 如果未设置可借用学期，则只能借用启动的教室
+        select * from ea.place_booking_term pbt where pbt.place_id = p2.id
+      ) and enabled = true
+    )
     except
     select place_id
     from tm.ev_place_usage pu
