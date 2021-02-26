@@ -338,7 +338,12 @@ and course.name in ('设计考察与实践') and course_class.department_id = '1
 -- join ea.course on course_class.course_id = course.id
 -- where course_class.term_id >= 20191
 -- and course.name in ('ERP沙盘模拟') and course_class.department_id = '20'
-
+union all -- 物流
+select distinct course_class.department_id, course.id, '课程设计', null::numeric(3,2), 2 /*正常*/, 3 /*学时*/, 9 /*常量*/, 70 /*1.0*/
+from ea.course_class
+join ea.course on course_class.course_id = course.id
+where course_class.term_id >= 20191
+and course.name in ('冷链物流课程设计') and course_class.department_id = '11'
 order by 1, 2
 on conflict(department_id, course_id) do update set
 category = excluded.category,
@@ -437,7 +442,6 @@ where id in (
   '08111550', -- 电子编排设计
   '08111550', -- 电子编排设计
   '05100600', -- 办公自动化
-  '05100600', -- 办公自动化
   '05110162', -- 出版现代技术（2）
   '05111510', -- 网络编辑学
   '08114270', -- 网络编辑工作坊
@@ -461,7 +465,20 @@ where id in (
   '08114510', -- 影视灯光
   '08113360', -- 图片摄影工作室
   '08114890', -- 教科书编辑与制作工作坊
-  '08114190' -- 创业工作室
+  '08114190', -- 创业工作室
+  '05111130', -- 信息资源检索与利用
+  '05111361', -- 办公自动化
+  '08114560', -- 语言表达实训1
+  '08114650', -- 数字影音多媒体制作
+  '08114700', -- 广播节目播音主持实训
+  '08114950', -- 影视特效制作
+  '08120033', -- 表演艺术（一）
+  '08120070', -- 电视节目策划与制作
+  '08121432', -- 纪录片编导
+  '08121620', -- 数字图像创意与设计
+  '08129330', -- 剧本创作工作室
+  '08129360', -- 播音发声实训
+  '08192860' -- 小说演播实训
 )
 order by 1, 2
 on conflict(department_id, course_id) do update set

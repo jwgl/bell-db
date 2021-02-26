@@ -19,6 +19,29 @@ select id, name, label_cn, label_en, path_level -1 as menu_level, root from r
 where path_level > 1
 order by display_order;
 
+-- 活动的行政班
+create or replace view tm.dva_admin_class_at_school as
+select ac.id, ac.supervisor_id, ac.counsellor_id
+from ea.admin_class ac
+join ea.major m on ac.major_id = m.id
+join ea.subject s on m.subject_id = s.id
+where current_date < make_date(grade + length_of_schooling, 7, 1)
+union all
+select ac.id, ac.supervisor_id, ac.counsellor_id
+from ea.admin_class ac
+join ea.major m on ac.major_id = m.id
+join ea.subject s on m.subject_id = s.id
+where current_date >= make_date(grade + length_of_schooling, 7, 1)
+and exists (
+  select 1
+  from ea.course_class
+  join ea.task on course_class.id = task.course_class_id
+  join ea.task_student on task_student.task_id = task.id
+  join ea.student on student.id = task_student.student_id
+  where student.admin_class_id = ac.id
+  and ea.course_class.term_id = (select id from ea.term where active = true)
+);
+
 -- 应用角色
 create or replace view tm.dv_teacher_role as
 select t.id as user_id, 'ROLE_IN_SCHOOL_TEACHER' as role_id
@@ -56,52 +79,10 @@ from ea.teacher t
 join tm.booking_auth ba on ba.checker_id = t.id
 union all
 select distinct supervisor_id as user_id, 'ROLE_CLASS_SUPERVISOR' as role_id
-from (
-  select ac.supervisor_id, ac.counsellor_id
-    from ea.admin_class ac
-    join ea.major m on ac.major_id = m.id
-    join ea.subject s on m.subject_id = s.id
-    where current_date < make_date(grade + length_of_schooling, 7, 1)
-    union all
-    select ac.supervisor_id, ac.counsellor_id
-    from ea.admin_class ac
-    join ea.major m on ac.major_id = m.id
-    join ea.subject s on m.subject_id = s.id
-    where current_date >= make_date(grade + length_of_schooling, 7, 1)
-    and exists (
-      select 1
-      from ea.course_class
-      join ea.task on course_class.id = task.course_class_id
-      join ea.task_student on task_student.task_id = task.id
-      join ea.student on student.id = task_student.student_id
-      where student.admin_class_id = ac.id
-      and ea.course_class.term_id = (select id from ea.term where active = true)
-    )
-) as admin_class_at_school
+from tm.dva_admin_class_at_school
 union all
 select distinct counsellor_id as user_id, 'ROLE_STUDENT_COUNSELLOR' as role_id
-from (
-  select ac.supervisor_id, ac.counsellor_id
-    from ea.admin_class ac
-    join ea.major m on ac.major_id = m.id
-    join ea.subject s on m.subject_id = s.id
-    where current_date < make_date(grade + length_of_schooling, 7, 1)
-    union all
-    select ac.supervisor_id, ac.counsellor_id
-    from ea.admin_class ac
-    join ea.major m on ac.major_id = m.id
-    join ea.subject s on m.subject_id = s.id
-    where current_date >= make_date(grade + length_of_schooling, 7, 1)
-    and exists (
-      select 1
-      from ea.course_class
-      join ea.task on course_class.id = task.course_class_id
-      join ea.task_student on task_student.task_id = task.id
-      join ea.student on student.id = task_student.student_id
-      where student.admin_class_id = ac.id
-      and ea.course_class.term_id = (select id from ea.term where active = true)
-    )
-) as admin_class_at_school
+from tm.dva_admin_class_at_school
 union all
 select distinct s.teacher_id as user_id, 'ROLE_OBSERVER' as role_id
 from tm.observer s
@@ -119,7 +100,10 @@ from tm_hunt.checker c
 union all
 select distinct e.teacher_id as user_id, 'ROLE_HUNT_EXPERT' as role_id
 from tm_hunt.expert e
-where e.is_external is not true;
+where e.is_external is not true
+union all
+select user_id::varchar(5), role_id
+from tm_huis.dva_teacher_role;
 
 -- 学生角色
 create or replace view tm.dv_student_role as

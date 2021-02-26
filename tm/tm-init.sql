@@ -147,95 +147,97 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_COURSE_CLAS
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_IN_SCHOOL_STUDENT',          'PERM_STUDENT_SCHEDULES_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_POSTPONED_STUDENT',          'PERM_STUDENT_SCHEDULES_READ');
 
-insert into tm.menu(id, label, display_order) values ('main',               '主菜单',       01);
-insert into tm.menu(id, label, display_order) values ('main.program',       '教学计划',     10);
-insert into tm.menu(id, label, display_order) values ('main.process',       '教学过程',     20);
-insert into tm.menu(id, label, display_order) values ('main.steer',         '质量监控',     30);
-insert into tm.menu(id, label, display_order) values ('main.dual',          '联合培养',     40);
-insert into tm.menu(id, label, display_order) values ('main.dual.workflow', '审核流程',     41);
-insert into tm.menu(id, label, display_order) values ('main.affair',        '事务处理',     50);
-insert into tm.menu(id, label, display_order) values ('main.settings',      '系统设置',     90);
-insert into tm.menu(id, label, display_order) values ('user',               '用户菜单',     02);
-insert into tm.menu(id, label, display_order) values ('user.profile',       '${userName}',  10);
+INSERT INTO tm.menu(id, label, display_order) VALUES ('main',               '主菜单',       01);
+INSERT INTO tm.menu(id, label, display_order) VALUES ('main.program',       '教学计划',     10);
+INSERT INTO tm.menu(id, label, display_order) VALUES ('main.process',       '教学过程',     20);
+INSERT INTO tm.menu(id, label, display_order) VALUES ('main.steer',         '质量监控',     30);
+INSERT INTO tm.menu(id, label, display_order) VALUES ('main.dual',          '联合培养',     40);
+INSERT INTO tm.menu(id, label, display_order) VALUES ('main.dual.workflow', '审核流程',     41);
+INSERT INTO tm.menu(id, label, display_order) VALUES ('main.affair',        '事务处理',     50);
+INSERT INTO tm.menu(id, label, display_order) VALUES ('main.resource',      '资源管理',     55);
+INSERT INTO tm.menu(id, label, display_order) VALUES ('main.settings',      '系统设置',     90);
+INSERT INTO tm.menu(id, label, display_order) VALUES ('user',               '用户菜单',     02);
+INSERT INTO tm.menu(id, label, display_order) VALUES ('user.profile',       '${userName}', 10);
 
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.program.visionList', 'main.program', '培养方案目录', '/plan/visions', true, array['TM-PLAN-API'], 10, 'PERM_VISION_READ');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.program.visionDraft', 'main.program', '编辑培养方案', '/plan/users/${userId}/visions', true, array['TM-PLAN-API'], 11, 'PERM_VISION_WRITE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.program.visionCheck', 'main.program', '培养方案审核', '/plan/checkers/${userId}/visions', true, array['TM-PLAN-API'], 12, 'PERM_VISION_CHECK');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.program.visionApproval', 'main.program', '培养方案审批', '/plan/approvers/${userId}/visions', true, array['TM-PLAN-API'], 13, 'PERM_VISION_APPROVE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.program.schemeList', 'main.program', '教学计划目录', '/plan/schemes', true, array['TM-PLAN-API'], 20, 'PERM_SCHEME_READ');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.program.schemeDraft', 'main.program', '编辑教学计划', '/plan/users/${userId}/schemes', true, array['TM-PLAN-API'], 21, 'PERM_SCHEME_WRITE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.program.schemeCheck', 'main.program', '教学计划审核', '/plan/checkers/${userId}/schemes', true, array['TM-PLAN-API'], 22, 'PERM_SCHEME_CHECK');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.program.schemeApproval', 'main.program', '教学计划审批', '/plan/approvers/${userId}/schemes', true, array['TM-PLAN-API'], 23, 'PERM_SCHEME_APPROVE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.program.schemeAdmin', 'main.program', '教学计划管理', '/plan/admin/schemes', true, array['TM-PLAN-API'], 24, 'PERM_SCHEME_ADMIN');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.program.schemeDeptAdmin', 'main.program', '教学计划管理', '/plan/departments/${departmentId}/schemes', true, array['TM-PLAN-API'], 25, 'PERM_SCHEME_DEPT_ADMIN');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.process.studentTimetable', 'main.process', '我的课表', '/core/students/${userId}/schedules', true, array['TM-CORE-API'], 10, 'PERM_STUDENT_SCHEDULES_READ');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.process.rollcallForm', 'main.process', '点名', '/here/teachers/${userId}/rollcalls', true, array['TM-HERE-API'], 20, 'PERM_ROLLCALL_WRITE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.process.studentLeaveForm', 'main.process', '请假', '/here/students/${userId}/leaves', true, array['TM-HERE-API'], 30, 'PERM_STUDENT_LEAVE_WRITE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.process.studentLeaveApproval', 'main.process', '批假', '/here/approvers/${userId}/leaves', true, array['TM-HERE-API'], 31, 'PERM_STUDENT_LEAVE_APPROVE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.process.freeListenForm', 'main.process', '免听申请', '/here/students/${userId}/freeListens', true, array['TM-HERE-API'], 40, 'PERM_FREE_LISTEN_WRITE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.process.freeListenCheck', 'main.process', '免听审核', '/here/teachers/${userId}/freeListens', true, array['TM-HERE-API'], 41, 'PERM_FREE_LISTEN_CHECK');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.process.freeListenApproval', 'main.process', '免听审批', '/here/approvers/${userId}/freeListens', true, array['TM-HERE-API'], 42, 'PERM_FREE_LISTEN_APPROVE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.process.courseClassAttendancesByTeacher', 'main.process', '教学班考勤','/here/teachers/${userId}/courseClasses', true, array['TM-HERE-API'], 50, 'PERM_COURSE_CLASS_EXECUTE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.process.courseClassAttendancesByDepartment', 'main.process', '开课单位考勤', '/here/departments/${departmentId}/courseClasses', true, array['TM-HERE-API'], 51, 'PERM_EXAM_DISQUAL_DEPT_ADMIN');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.process.adminClassAttendancesByTeacher', 'main.process', '行政班考勤', '/here/teachers/${userId}/adminClasses', true, array['TM-HERE-API'], 52, 'PERM_ATTENDANCE_CLASS_ADMIN');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.process.adminClassAttendancesByDepartment', 'main.process', '学生学院考勤', '/here/departments/${departmentId}/adminClasses', true, array['TM-HERE-API'], 53, 'PERM_ATTENDANCE_DEPT_ADMIN');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.process.studentAttendances', 'main.process', '我的考勤', '/here/students/${userId}/attendances', true, array['TM-HERE-API'], 54, 'PERM_ATTENDANCE_ITEM');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.affair.workitems', 'main.affair', '待办事项', '/core/users/${userId}/works', true, array['TM-CORE-API'], 10, 'PERM_WORK_ITEMS');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.affair.cardReissueForm', 'main.affair', '补办学生证申请', '/card/students/${userId}/reissues', true, array['TM-CARD-API'], 40, 'PERM_CARD_REISSUE_WRITE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.affair.cardReissueApproval', 'main.affair', '补办学生证审批', '/card/approvers/${userId}/reissues', true, array['TM-CARD-API'], 41, 'PERM_CARD_REISSUE_APPROVE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.affair.cardReissueOrder', 'main.affair', '补办学生证订单', '/card/reissueOrders', true, array['TM-CARD-API'], 42, 'PERM_CARD_REISSUE_APPROVE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.affair.placeBookingForm', 'main.affair', '借用教室申请', '/place/users/${userId}/bookings', true, array['TM-PLACE-API'], 50, 'PERM_PLACE_BOOKING_WRITE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.affair.placeBookingCheck', 'main.affair', '借用教室审核', '/place/checkers/${userId}/bookings', true, array['TM-PLACE-API'], 51, 'PERM_PLACE_BOOKING_CHECK');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.affair.placeBookingApproval', 'main.affair', '借用教室审批', '/place/approvers/${userId}/bookings', true, array['TM-PLACE-API'], 52, 'PERM_PLACE_BOOKING_APPROVE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.affair.placeBookingReport', 'main.affair', '借用教室报表', '/place/bookingReports', true, array['TM-PLACE-API'], 53, 'PERM_PLACE_BOOKING_APPROVE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.affair.placeUsage', 'main.affair', '教室使用情况', '/place/usages', true, array['TM-PLACE-API'], 54, 'PERM_PLACE_USAGE_READ');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.affair.misconductRecord', 'main.affair', '教室违规记录', '/place/keepers/${userId}/bookings', true, array['TM-PLACE-API'], 55, 'PERM_BOOKING_MISCONDUCT_WRITE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.affair.misconductCheck', 'main.affair', '教室违规核实', '/place/checkers/${userId}/misconducts', true, array['TM-PLACE-API'], 56, 'PERM_BOOKING_MISCONDUCT_CHECK');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.affair.misconductApprove', 'main.affair', '教室违规处理', '/place/approvers/${userId}/misconducts', true, array['TM-PLACE-API'], 57, 'PERM_BOOKING_MISCONDUCT_APPROVE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
+('main.affair.placeUsage', 'main.affair', '教室使用情况', '/place/usages', true, array['TM-PLACE-API'], 51, 'PERM_PLACE_USAGE_READ');
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
+('main.affair.placeBookingForm', 'main.affair', '借用教室申请', '/place/users/${userId}/bookings', true, array['TM-PLACE-API'], 52, 'PERM_PLACE_BOOKING_WRITE');
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.settings.subject', 'main.settings', '校内专业', '/plan/settings/subjects', true, array['TM-PLAN-API'], 10, 'PERM_SUBJECT_SETUP');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.settings.program', 'main.settings', '教学计划', '/plan/settings/programs', true, array['TM-PLAN-API'], 11, 'PERM_PROGRAM_SETUP');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.settings.placeBookingAuth', 'main.settings', '借用教室审核人', '/place/settings/bookingAuths', true, array['TM-PLACE-API'], 30, 'PERM_PLACE_BOOKING_APPROVE');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('user.profile.modify', 'user.profile', '修改个人信息', '/core/users/${userId}/profile', true, array['TM-CORE-API'], 10, 'PERM_PROFILE_SETUP');
-insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('user.profile.password', 'user.profile', '修改密码', '/core/users/${userId}/password', true, array['TM-CORE-API'], 20, 'PERM_PROFILE_SETUP');
+
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
+('main.resource.placeBookingCheck', 'main.resource', '借用教室审核', '/place/checkers/${userId}/bookings', true, array['TM-PLACE-API'], 10, 'PERM_PLACE_BOOKING_CHECK');
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
+('main.resource.placeBookingApproval', 'main.resource', '借用教室审批', '/place/approvers/${userId}/bookings', true, array['TM-PLACE-API'], 11, 'PERM_PLACE_BOOKING_APPROVE');
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
+('main.resource.placeBookingReport', 'main.resource', '借用教室报表', '/place/bookingReports', true, array['TM-PLACE-API'], 12, 'PERM_PLACE_BOOKING_APPROVE');
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
+('main.resource.misconductRecord', 'main.resource', '教室违规记录', '/place/keepers/${userId}/bookings', true, array['TM-PLACE-API'], 13, 'PERM_BOOKING_MISCONDUCT_WRITE');
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
+('main.resource.misconductCheck', 'main.resource', '教室违规核实', '/place/checkers/${userId}/misconducts', true, array['TM-PLACE-API'], 14, 'PERM_BOOKING_MISCONDUCT_CHECK');
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
+('main.resource.misconductApprove', 'main.resource', '教室违规处理', '/place/approvers/${userId}/misconducts', true, array['TM-PLACE-API'], 15, 'PERM_BOOKING_MISCONDUCT_APPROVE');
 
 INSERT INTO tm.workflow (id,name) VALUES ('scheme.create',  '教学计划编制');
 INSERT INTO tm.workflow (id,name) VALUES ('scheme.revise',  '教学计划变更');

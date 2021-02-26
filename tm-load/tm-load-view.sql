@@ -476,7 +476,7 @@ left join tm_load.human_resource_teacher b on a.human_resource_number = b.id
 where a.id in (
   select teacher_id from tm_load.workload_task_teacher
   union
-  select teacher_id from tm_load.dvm_external_workload
+  select teacher_id from tm_load.et_external_workload
 );
 
 /**
@@ -513,9 +513,7 @@ select a.term_id, b.department_id, a.teacher_id,
   coalesce(a.executive_workload, 0.00) as external_executive_workload,
   coalesce(a.correction, 0.00) as external_correction
 from tm_load.et_external_workload a
-join ea.teacher b on a.teacher_id = b.id
-left join tm_load.teacher_workload_settings c on a.teacher_id = c.teacher_id
-where c.employment_status = '在岗';
+join ea.teacher b on a.teacher_id = b.id;
 
 /**
  * 更新视图：教师学期工作量-调整与合计
