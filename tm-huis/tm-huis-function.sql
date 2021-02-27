@@ -75,13 +75,13 @@ begin
         select x.id, reserved_time, false
         from (
           select room_reservation.id, tsrange(
-            (reservation_date + room_reservation.start_time)::timestamp,
-            (reservation_date + room_reservation.end_time)::timestamp,
+            (reserved_date + room_reservation.lower_time)::timestamp,
+            (reserved_date + room_reservation.upper_time)::timestamp,
             '[)'
           ) as reserved_time
           from tm_huis.room_reservation, generate_series(
-            start_date, end_date, (date_interval || 'day')::interval
-          ) t(reservation_date)
+            lower_date, upper_date, (date_interval || 'day')::interval
+          ) t(reserved_date)
           where room_reservation.room_id = room.id
         ) x
         where reserved_time && v_range
@@ -100,7 +100,7 @@ begin
 end;
 $$ language plpgsql;
 
-create or replace function tm_huis.fn_find_room_schedules(
+create or replace function tm_huis.fn_find_schedules_by_user(
   p_user_id text,
   p_start_date date,
   p_end_date date
@@ -125,6 +125,70 @@ begin
     and booking_form.status = 'ACTIVE'
     and booking_item.status = 'ACTIVE'
     where (booking_item.booking_time && v_range or booking_item.actual_time && v_range)
+  ), booking_all as (
+    select booking.id, room_id, subject,
+      lower(booking_time) as lower_time,
+      upper(booking_time) as upper_time,
+      false as is_actual
+    from booking
+    where actual_time is null
+    union all
+    select booking.id, room_id, subject,
+      lower(booking_time + actual_time),
+      upper(booking_time + actual_time),
+      true
+    from booking
+    where booking_time && actual_time
+    union all
+    select booking.id, room_id, subject,
+      lower(actual_time),
+      upper(actual_time),
+      true
+    from booking
+    where not booking_time && actual_time
+  )
+  select lower_time::date as occupied_date,
+    jsonb_agg(jsonb_build_object(
+      'id', booking_all.id,
+      'building', room.building,
+      'room', room.name,
+      'subject', booking_all.subject,
+      'lowerTime', substr(lower_time::text, 12, 5),
+      'upperTime', substr(upper_time::text, 12, 5),
+      'isActual', is_actual
+    ) order by lower_time) as booked_times
+  from booking_all
+  join tm_huis.room on booking_all.room_id = room.id
+  group by lower_time::date;
+end;
+$$ language plpgsql;
+
+create or replace function tm_huis.fn_find_schedules_by_room(
+  p_room_id int,
+  p_start_date date,
+  p_end_date date
+) returns table (
+  booked_date date,
+  booked_times jsonb
+) as $$
+declare
+  v_range tsrange;
+begin
+  v_range := tsrange(p_start_date, p_end_date + 1, '[)');
+  return query
+  with booking as (
+    select booking_item.id,
+      booking_item.room_id,
+      booking_form.subject,
+      booking_item.booking_time,
+      booking_item.actual_time
+    from tm_huis.booking_form
+    join tm_huis.booking_item on booking_form.id = booking_item.form_id
+    join tm_huis.room on booking_item.room_id = room.id
+    and booking_form.status = 'ACTIVE'
+    and booking_item.status = 'ACTIVE'
+    where (booking_item.booking_time && v_range or booking_item.actual_time && v_range)
+    and room.id = p_room_id
   ), booking_all as (
     select booking.id, room_id, subject,
       lower(booking_time) as lower_time,

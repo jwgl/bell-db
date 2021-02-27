@@ -80,6 +80,7 @@ INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_HUIS_BOOKIN
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_HUIS_BOOKING_ADMIN',     'PERM_HUIS_BOOKING_CHECK');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_HUIS_BOOKING_ADMIN',     'PERM_HUIS_STATEMENT_CHECK');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_HUIS_BOOKING_ADMIN',     'PERM_HUIS_SCHEDULE_READ');
+INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_HUIS_BOOKING_ADMIN',     'PERM_HUIS_BOOKING_ADMIN');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_HUIS_ROOM_OPERATOR',     'PERM_HUIS_OPERATION_WRITE');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_HUIS_ROOM_OPERATOR',     'PERM_HUIS_SCHEDULE_READ');
 INSERT INTO tm.role_permission (role_id,permission_id) VALUES ('ROLE_HUIS_STATEMENT_MANAGER', 'PERM_HUIS_STATEMENT_WRITE');
@@ -103,6 +104,11 @@ INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_o
 ('main.resource.huisStatementTask', 'main.resource', '会议室结算审批', '/huis/users/${userId}/statementTasks', true, array['TM-HUIS-API'], 23, 'PERM_HUIS_STATEMENT_CHECK');
 INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.resource.huisRoomSchedule', 'main.resource', '会议室使用安排', '/huis/users/${userId}/roomSchedules', true, array['TM-HUIS-API'], 24, 'PERM_HUIS_SCHEDULE_READ');
+
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
+('main.settings.huisBookingAuth', 'main.settings', '会议室借用审核人', '/huis/settings/bookingAuths', true, array['TM-HUIS-API'], 51, 'PERM_HUIS_BOOKING_ADMIN');
+INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
+('main.settings.huisRoomSetting', 'main.settings', '会议室设置', '/huis/departments/${departmentId}/rooms', true, array['TM-HUIS-API'], 52, 'PERM_HUIS_BOOKING_ADMIN');
 
 INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.resource.huisBookingAdmin', 'main.resource', '会议室借用管理', '/huis/bookingForms', true, array['TM-HUIS-API'], 25, 'PERM_HUIS_BOOKING_ADMIN');
