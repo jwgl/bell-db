@@ -70,6 +70,20 @@ select room.id,
       select id, actual_time, true
       from booking 
       where not booking_time && actual_time
+      union all
+        select x.id, reserved_time, false
+        from (
+          select room_reservation.id, tsrange(
+            (reserved_date + room_reservation.lower_time)::timestamp,
+            (reserved_date + room_reservation.upper_time)::timestamp,
+            '[)'
+          ) as reserved_time
+          from tm_huis.room_reservation, generate_series(
+            lower_date, upper_date, (date_interval || 'day')::interval
+          ) t(reserved_date)
+          where room_reservation.room_id = room.id
+        ) x
+        where reserved_time && tsrange(CURRENT_DATE, '9999-12-30'::date)
     )
     select jsonb_agg(jsonb_build_object(
         'id', booking_all.id,
@@ -668,3 +682,46 @@ with step as (
 select id, name, form_id, subject, task_key, form_key, assignee, start_time, end_time
 from step
 order by end_time desc;
+
+-- 数据视图-会议室设置视图
+create or replace view tm_huis.dv_room_setting as
+select room.id,
+  room.name,
+  department.id as department_id,
+  department.name as department_name,
+  room.furniture,
+  room.seat,
+  room.max_seat,
+  room.area,
+  room.unit_price,
+  room.time_unit,
+  room.is_internal_free,
+  room.is_public,
+  (select jsonb_agg(jsonb_build_object(
+        'id', facility.id,
+        'name', facility.name,
+        'unitPrice', facility.unit_price,
+        'unitName', facility.unit_name,
+        'timeUnit', facility.time_unit,
+        'quantity', room_facility.quantity,
+        'isBasic', room_facility.is_basic
+      ) order by facility.id)
+    from tm_huis.room_facility
+    join tm_huis.facility on room_facility.facility_id = facility.id
+    where room_facility.room_id = room.id
+  ) as facilities,
+  (select jsonb_agg(jsonb_build_object(
+        'id', room_reservation.id,
+        'lowerDate', lower_date,
+        'upperDate', upper_date,
+        'dateInterval', date_interval,
+        'lowerTime', lower_time,
+        'upperTime', upper_time,
+        'note', note
+      ) order by room_reservation.id)
+    from tm_huis.room_reservation
+    where room_reservation.room_id = room.id
+  ) as reservations
+from tm_huis.room
+join ea.department on room.department_id = department.id
+order by room.name;

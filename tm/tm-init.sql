@@ -220,7 +220,7 @@ INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_o
 INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.settings.program', 'main.settings', '教学计划', '/plan/settings/programs', true, array['TM-PLAN-API'], 11, 'PERM_PROGRAM_SETUP');
 INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
-('main.settings.placeBookingAuth', 'main.settings', '借用教室审核人', '/place/settings/bookingAuths', true, array['TM-PLACE-API'], 30, 'PERM_PLACE_BOOKING_APPROVE');
+('main.settings.placeBookingAuth', 'main.settings', '借用教室审核人', '/place/settings/bookingAuths', true, array['TM-PLACE-API'], 50, 'PERM_PLACE_BOOKING_APPROVE');
 INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('user.profile.modify', 'user.profile', '修改个人信息', '/core/users/${userId}/profile', true, array['TM-CORE-API'], 10, 'PERM_PROFILE_SETUP');
 INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
