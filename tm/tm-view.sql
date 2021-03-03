@@ -119,7 +119,10 @@ from tm_hunt.checker c
 union all
 select distinct e.teacher_id as user_id, 'ROLE_HUNT_EXPERT' as role_id
 from tm_hunt.expert e
-where e.is_external is not true;
+where e.is_external is not true
+union all
+select distinct user_id, 'ROLE_ASSET_BUILDING_ADMIN' as role_id
+from tm_asset.user_area;
 
 -- 学生角色
 create or replace view tm.dv_student_role as

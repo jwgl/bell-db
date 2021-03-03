@@ -39,3 +39,8 @@ grant select on tm_dual.degree_application to bi;
 grant select on tm_hunt.teacher_temp to bi;
 grant select on tm.dv_observation_view    to bi;    ----督导听课视图
 grant select on tm_hunt.teacher_temp to bi;
+grant select on tm_wx.cet_teacher to bi;      ---监考用户
+grant select on tm_wx.cet_teacher_room to bi;      ---监考场地
+grant select on tm_wx.exam_room to bi;      ---考试场地	
+grant select on tm_wx.exam to bi;      ---四六级考试
+grant select on tm_wx.exam_group to bi;      ---资料组
