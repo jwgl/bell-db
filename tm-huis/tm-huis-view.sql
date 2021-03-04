@@ -262,7 +262,11 @@ select booking_item.id as id,
     and room_operator.operator_id = assignee_
     order by act_ru_task.create_time_
     limit 1
-  ) as workflow_task_id
+  ) as workflow_task_id,
+  (select sum(booking_facility.subtotal)
+    from tm_huis.booking_facility
+    where booking_facility.item_id = booking_item.id
+  ) as subtotal
 from tm_huis.booking_form
 join tm_huis.booking_item on booking_form.id = booking_item.form_id
 join tm_huis.room on booking_item.room_id = room.id
