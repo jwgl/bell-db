@@ -49,9 +49,13 @@ begin
     join tm.place_user_type t on p2.id = t.place_id
     where (t.user_type = p_user_type or p_adv_user = true)
     and p2.type = p_place_type
-    and (enabled = true or enabled = false and exists (
-      select * from ea.place_booking_term where place_id = p2.id
-    ))
+    and ( -- 如果设置了可借用学期，与是否启用无关
+      exists (
+        select * from ea.place_booking_term pbt where pbt.place_id = p2.id and term_id = p_term_id
+      ) or not exists ( -- 如果未设置可借用学期，则只能借用启动的教室
+        select * from ea.place_booking_term pbt where pbt.place_id = p2.id
+      ) and enabled = true
+    )
     except
     select place_id
     from tm.ev_place_usage pu
@@ -107,7 +111,7 @@ $$ language plpgsql;
 create or replace function tm.sp_find_building_bookings(
   p_term_id ea.term.id%type,          -- 学期
   p_building ea.place.building%type,  -- 教学楼
-  p_place_id ea.place.id%type,        -- 不指定为''
+  p_place_id ea.place.id%type,        -- 不指定为'', 从'type:'开始的按类型查询
   p_week integer,                     -- 不指定为-1
   p_day_of_week integer,              -- 不指定为-1
   p_section integer                   -- 不指定为-1
@@ -152,7 +156,7 @@ begin
   where bf.term_id = p_term_id
   and bf.status = 'APPROVED'
   and place.building = p_building
-  and (p_place_id = '' or place.id = p_place_id)
+  and (p_place_id = '' or place.id = p_place_id or p_place_id like 'type:%' and place.type = substring(p_place_id, 6))
   and (p_week = -1 or ea.fn_weeks_to_integer(bi.start_week, bi.end_week, bi.odd_even) & (1 << (p_week - 1)) <> 0)
   and (p_day_of_week = -1 or bi.day_of_week = p_day_of_week)
   and (p_section = -1 or bs.value & (1 << (p_section - 1)) <> 0)

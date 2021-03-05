@@ -257,21 +257,26 @@ with task as ( -- 查询所有任务的主讲教师和平行班系数设置
   from task
   order by id, coalesce(parallel_ratio, 0.9) desc
 ), task_teacher_by_timetable_base as ( -- 计算任务教师排课工作量
-  select a.id, teacher_id, task_ids, sum(case a.workload_type
-      when 1 then 0
-      when 2 then coalesce(ea.fn_weeks_count(start_week, end_week, odd_even) * total_section, 0)
-    end) as workload, a.workload_type
-  from tm_load.workload_task a
-  left join tm_load.workload_task_schedule b on b.workload_task_id = a.id
-  where a.workload_type <> 0 and a.workload_mode = 1
-  group by a.id, teacher_id
+  select id, teacher_id, task_ids, sum(workload) as workload, workload_type
+  from (
+    select a.id, b.teacher_id, task_ids, case coalesce(c.workload_type, a.workload_type)
+        when 1 then 0
+        when 2 then coalesce(ea.fn_weeks_count(start_week, end_week, odd_even) * total_section, 0)
+      end as workload,
+      coalesce(c.workload_type, a.workload_type) as workload_type
+    from tm_load.workload_task a
+    left join tm_load.workload_task_schedule b on b.workload_task_id = a.id
+    left join tm_load.workload_task_teacher_settings c on a.id = c.workload_task_id and b.teacher_id = c.teacher_id
+    where coalesce(c.workload_type, a.workload_type) <> 0 and a.workload_mode = 1
+  ) as t
+  group by id, teacher_id, task_ids, workload_type
 ), task_teacher_by_timetable as ( -- 查询所有任务相关教师情况，包括多教师
   select a.id, coalesce(a.teacher_id, c.primary_teacher_id) as teacher_id, workload, case a.workload_type
       when 1 then 0
       when 2 then coalesce(b.correction, 0)
     end as correction
   from task_teacher_by_timetable_base a
-  left join tm_load.workload_task_teacher b on a.id = b.workload_task_id and a.teacher_id = b.teacher_id
+  left join tm_load.workload_task_teacher_settings b on a.id = b.workload_task_id and a.teacher_id = b.teacher_id
   left join task_settings c on a.id = c.id
   union all
   select distinct a.id, c.teacher_id, 0 as workload, case a.workload_type
@@ -281,43 +286,48 @@ with task as ( -- 查询所有任务的主讲教师和平行班系数设置
   from tm_load.workload_task a
   join ea.task b on b.id = any(a.task_ids)
   join ea.task_teacher c on b.id = c.task_id
-  left join tm_load.workload_task_teacher d on a.id = d.workload_task_id and c.teacher_id = d.teacher_id
+  left join tm_load.workload_task_teacher_settings d on a.id = d.workload_task_id and c.teacher_id = d.teacher_id
   where not exists (
     select 1
     from task_teacher_by_timetable_base x
-    join task_settings y on x.id = y.id
+    left join task_settings y on x.id = y.id
     where x.id = a.id and coalesce(x.teacher_id, y.primary_teacher_id) = c.teacher_id
   )
   and a.workload_type <> 0 and a.workload_mode = 1
 ), workload_by_timetable as ( -- 计算按排课计的任务的平行班系数
-  select a.id, a.teacher_id, workload, correction, case
+  select a.id, a.teacher_id, workload, coalesce(d.correction, 0) as correction, case
+      when d.parallel_ratio is not null then d.parallel_ratio
       when c.parallel_ratio is not null then c.parallel_ratio
-      when rank() over(partition by term_id, teacher_id, course_id, course_item order by (workload * class_size_ratio + correction) desc, code) = 1 then 1.0
+      when rank() over(partition by term_id, a.teacher_id, course_id, course_item order by (workload * class_size_ratio + coalesce(d.correction, 0)) desc, code) = 1 then 1.0
       else 0.9
     end as parallel_ratio
   from task_teacher_by_timetable a
   join tm_load.workload_task b on a.id = b.id
   left join task_settings c on b.id = c.id
+  left join tm_load.workload_task_teacher_settings d on a.id = d.workload_task_id and a.teacher_id = d.teacher_id
 ), task_teacher_by_student_base as ( -- 查询按学生计的任务和教师，包含多教师情况
   select id, teacher_id, bool_or(primary_teacher) as primary_teacher, parallel_ratio
   from (
-    select a.id, c.teacher_id, true as primary_teacher, coalesce(parallel_ratio, 1.0) as parallel_ratio
+    select a.id, c.teacher_id, true as primary_teacher, coalesce(e.parallel_ratio, d.parallel_ratio, 1.0) as parallel_ratio
     from tm_load.workload_task a
     join ea.task b on b.id = any(a.task_ids)
     join ea.course_class c on b.course_class_id = c.id
     left join tm_load.course_workload_settings d on d.course_id = a.course_id and d.department_id = a.department_id
-    where a.workload_type <> 0 and a.workload_mode = 2
+    left join tm_load.workload_task_teacher_settings e on a.id = e.workload_task_id and c.teacher_id = e.teacher_id
+    where coalesce(e.workload_type, a.workload_type) <> 0 and a.workload_mode = 2
     union
-    select a.id, c.teacher_id, false as primary_teacher, coalesce(parallel_ratio, 1.0) as parallel_ratio
+    select a.id, c.teacher_id, false as primary_teacher, coalesce(e.parallel_ratio, d.parallel_ratio, 1.0) as parallel_ratio
     from tm_load.workload_task a
     join ea.task b on b.id = any(a.task_ids)
     join ea.task_teacher c on c.task_id = b.id
     left join tm_load.course_workload_settings d on d.course_id = a.course_id and d.department_id = a.department_id
-    where a.workload_type <> 0 and a.workload_mode = 2
+    left join tm_load.workload_task_teacher_settings e on a.id = e.workload_task_id and c.teacher_id = e.teacher_id
+    where coalesce(e.workload_type, a.workload_type) <> 0 and a.workload_mode = 2
   ) workload_teacher_temp
   group by id, teacher_id, parallel_ratio
 ), task_teacher_by_student as ( -- 计算学生人数和修正值
-  select a.id, b.teacher_id, a.workload_type, a.course_credit, case b.primary_teacher
+  select a.id, b.teacher_id, coalesce(c.workload_type, a.workload_type) as workload_type,
+    a.course_credit, case b.primary_teacher
       when true then student_count + coalesce(c.correction, 0)
       else coalesce(c.correction, 0)
     end as student_count,
@@ -327,7 +337,7 @@ with task as ( -- 查询所有任务的主讲教师和平行班系数设置
     student_count_upper_bound
   from tm_load.workload_task a
   join task_teacher_by_student_base b on a.id = b.id
-  left join tm_load.workload_task_teacher c on a.id = c.workload_task_id and b.teacher_id = c.teacher_id
+  left join tm_load.workload_task_teacher_settings c on a.id = c.workload_task_id and b.teacher_id = c.teacher_id
 ), workload_by_student as ( -- 计算按学生计的任务工作量
   select id, teacher_id,
     case workload_type
@@ -341,38 +351,41 @@ with task as ( -- 查询所有任务的主讲教师和平行班系数设置
   join task_settings b on a.id = b.id
   where a.workload_type <> 0 and a.workload_mode = 3
 ), task_teacher_by_coursehour as ( -- 查询所有任务相关教师情况，包括多教师
-  select a.id, a.teacher_id, workload, case a.workload_type
+  select a.id, a.teacher_id, workload, case coalesce(b.workload_type, a.workload_type)
       when 1 then 0
       when 2 then coalesce(b.correction, 0)
     end as correction
   from task_teacher_by_coursehour_base a
-  left join tm_load.workload_task_teacher b on a.id = b.workload_task_id and a.teacher_id = b.teacher_id
+  left join tm_load.workload_task_teacher_settings b on a.id = b.workload_task_id and a.teacher_id = b.teacher_id
   union all
-  select a.id, c.teacher_id, workload, case a.workload_type
+  select a.id, c.teacher_id, workload, case coalesce(d.workload_type, a.workload_type)
       when 1 then 0
       when 2 then coalesce(d.correction, 0)
     end as correction
   from task_teacher_by_coursehour_base a
   join ea.task b on b.id = any(a.task_ids)
   join ea.task_teacher c on b.id = c.task_id
-  left join tm_load.workload_task_teacher d on a.id = d.workload_task_id and c.teacher_id = d.teacher_id
-  where (a.id, c.teacher_id) not in (
-    select x.id, coalesce(x.teacher_id, y.primary_teacher_id)
+  left join tm_load.workload_task_teacher_settings d on a.id = d.workload_task_id and c.teacher_id = d.teacher_id
+  where not exists (
+    select 1
     from task_teacher_by_coursehour_base x
     join task_settings y on x.id = y.id
+    where x.id = a.id and coalesce(x.teacher_id, y.primary_teacher_id) = c.teacher_id
   )
 ), task_teacher_by_coursehour_count as (
   select id, count(*) as teacher_count from task_teacher_by_coursehour group by id
 ), workload_by_coursehour as ( -- 计算按学时计任务的平行班系数
-  select a.id, a.teacher_id, workload / teacher_count as workload, correction, case
+  select a.id, a.teacher_id, workload / teacher_count as workload, a.correction, case
+      when e.parallel_ratio is not null then e.parallel_ratio
       when d.parallel_ratio is not null then d.parallel_ratio
-      when rank() over(partition by term_id, teacher_id, course_id, course_item order by (workload * class_size_ratio / teacher_count + correction) desc, code) = 1 then 1.0
+      when rank() over(partition by term_id, a.teacher_id, course_id, course_item order by (workload * class_size_ratio / teacher_count + a.correction) desc, code) = 1 then 1.0
       else 0.9
     end as parallel_ratio
   from task_teacher_by_coursehour a
   join tm_load.workload_task b on a.id = b.id
   join task_teacher_by_coursehour_count c on a.id = c.id
   left join task_settings d on a.id = d.id
+  left join tm_load.workload_task_teacher_settings e on a.id = e.workload_task_id and a.teacher_id = e.teacher_id
 ), workload_all as (
   select id as workload_task_id, teacher_id, workload as original_workload, correction, parallel_ratio
   from workload_by_timetable
@@ -389,32 +402,34 @@ select * from workload_all where teacher_id is not null;
  * 更新视图：工作量教学任务-标准工作量和任务顺序
  */
 create or replace view tm_load.dvu_workload_task_teacher_standard_workload as
-select workload_task.id as workload_task_id, workload_task_teacher.teacher_id, rank() over(
-    partition by term_id, workload_task_teacher.teacher_id
+select a.id as workload_task_id, b.teacher_id, rank() over(
+    partition by term_id, b.teacher_id
     order by
       course_id,
       case
-        when workload_task.primary_teacher_id = workload_task_teacher.teacher_id then 1
+        when a.primary_teacher_id = b.teacher_id then 1
         else 2
       end,
-      translate(substring(workload_task.code from '-(\d+[A-Z]?)(,|$)'), 'ABCDEFG', '1234567')::integer * case
-        when workload_task.course_item = '理论' then 10
+      translate(substring(a.code from '-(\d+[A-Z]?)(,|$)'), 'ABCDEFG', '1234567')::integer * case
+        when a.course_item = '理论' then 10
         else 1
       end,
-      workload_task.code,
+      a.code,
       course_item
    ) as task_ordinal,
-  case workload_type
+  case coalesce(c.workload_type, a.workload_type)
     when 0 then 0 -- 排除
     when 1 then 0 -- 不计
     when 2 then case workload_mode -- 正常
-      when 1 then (original_workload + correction) * instructional_mode_ratio * class_size_ratio * parallel_ratio -- 按排课
-      when 2 then original_workload * instructional_mode_ratio * parallel_ratio -- 按学生
-      when 3 then (original_workload + correction) * instructional_mode_ratio * class_size_ratio * parallel_ratio -- 按学时
+      when 1 then (original_workload + b.correction) * coalesce(d.ratio, instructional_mode_ratio) * class_size_ratio * b.parallel_ratio -- 按排课
+      when 2 then original_workload * coalesce(d.ratio, instructional_mode_ratio) * b.parallel_ratio -- 按学生
+      when 3 then (original_workload + b.correction) * coalesce(d.ratio, instructional_mode_ratio) * class_size_ratio * b.parallel_ratio -- 按学时
     end
   end as standard_workload
-from tm_load.workload_task
-join tm_load.workload_task_teacher on workload_task.id = workload_task_teacher.workload_task_id;
+from tm_load.workload_task a
+join tm_load.workload_task_teacher b on a.id = b.workload_task_id
+left join tm_load.workload_task_teacher_settings c on a.id = c.workload_task_id and b.teacher_id = c.teacher_id
+left join tm_load.instructional_mode d on c.instructional_mode_id = d.id;
 
 /**
  * 辅助视图：教师任务工作量
@@ -461,7 +476,7 @@ left join tm_load.human_resource_teacher b on a.human_resource_number = b.id
 where a.id in (
   select teacher_id from tm_load.workload_task_teacher
   union
-  select teacher_id from tm_load.dvm_external_workload
+  select teacher_id from tm_load.et_external_workload
 );
 
 /**
@@ -473,7 +488,7 @@ with teacher_task_workload as (
       when 1 then workload_task.department_id -- 按开课单位申报
       when 2 then teacher.department_id -- 按教师单位申报
     end as department_id, workload_task_teacher.teacher_id,
-        workload_mode, standard_workload, executive_weekly_workload
+    workload_mode, standard_workload, executive_weekly_workload
   from tm_load.workload_task
   join tm_load.workload_task_teacher on workload_task_teacher.workload_task_id = workload_task.id
   join ea.teacher on workload_task_teacher.teacher_id = teacher.id
@@ -498,9 +513,7 @@ select a.term_id, b.department_id, a.teacher_id,
   coalesce(a.executive_workload, 0.00) as external_executive_workload,
   coalesce(a.correction, 0.00) as external_correction
 from tm_load.et_external_workload a
-join ea.teacher b on a.teacher_id = b.id
-left join tm_load.teacher_workload_settings c on a.teacher_id = c.teacher_id
-where c.employment_status = '在岗';
+join ea.teacher b on a.teacher_id = b.id;
 
 /**
  * 更新视图：教师学期工作量-调整与合计
@@ -568,7 +581,7 @@ with task as (
       when 2 then '学生'
       when 3 then '学时'
     end as workload_mode,
-    case workload_type
+    case coalesce(f.workload_type, a.workload_type)
       when 0 then '排除'
       when 1 then '不计'
       when 2 then '正常'
@@ -584,24 +597,29 @@ with task as (
     end as class_size_source,
     class_size_type,
     class_size_ratio,
-    case instructional_mode_source
-      when 0 then '缺省'
-      when 1 then '专业'
-      when 2 then '课程'
-      when 3 then '课程项'
-      when 4 then '课程性质'
-      when 9 then '自定义'
+    case 
+      when f.instructional_mode_id is not null then '个人'
+      else case instructional_mode_source
+        when 0 then '缺省'
+        when 1 then '专业'
+        when 2 then '课程'
+        when 3 then '课程项'
+        when 4 then '课程性质'
+        when 9 then '自定义'
+      end
     end as instructional_mode_source,
-    instructional_mode_type,
-    instructional_mode_ratio,
-    parallel_ratio, correction, original_workload, standard_workload,
+    coalesce(g.name, instructional_mode_type) as instructional_mode_type,
+    coalesce(g.ratio, instructional_mode_ratio)::numeric(3, 2) as instructional_mode_ratio,
+    b.parallel_ratio, b.correction, b.original_workload, b.standard_workload,
     tm_load.fn_build_workload_task_schedule_string(a.id, b.teacher_id) as workload_source,
-    course_class_name, course_class_major, note
+    course_class_name, course_class_major, f.note
   from tm_load.workload_task a
   join tm_load.workload_task_teacher b on b.workload_task_id = a.id
   join ea.teacher c on b.teacher_id = c.id
   join ea.department d on c.department_id = d.id
   join ea.department e on a.department_id = e.id
+  left join tm_load.workload_task_teacher_settings f on a.id = f.workload_task_id and b.teacher_id = f.teacher_id
+  left join tm_load.instructional_mode g on f.instructional_mode_id = g.id
   union all
   select term_id, a.id, code, task_ordinal,
     b.id as teacher_id, b.name as teacher_name, c.name as teacher_department, human_resource_number,
@@ -968,7 +986,7 @@ jsonb_pretty(jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
     when (x).parallel_ratio is distinct from (y).parallel_ratio
     then jsonb_build_object('old', (y).parallel_ratio, 'new', (x).parallel_ratio)
   end,
-  'parallel_ratio', case
+  'correction', case
     when (x).correction is distinct from (y).correction
     then jsonb_build_object('old', (y).correction, 'new', (x).correction)
   end,
@@ -991,3 +1009,27 @@ group by (x).term_id, (x).teacher_department, (x).teacher_id, (x).teacher_name,
   (x).workload_task_id, (x).workload_task_code,
   (x).course_id, (x).course_name, (x).course_item, (x).course_credit, (x).course_property, (x).course_class_department
 order by (x).term_id, (x).teacher_department, (x).teacher_id, (x).workload_task_code;
+
+-- 无工作量的教师
+create or replace view tm_load.av_teacher_without_workload as
+with teacher as (
+    select b.id as human_resouce_id, b.name as human_resouce_name, b.department as human_resouce_department,
+        a.employment_mode, a.post_type,
+        b.teacher_id, c.name as teacher_name, d.name as teacher_department
+    from tm_load.teacher_workload_settings a
+    join tm_load.human_resource_teacher b on a.teacher_id = b.teacher_id
+    join ea.teacher c on a.teacher_id = c.id
+    join ea.department d on c.department_id = d.id
+    where a.employment_mode = '在编' and a.employment_status = '在岗'
+), term as (
+    select distinct term_id
+    from tm_load.rv_workload_report
+)
+select y.term_id, x.*, 0 as workload
+from teacher x, term y
+where not exists (
+    select * from
+    tm_load.rv_workload_report
+    where teacher_id = x.teacher_id
+    and term_id = y.term_id
+);

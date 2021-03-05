@@ -27,12 +27,12 @@ INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('form.questio
 INSERT INTO tm.workflow_activity (workflow_id,id,name,url) VALUES ('form.questionnaire', 'form.questionnaire.view',            '查看',     '/form/pollsters/${userId}/questionnaires/${id}');
 
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.affair.questionnaire', 'main.affair', '调查问卷申请', '/form/pollsters/${userId}/questionnaires', true, array['TM-FORM-API'], 60, 'PERM_QUESTIONNAIRE_WRITE');
+('main.affair.questionnaire', 'main.affair', '调查问卷申请', '/form/pollsters/${userId}/questionnaires', true, array['TM-FORM-API'], 70, 'PERM_QUESTIONNAIRE_WRITE');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.affair.questionnaireAdminClassCheck', 'main.affair', '调查问卷审核（班级）', '/form/supervisors/${userId}/questionnaires', true, array['TM-FORM-API'], 61, 'PERM_QUESTIONNAIRE_ADMIN_CLASS_CHECK');
+('main.affair.questionnaireAdminClassCheck', 'main.affair', '调查问卷审核（班级）', '/form/supervisors/${userId}/questionnaires', true, array['TM-FORM-API'], 71, 'PERM_QUESTIONNAIRE_ADMIN_CLASS_CHECK');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.affair.questionnaireCheck', 'main.affair', '调查问卷审核（院级）', '/form/checkers/${userId}/questionnaires', true, array['TM-FORM-API'], 62, 'PERM_QUESTIONNAIRE_CHECK');
+('main.affair.questionnaireCheck', 'main.affair', '调查问卷审核（院级）', '/form/checkers/${userId}/questionnaires', true, array['TM-FORM-API'], 72, 'PERM_QUESTIONNAIRE_CHECK');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.affair.questionnaireApproval', 'main.affair', '调查问卷审批', '/form/approvers/${userId}/questionnaires', true, array['TM-FORM-API'], 63, 'PERM_QUESTIONNAIRE_APPROVE');
+('main.affair.questionnaireApproval', 'main.affair', '调查问卷审批', '/form/approvers/${userId}/questionnaires', true, array['TM-FORM-API'], 73, 'PERM_QUESTIONNAIRE_APPROVE');
 insert into tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) values
-('main.affair.questionnaireResponse', 'main.affair', '参与调查问卷', '/form/respondents/${userId}/questionnaires', true, array['TM-FORM-API'], 64, 'PERM_QUESTIONNAIRE_RESPONSE');
+('main.affair.questionnaireResponse', 'main.affair', '参与调查问卷', '/form/respondents/${userId}/questionnaires', true, array['TM-FORM-API'], 74, 'PERM_QUESTIONNAIRE_RESPONSE');

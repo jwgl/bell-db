@@ -100,7 +100,10 @@ select task.id, cc.term_id, cc.id as course_class_id, d.name as department, task
     where pc.course_id = c.id
     and ccp.course_class_id = cc.id
     ), ',')) as property,
-    array_agg(distinct t.name) as teacher_name,
+    case
+      when count(distinct t.id) = 0 then array_agg(distinct ttt.name)
+      else array_agg(distinct t.name)
+    end as teacher_name,
     count(distinct t.id) as teacher_count,
     (select count(*) from task_student where task_id = task.id) as student_count,
     array_to_string(array(
@@ -111,11 +114,13 @@ select task.id, cc.term_id, cc.id as course_class_id, d.name as department, task
 from task
 join course_class cc on cc.id = task.course_class_id
 join course c on c.id = cc.course_id
-join task_teacher tt on tt.task_id = task.id
-join teacher t on t.id = tt.teacher_id
 join department d on cc.department_id = d.id
+left join task_schedule ts on ts.task_id = task.id
+left join teacher t on t.id = ts.teacher_id
 left join course_item ci on task.course_item_id = ci.id
 left join property p on p.id = cc.property_id
+left join task_teacher tt on tt.task_id = task.id
+left join teacher ttt on ttt.id = tt.teacher_id
 group by task.id, term_id, cc.id, d.name, c.id, c.name, ci.name, p.name, task.code;
 
 -- 教学安排
@@ -170,7 +175,12 @@ left join place on place.id = a.place_id;
 -- 学生信息
 create or replace view ea.av_student as
 select student.id, student.name, student.sex, d.id as department_id, d.name as department_name, m.grade,
-  s.name as subject, ac.name as admin_class,
+  s.name as subject, case s.education_level
+    when 1 then '本科'
+    when 2 then '硕士'
+    when 1 then '博士'
+  end as education_level,
+  ac.name as admin_class,
   t1.id || '-' || t1.name as counsellor, t1.id || '-' || t2.name supervisor, student.at_school,
   id_number
 from student
