@@ -24,6 +24,7 @@ grant select on tm.observation_criteria_item  to bi;  ----评分细则
 grant select on tm_hunt.project to bi;     ----项目表
 grant select on tm_hunt.review  to bi; 	   ----审批表
 grant select on tm_hunt.subtype to bi;     ----项目类别
+grant select on tm_hunt.type to bi;     ----项目大类别
 grant select on tm_hunt.origin to bi;     ----项目来源	
 grant select on tm_hunt.fund to bi;     ----经费	
 grant select on ea.department to bi;	----部门表
@@ -36,3 +37,10 @@ grant select on tm_wx.post_info to bi;  ---邮件信息
 grant select on tm.et_dualdegree_student to bi;
 grant select on tm_dual.degree_application to bi;
 grant select on tm_hunt.teacher_temp to bi;
+grant select on tm.dv_observation_view    to bi;    ----督导听课视图
+grant select on tm_hunt.teacher_temp to bi;
+grant select on tm_wx.cet_teacher to bi;      ---监考用户
+grant select on tm_wx.cet_teacher_room to bi;      ---监考场地
+grant select on tm_wx.exam_room to bi;      ---考试场地	
+grant select on tm_wx.exam to bi;      ---四六级考试
+grant select on tm_wx.exam_group to bi;      ---资料组
