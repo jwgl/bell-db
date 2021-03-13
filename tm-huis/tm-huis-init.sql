@@ -111,6 +111,6 @@ INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_o
 ('main.settings.huisRoomSetting', 'main.settings', '会议室设置', '/huis/departments/${departmentId}/rooms', true, array['TM-HUIS-API'], 52, 'PERM_HUIS_BOOKING_ADMIN');
 
 INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
-('main.resource.huisBookingAdmin', 'main.resource', '会议室借用管理', '/huis/bookingForms', true, array['TM-HUIS-API'], 25, 'PERM_HUIS_BOOKING_ADMIN');
+('main.resource.huisBookingAdmin', 'main.resource', '会议室借用管理', '/huis/departments/${departmentId}/bookingForms', true, array['TM-HUIS-API'], 25, 'PERM_HUIS_BOOKING_ADMIN');
 INSERT INTO tm.menu_item(id, menu_id, label, url, enabled, depends_on, display_order, permission_id) VALUES
 ('main.resource.huisStatementAdmin', 'main.resource', '会议室结算管理', '/huis/statementForms', true, array['TM-HUIS-API'], 26, 'PERM_HUIS_BOOKING_ADMIN');

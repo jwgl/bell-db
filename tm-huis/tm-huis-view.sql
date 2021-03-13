@@ -97,6 +97,25 @@ from tm_huis.room
 join ea.department on room.department_id = department.id
 order by room.name;
 
+-- 数据视图-借用单管理员视图
+create or replace view tm_huis.dv_booking_admin as
+select distinct booking_form.id,
+  department.name as department,
+  system_user.name as user,
+  booking_type.name as type,
+  booking_form.subject,
+  room.department_id as room_department_id,
+  booking_form.date_updated,
+  booking_form.workflow_state,
+  booking_form.status
+from tm_huis.booking_form
+join tm_huis.booking_item on booking_form.id = booking_item.form_id
+join tm_huis.room on booking_item.room_id = room.id
+join ea.department on booking_form.department_id = department.id
+join tm_huis.booking_type on booking_form.booking_type_id = booking_type.id
+join tm.system_user on booking_form.user_id = system_user.id
+order by date_updated desc;
+
 -- 数据视图-借用单列表视图
 create or replace view tm_huis.dv_booking_list as
 select booking_form.id,
@@ -106,6 +125,7 @@ select booking_form.id,
   booking_form.user_id,
   booking_form.date_updated,
   booking_form.workflow_state,
+  booking_form.status,
   (select act_ru_task.id_
     from wf.act_ru_task
     where booking_form.workflow_instance_id = act_ru_task.proc_inst_id_
@@ -256,6 +276,7 @@ select booking_item.id as id,
   upper(booking_item.actual_time) as actual_upper_time,
   room_operator.operator_id,
   booking_item.workflow_state,
+  booking_item.status,
   (select act_ru_task.id_
     from wf.act_ru_task
     where booking_item.workflow_instance_id = act_ru_task.proc_inst_id_
@@ -394,6 +415,7 @@ select statement_form.id as id,
   statement_form.user_id,
   statement_form.date_updated,
   statement_form.workflow_state,
+  statement_form.status,
   (select act_ru_task.id_
     from wf.act_ru_task
     where statement_form.workflow_instance_id = act_ru_task.proc_inst_id_
