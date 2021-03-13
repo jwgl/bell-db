@@ -227,6 +227,9 @@ begin
 end;
 $$ language plpgsql;
 
+/**
+ * 查找冲突的预留
+ */
 create or replace function tm_huis.fn_find_reservation_conflict(
   p_room_id int,
   p_lower_date date,
@@ -291,7 +294,7 @@ return query
     || substring(lower_time::text, 1, 5) || '至' || substring(upper_time::text, 1, 5)
     || '-' || coalesce(room_reservation.note, '')
   from tm_huis.room_reservation
-  where exists (
+  where room_id = p_room_id and exists (
     select 1
     from generate_series(
       room_reservation.lower_date, room_reservation.upper_date, (room_reservation.date_interval || 'day')::interval
