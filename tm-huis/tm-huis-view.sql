@@ -129,7 +129,8 @@ select booking_form.id,
   (select act_ru_task.id_
     from wf.act_ru_task
     where booking_form.workflow_instance_id = act_ru_task.proc_inst_id_
-    and booking_form.user_id = assignee_
+      and booking_form.user_id = assignee_
+      and act_ru_task.task_def_key_ = 'ut-edit'
     order by act_ru_task.create_time_
     limit 1
   ) as workflow_task_id
@@ -280,7 +281,8 @@ select booking_item.id as id,
   (select act_ru_task.id_
     from wf.act_ru_task
     where booking_item.workflow_instance_id = act_ru_task.proc_inst_id_
-    and room_operator.operator_id = assignee_
+      and room_operator.operator_id = assignee_
+      and act_ru_task.task_def_key_ = 'ut-edit'
     order by act_ru_task.create_time_
     limit 1
   ) as workflow_task_id,
@@ -419,7 +421,8 @@ select statement_form.id as id,
   (select act_ru_task.id_
     from wf.act_ru_task
     where statement_form.workflow_instance_id = act_ru_task.proc_inst_id_
-    and statement_form.user_id = assignee_
+      and statement_form.user_id = assignee_
+      and act_ru_task.task_def_key_ = 'ut-edit'
     order by act_ru_task.create_time_
     limit 1
   ) as workflow_task_id
@@ -617,6 +620,8 @@ select task.id_ as id, task.name_ as name,
   task.create_time_ as create_time
 from tm_huis.booking_form form
 join wf.act_ru_task task on form.workflow_instance_id = task.proc_inst_id_
+where task.task_def_key_ = 'ut-edit' and task.assignee_ <> form.user_id
+   or task.task_def_key_ <> 'ut-edit'
 order by task.create_time_;
 
 -- 数据视图-会议室借用工作流历史
@@ -652,6 +657,8 @@ from tm_huis.booking_form form
 join tm_huis.booking_item item on form.id = item.form_id
 join tm_huis.room on item.room_id = room.id
 join wf.act_ru_task task on item.workflow_instance_id = task.proc_inst_id_
+where task.task_def_key_ = 'ut-edit' and task.assignee_ <> item.operator_id
+   or task.task_def_key_ <> 'ut-edit'
 order by task.create_time_;
 
 -- 数据视图-使用确认工作流历史
@@ -686,7 +693,10 @@ select task.id_ as id, task.name_ as name,
   task.assignee_ as assignee,
   task.create_time_ as create_time
 from tm_huis.statement_form form
-join wf.act_ru_task task on form.workflow_instance_id = task.proc_inst_id_;
+join wf.act_ru_task task on form.workflow_instance_id = task.proc_inst_id_
+where task.task_def_key_ = 'ut-edit' and task.assignee_ <> form.user_id
+   or task.task_def_key_ <> 'ut-edit'
+order by task.create_time_;
 
 -- 数据视图-借用结算工作流历史
 create or replace view tm_huis.dv_statement_step as
