@@ -373,11 +373,13 @@ join tm_huis.room on booking_item.room_id = room.id
 left join system_user on booking_item.operator_id = system_user.id;
 
 -- 数据视图-超期结算视图
-create or replace view tm_huis.dv_statement_delay as
+create or replace view tm_huis.dv_booking_facility_unsettled as
 with delay_config as (
   select (value || 'd') :: interval as value from tm.system_config where key ='huis.statement.delay'
 )
 select booking_facility.id as id,
+  department.id as department_id,
+  department.name as department_name,
   form_user.id as user_id,
   form_user.name as user_name,
   booking_form.id as booking_form_id,
@@ -387,7 +389,7 @@ select booking_facility.id as id,
   lower(booking_item.booking_time) as booking_lower_time,
   upper(booking_item.booking_time) as booking_upper_time,
   facility.name as facility,
-  booking_facility.subtotal as subtotal,
+  booking_facility.subtotal,
   booking_item.date_confirm,
   booking_item.workflow_instance_id as item_workflow_instance_id,
   booking_item.workflow_state as item_workflow_state,
@@ -401,13 +403,14 @@ join tm_huis.booking_facility on booking_facility.item_id = booking_item.id
 join tm_huis.room on booking_item.room_id = room.id
 join tm_huis.facility on booking_facility.facility_id = facility.id
 join tm.system_user form_user on booking_form.user_id = form_user.id
+join ea.department on booking_form.department_id = department.id
 left join tm_huis.statement_form on booking_facility.statement_form_id = statement_form.id
 where (statement_form.id is null or statement_form.status <> 'ACTIVE')
 and now() - booking_item.date_confirm > (select value from delay_config)
-and not( booking_form.is_internal and room.is_internal_free)
 and booking_form.status = 'ACTIVE'
 and booking_item.status = 'ACTIVE'
-and booking_facility.status = 'ACTIVE';
+and booking_facility.status = 'ACTIVE'
+and booking_facility.subtotal > 0;
 
 -- 数据视图-结算单列表视图
 create or replace view tm_huis.dv_statement_list as
