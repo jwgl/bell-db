@@ -386,6 +386,7 @@ select booking_facility.id as id,
   booking_item.id as booking_item_id,
   booking_form.subject as subject,
   room.name as room,
+  room.department_id as room_department_id,
   lower(booking_item.booking_time) as booking_lower_time,
   upper(booking_item.booking_time) as booking_upper_time,
   facility.name as facility,
@@ -410,7 +411,8 @@ and now() - booking_item.date_confirm > (select value from delay_config)
 and booking_form.status = 'ACTIVE'
 and booking_item.status = 'ACTIVE'
 and booking_facility.status = 'ACTIVE'
-and booking_facility.subtotal > 0;
+and booking_facility.subtotal > 0
+order by booking_item.date_confirm;
 
 -- 数据视图-结算单列表视图
 create or replace view tm_huis.dv_statement_list as
