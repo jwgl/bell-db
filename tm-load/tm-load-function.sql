@@ -83,7 +83,7 @@ declare
 begin
   -- 更新工作量修正
   update tm_load.workload_task_teacher set
-  correction = correction,
+  correction = p_correction,
   note = p_note
   where workload_task_id = p_workload_task_id
   and teacher_id = p_teacher_id;
