@@ -440,36 +440,89 @@ on conflict(task_id, teacher_id) do nothing;
 
 -- 教学安排
 -- Oracle端合并性能低，合并逻辑移到PostgreSQL端
+-- insert into ea.task_schedule(id, day_of_week, end_week, odd_even, place_id, start_section, start_week, task_id, teacher_id, total_section, root_id)
+-- with formal as (
+--     select case when b.id is null then a.id else b.id end as id, -- 统一ID为长度不等于1的安排
+--         case when b.id is null then a.root_id else b.root_id end as root_id, -- 统一ROOT_ID为长度不等于1的安排
+--         a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week,
+--         a.odd_even, a.day_of_week, a.start_section, a.total_section
+--     from ea.sv_task_schedule a
+--     left join ea.sv_task_schedule b on a.task_id = b.task_id
+--     and a.teacher_id = b.teacher_id
+--     and (a.place_id = b.place_id or a.place_id is null and b.place_id is null)
+--     and a.start_week = b.start_week
+--     and a.end_week = b.end_week
+--     and a.odd_even = b.odd_even
+--     and a.day_of_week = b.day_of_week
+--     and a.total_section = 1
+--     and (a.start_section + a.total_section = b.start_section and b.start_section not in (5, 10)
+--       or b.start_section + b.total_section = a.start_section and a.start_section not in (5, 10))
+-- ), schedule as (
+--   select id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week,
+--     min(start_section) as start_section, sum(total_section) as total_section, root_id
+--   from formal
+--   group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, root_id
+-- )
+-- select id, day_of_week, end_week, odd_even, place_id, start_section, start_week, task_id, teacher_id, total_section,
+--   case
+--     when root_id is null then null
+--     when exists (select id from schedule x where x.id = y.root_id) then root_id
+--     else null
+--   end as root_id
+-- from schedule y
+-- on conflict(id) do update set
+-- task_id        = EXCLUDED.task_id,
+-- teacher_id     = EXCLUDED.teacher_id,
+-- place_id       = EXCLUDED.place_id,
+-- start_week     = EXCLUDED.start_week,
+-- end_week       = EXCLUDED.end_week,
+-- odd_even       = EXCLUDED.odd_even,
+-- day_of_week    = EXCLUDED.day_of_week,
+-- start_section  = EXCLUDED.start_section,
+-- total_section  = EXCLUDED.total_section,
+-- root_id        = EXCLUDED.root_id;
+
 insert into ea.task_schedule(id, day_of_week, end_week, odd_even, place_id, start_section, start_week, task_id, teacher_id, total_section, root_id)
-with formal as (
-    select case when b.id is null then a.id else b.id end as id, -- 统一ID为长度不等于1的安排
-        case when b.id is null then a.root_id else b.root_id end as root_id, -- 统一ROOT_ID为长度不等于1的安排
-        a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week,
-        a.odd_even, a.day_of_week, a.start_section, a.total_section
-    from ea.sv_task_schedule a
-    left join ea.sv_task_schedule b on a.task_id = b.task_id
-    and a.teacher_id = b.teacher_id
-    and (a.place_id = b.place_id or a.place_id is null and b.place_id is null)
-    and a.start_week = b.start_week
-    and a.end_week = b.end_week
-    and a.odd_even = b.odd_even
-    and a.day_of_week = b.day_of_week
-    and a.total_section = 1
-    and (a.start_section + a.total_section = b.start_section and b.start_section not in (5, 10)
-      or b.start_section + b.total_section = a.start_section and a.start_section not in (5, 10))
-), schedule as (
-  select id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week,
-    min(start_section) as start_section, sum(total_section) as total_section, root_id
-  from formal
-  group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, root_id
+with schedule as (
+  select a.id, a.root_id, a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week,
+      a.odd_even, a.day_of_week, a.start_section, a.total_section, b.segment
+  from ea.sv_task_schedule a
+  join ea.period b on a.term_id between b.start_term and b.end_term and a.start_section = b.code
+  where term_id = 20202
+), schedule_start as (
+  select schedule.*, case
+    when lag(start_section) over w1 + lag(total_section) over w1 = start_section -- 相连
+      and (sum(total_section) over w2 % 2 = 1 -- 之前节数合计为奇数
+        or total_section = 1 and coalesce(lead(total_section) over w1, 0) % 2 = 0 -- 或之前节数为偶数，当前节数为单节且后续节不为奇数
+      )
+    then 0 else 1 end as start_flag
+  from schedule
+  window w1 as (partition by task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, segment
+                order by start_section),
+         w2 as (partition by task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, segment
+                order by start_section
+                range unbounded preceding exclude current row)
+), schedule_group as (
+  select schedule_start.*, sum(start_flag) over w as group_number
+  from schedule_start
+  window w as (partition by task_id, teacher_id, start_week, end_week, odd_even, day_of_week, segment
+               order by start_section)
+), schedule_merge as (
+  select first_value(id) over w as id,
+    first_value(root_id) over w as root_id,
+    task_id, teacher_id, place_id,
+    start_week, end_week, odd_even, day_of_week,
+    start_section, total_section, start_flag, group_number,
+    min(start_section) over w as start_section_new,
+    sum(total_section) over w as total_section_new
+  from schedule_group
+  window w as (partition by task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, segment, group_number
+               order by total_section desc, start_section -- 取节数最长的id和root_id，相同节数取节次最小值
+               range between unbounded preceding and unbounded following)
 )
-select id, day_of_week, end_week, odd_even, place_id, start_section, start_week, task_id, teacher_id, total_section,
-  case
-    when root_id is null then null
-    when exists (select id from schedule x where x.id = y.root_id) then root_id
-    else null
-  end as root_id
-from schedule y
+select id, day_of_week, end_week, odd_even, place_id, start_section_new as start_section, start_week, task_id, teacher_id, total_section_new as total_section, root_id
+from schedule_merge
+where start_flag = 1
 on conflict(id) do update set
 task_id        = EXCLUDED.task_id,
 teacher_id     = EXCLUDED.teacher_id,
