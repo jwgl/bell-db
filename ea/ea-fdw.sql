@@ -15,3 +15,26 @@ create foreign table ea.et_bnuc_task_schedule (
   week_bits     integer,
   section_bits  integer
 ) server bnuc options (schema_name 'ea', table_name 'ev_bnuc_task_schedule', updatable 'false');
+
+
+drop foreign table if exists ea.et_online_place_schedule_remote;
+create foreign table ea.et_online_place_schedule_remote (
+  task_id       uuid,
+  place_id      character varying(6),
+  day_of_week   integer,
+  week_bits     integer,
+  section_bits  integer,
+  start_section integer,
+  total_section integer,
+  start_date    date,
+  end_date      date
+) server bnuc options (schema_name 'ea', table_name 'tv_online_place_schedule_local', updatable 'false');
+
+
+drop foreign table if exists ea.et_place_live_student;
+create foreign table ea.et_place_live_student (
+  place_id      text,
+  student_id    text,
+  password      text,
+  create_time   timestamp without time zone
+) server bnuc options (schema_name 'ea', table_name 'place_live_student', updatable 'false');

@@ -89,28 +89,32 @@ left join property p on p.id = cc.property_id;
 
 -- 教学任务
 create or replace view ea.av_task as
-select task.id, cc.term_id, cc.id as course_class_id, d.name as department, task.code, c.id as course_id, c.name as course_name,
-    ci.name as course_item,
-    c.credit as course_credit,
-    coalesce(p.name, array_to_string(array(
+select task.id, cc.term_id, cc.id as course_class_id, '本科' as education_level,
+  d.name as department, task.code, c.id as course_id, c.name as course_name,
+  ci.name as course_item,
+  c.credit as course_credit,
+  coalesce(p.name, array_to_string(array(
     select distinct property.name
     from ea.course_class_program ccp
     join ea.program_course pc on pc.program_id = ccp.program_id
     join ea.property on pc.property_id = property.id
     where pc.course_id = c.id
     and ccp.course_class_id = cc.id
-    ), ',')) as property,
-    case
-      when count(distinct t.id) = 0 then array_agg(distinct ttt.name)
-      else array_agg(distinct t.name)
-    end as teacher_name,
-    count(distinct t.id) as teacher_count,
-    (select count(*) from task_student where task_id = task.id) as student_count,
-    array_to_string(array(
-      select ea.mf_get_timetable_string(task_schedule) || '/' || place.name
-      from ea.task_schedule
-      left join ea.place on task_schedule.place_id = place.id
-      where task_schedule.task_id = task.id), ';') as schedules
+    ), ',')
+  ) as property,
+  case
+    when count(distinct t.id) = 0 then string_agg(distinct ttt.name, ',')
+    else string_agg(distinct t.name, ',')
+  end as teacher_name,
+  cc.name as course_class_name,
+  (select count(*) from task_student where task_id = task.id) as student_count,
+  array_to_string(array(
+    select ea.mf_get_timetable_string(task_schedule) || '/' || place.name
+    from ea.task_schedule
+    left join ea.place on task_schedule.place_id = place.id
+    where task_schedule.task_id = task.id
+    order by start_week, odd_even, day_of_week, start_section
+  ), ';') as schedules
 from task
 join course_class cc on cc.id = task.course_class_id
 join course c on c.id = cc.course_id
@@ -153,6 +157,27 @@ join ea.department f on e.department_id = f.id
 join ea.major g on e.major_id = g.id
 join ea.subject h on g.subject_id = h.id
 join ea.teacher i on c.teacher_id = i.id;
+
+-- 学生任务
+create or replace view ea.av_student_task as
+select student.id as student_id, student.name as student_name, cc.term_id, c.id as course_id, c.name as course_name, ci.name as course_item,
+    teacher.id as teacher_id, teacher.name as teacher_name,
+    task.id as task_id, task.code as task_code, course_class_id,
+    ts.repeat_type, array(
+      select fn_timetable_to_string(start_week, end_week, odd_even, day_of_week, start_section, total_section) || '/' || b.name
+      from task_schedule a
+      join teacher te on te.id = a.teacher_id
+      left join place b on a.place_id = b.id
+      where a.task_id = task.id
+      order by start_week, odd_even, day_of_week, start_section
+    ) as schedule
+from task
+join course_class cc on cc.id = task.course_class_id
+join course c on c.id = cc.course_id
+join task_student ts on ts.task_id = task.id
+join student on student.id = ts.student_id
+join teacher on teacher.id = cc.teacher_id
+left join course_item ci on ci.id = task.course_item_id;
 
 -- 学生课表
 create or replace view ea.av_student_schedule as
@@ -439,3 +464,72 @@ select task.code, schedule.id, root_id, schedule.start_week, schedule.end_week, 
 from schedule
 join ea.task on schedule.task_id = task.id where root_id not in (select id from schedule)
 order by task.code, schedule.start_week, day_of_week, start_section;
+
+-- 检查排课同步数据中包含重复ID的情况
+create or replace view ea.cv_duplicated_sv_task_schedule_id as
+with task_schedule as (
+    select * from sv_task_schedule where term_id = (select id from ea.term where active = true)
+), schedule_segment as (
+  select a.id, a.root_id, a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week,
+      a.odd_even, a.day_of_week, a.start_section, a.total_section, b.segment
+  from task_schedule a
+  join ea.period b on a.term_id between b.start_term and b.end_term and a.start_section = b.code
+), schedule_start as (
+  select schedule_segment.*, case
+    when lag(start_section) over w1 + lag(total_section) over w1 = start_section -- 相连
+      and (sum(total_section) over w2 % 2 = 1 -- 之前节数合计为奇数
+        or total_section = 1 and coalesce(lead(total_section) over w1, 0) % 2 = 0 -- 或之前节数为偶数，当前节数为单节且后续节不为奇数
+      )
+    then 0 else 1 end as start_flag
+  from schedule_segment
+  window w1 as (partition by task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, segment
+                order by start_section),
+         w2 as (partition by task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, segment
+                order by start_section
+                range unbounded preceding exclude current row)
+), schedule_group as (
+  select schedule_start.*, sum(start_flag) over w as group_number
+  from schedule_start
+  window w as (partition by task_id, teacher_id, start_week, end_week, odd_even, day_of_week, segment
+               order by start_section)
+), schedule_merge as (
+  select first_value(id) over w as id,
+    first_value(root_id) over w as root_id,
+    task_id, teacher_id, place_id,
+    start_week, end_week, odd_even, day_of_week,
+    start_section, total_section, start_flag, group_number,
+    min(start_section) over w as start_section_new,
+    sum(total_section) over w as total_section_new
+  from schedule_group
+  window w as (partition by task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, segment, group_number
+               order by total_section desc, start_section -- 取节数最长的id和root_id，相同节数取节次最小值
+               range between unbounded preceding and unbounded following)
+), schedule_normal as (
+  select id, root_id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week,
+    start_section_new as start_section, total_section_new as total_section
+  from schedule_merge
+  where start_flag = 1
+)
+select * from schedule_normal where id in (
+  select id from schedule_normal group by id having count(*) > 1
+);
+
+-- 本地场地开门时间
+create view ea.av_place_schedule_local as
+select task_schedule.id, place_id, place.name as place_name,
+  term.start_date + (task_schedule.start_week + case odd_even when 0 then 0 else (odd_even + task_schedule.start_week) % 2 end - 1) * 7 + (day_of_week - 1) as start_date,
+  term.start_date + (task_schedule.end_week - case odd_even when 0 then 0 else (odd_even + task_schedule.end_week) % 2 end - 1) * 7 + (day_of_week - 1) as end_date,
+  case odd_even when 0 then 7 else 14 end as date_interval, bs1.start_time, bs2.end_time,
+  course.name || case when course_item.name is not null then course_item.name else '' end || '/' || teacher.name || '/' || fn_timetable_to_string(task_schedule.start_week, task_schedule.end_week, task_schedule.odd_even, day_of_week, start_section, total_section) as note
+from ea.task_schedule
+join ea.task on task_schedule.task_id = task.id
+join ea.course_class on course_class.id = task.course_class_id
+join ea.course on course.id = course_class.course_id
+join ea.teacher on teacher.id = task_schedule.teacher_id
+join ea.term on course_class.term_id = term.id
+join ea.bell_schedule bs1 on bs1.period = task_schedule.start_section and term.id between bs1.start_term and bs1.end_term
+join ea.bell_schedule bs2 on bs2.period = (task_schedule.start_section + task_schedule.total_section - 1) and term.id between bs2.start_term and bs2.end_term
+join ea.place on place.id = task_schedule.place_id
+left join course_item on course_item.id = task.course_item_id
+where '2021-09-13'::date between term.start_date and (term.start_date + (term.max_week - term.start_week + 1) * 7 - 1)
+order by place_id, start_time, start_date, date_interval;
