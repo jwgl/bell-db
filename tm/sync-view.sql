@@ -90,9 +90,6 @@ select distinct to_number(substr(xn, 1, 4) || xq) as term_id,
     sydw as department,
     bz as description
 from zfxfzb.jxcdview_old_tms t
-left join (select * from zfxfzb.ttksqb
-    where bdlb='考试' and shbj='1') k on t.xkkh=k.xkkh
-    and t.xqj=k.yxqj and to_char(t.sjd)=k.ysjd and to_char(t.jsz)=k.yjsz
 where jsbh is not null;
 
 /**
