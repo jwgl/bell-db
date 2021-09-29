@@ -54,7 +54,8 @@ create type tm_huis.statement_form_status as enum (
 create type tm_huis.facility_type as enum (
     'BASIC_SERVICE',
     'BASIC_DETAIL',
-    'EXTRA_SERVICE'
+    'EXTRA_SERVICE',
+    'REQUIRED_SERVICE'
 );
 
 INSERT INTO tm.role (id,name) VALUES ('ROLE_HUIS_BOOKING_CHECKER',     '会议室借用审核人');

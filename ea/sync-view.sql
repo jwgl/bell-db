@@ -1161,7 +1161,7 @@ with x as (
   select a.xn, a.xq, a.kcdm, a.kcmc, a.xkkh, a.kcxz, d.jxjhh, count(*) as student_count,
     rank() over(partition by a.xkkh order by count(*) desc) as rank
   from zfxfzb.cfbjxrwb a
-  join zfxfzb.cjb b on a.xkkh = b.xkkh
+  join zfxfzb.xsxkb b on a.xkkh = b.xkkh
   join zfxfzb.xsjbxxb c on b.xh = c.xh
   join zfxfzb.jxjhkcxxb d on d.zydm = c.zydm and d.kcdm = a.kcdm and c.dqszj = d.nj
   where a.kcxz <> '公共必修课'
