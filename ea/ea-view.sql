@@ -437,32 +437,53 @@ order by b.id, b.day;
 
 -- 检查root_id不存在的排课
 create or replace view ea.cv_root_id_not_exists as
-with formal as (
-    select case when b.id is null then a.id else b.id end as id, -- 统一ID为长度不等于1的安排
-        case when b.id is null then a.root_id else b.root_id end as root_id, -- 统一ROOT_ID为长度不等于1的安排
-        a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week,
-        a.odd_even, a.day_of_week, a.start_section, a.total_section
-    from ea.sv_task_schedule a
-    left join ea.sv_task_schedule b on a.task_id = b.task_id
-    and a.teacher_id = b.teacher_id
-    and (a.place_id = b.place_id or a.place_id is null and b.place_id is null)
-    and a.start_week = b.start_week
-    and a.end_week = b.end_week
-    and a.odd_even = b.odd_even
-    and a.day_of_week = b.day_of_week
-    and a.total_section = 1
-    and (a.start_section + a.total_section = b.start_section and b.start_section not in (5, 10)
-      or b.start_section + b.total_section = a.start_section and a.start_section not in (5, 10))
-), schedule as (
-    select id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week,
-        min(start_section) as start_section, sum(total_section) as total_section, root_id
-    from formal
-    group by id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, root_id
+with task_schedule as (
+    select * from sv_task_schedule where term_id = (select id from ea.term where active = true)
+), schedule_segment as (
+  select a.id, a.root_id, a.task_id, a.teacher_id, a.place_id, a.start_week, a.end_week,
+      a.odd_even, a.day_of_week, a.start_section, a.total_section, b.segment
+  from task_schedule a
+  join ea.period b on a.term_id between b.start_term and b.end_term and a.start_section = b.code
+), schedule_start as (
+  select schedule_segment.*, case
+    when lag(start_section) over w1 + lag(total_section) over w1 = start_section -- 相连
+      and (sum(total_section) over w2 % 2 = 1 -- 之前节数合计为奇数
+        or total_section = 1 and coalesce(lead(total_section) over w1, 0) % 2 = 0 -- 或之前节数为偶数，当前节数为单节且后续节不为奇数
+      )
+    then 0 else 1 end as start_flag
+  from schedule_segment
+  window w1 as (partition by task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, segment
+                order by start_section),
+         w2 as (partition by task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, segment
+                order by start_section
+                range unbounded preceding exclude current row)
+), schedule_group as (
+  select schedule_start.*, sum(start_flag) over w as group_number
+  from schedule_start
+  window w as (partition by task_id, teacher_id, start_week, end_week, odd_even, day_of_week, segment
+               order by start_section)
+), schedule_merge as (
+  select first_value(id) over w as id,
+    first_value(root_id) over w as root_id,
+    task_id, teacher_id, place_id,
+    start_week, end_week, odd_even, day_of_week,
+    start_section, total_section, start_flag, group_number,
+    min(start_section) over w as start_section_new,
+    sum(total_section) over w as total_section_new
+  from schedule_group
+  window w as (partition by task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week, segment, group_number
+               order by total_section desc, start_section -- 取节数最长的id和root_id，相同节数取节次最小值
+               range between unbounded preceding and unbounded following)
+), schedule_normal as (
+  select id, root_id, task_id, teacher_id, place_id, start_week, end_week, odd_even, day_of_week,
+    start_section_new as start_section, total_section_new as total_section
+  from schedule_merge
+  where start_flag = 1
 )
 select task.code, schedule.id, root_id, schedule.start_week, schedule.end_week, odd_even,
   day_of_week, start_section, total_section
-from schedule
-join ea.task on schedule.task_id = task.id where root_id not in (select id from schedule)
+from schedule_normal schedule
+join ea.task on schedule.task_id = task.id where root_id not in (select id from schedule_normal)
 order by task.code, schedule.start_week, day_of_week, start_section;
 
 -- 检查排课同步数据中包含重复ID的情况
