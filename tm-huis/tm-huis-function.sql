@@ -116,7 +116,7 @@ begin
   with booking as (
     select booking_item.id,
       booking_item.room_id,
-      booking_form.subject,
+      concat(booking_form.subject,'-',booking_form.contact,booking_form.contact_number) as subject,
       booking_item.booking_time,
       booking_item.actual_time
     from tm_huis.booking_form
